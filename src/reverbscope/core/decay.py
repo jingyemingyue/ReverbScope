@@ -177,6 +177,7 @@ from reverbscope.core.filters import (
     bandpass_sos,
     iec_band,
 )
+from reverbscope.core.multislope import fit_multi_slope
 from reverbscope.errors import ConfigurationError, InvalidAudioError
 from reverbscope.i18n import _, diag
 from reverbscope.models.audio import FloatArray
@@ -1551,6 +1552,24 @@ def analyze_band(
             basis = metric.name
             break
 
+    late_decay_s = (
+        -60.0 / trunc.late_slope_db_per_s
+        if trunc.late_slope_db_per_s is not None and trunc.late_slope_db_per_s < 0.0
+        else None
+    )
+    multi_slope = fit_multi_slope(
+        power,
+        sample_rate,
+        onset=onset,
+        time_origin_index=origin,
+        first_index=first_index,
+        decay_range_db=float(trunc.peak_db - trunc.noise_floor_db),
+        bandwidth_hz=band.bandwidth_hz if band is not None else None,
+        reference_decays_s=(t30.seconds, t20.seconds, edt.seconds),
+        late_decay_s=late_decay_s,
+        cut_short=trunc.cut_short_db is not None,
+    )
+
     edc_time, edc_db = _decimate_curve(curve, sample_rate)
     return BandDecay(
         band_label=band.label if band is not None else "broadband",
@@ -1577,6 +1596,7 @@ def analyze_band(
         c80=c80,
         d50=d50,
         centre_time=centre,
+        multi_slope=multi_slope,
     )
 
 

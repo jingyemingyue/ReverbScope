@@ -1255,6 +1255,7 @@ def _mark_decay_not_computed(decay: DecayResult, reason: str) -> DecayResult:
             rt60_estimate_s=None,
             rt60_basis=None,
             curvature_percent=None,
+            multi_slope=None,
         )
 
     return replace(

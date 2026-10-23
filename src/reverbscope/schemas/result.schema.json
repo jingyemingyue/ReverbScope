@@ -81,6 +81,47 @@
         "reason": { "$ref": "#/$defs/string_or_null" }
       }
     },
+    "decay_slope_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slope_count",
+        "decay_times_s",
+        "amplitudes",
+        "noise_term",
+        "bic",
+        "rms_residual_db"
+      ],
+      "properties": {
+        "slope_count": { "type": "integer", "minimum": 1 },
+        "decay_times_s": { "$ref": "#/$defs/number_array" },
+        "amplitudes": { "$ref": "#/$defs/number_array" },
+        "amplitudes_db": { "$ref": "#/$defs/number_array" },
+        "energy_shares_percent": { "$ref": "#/$defs/number_array" },
+        "noise_term": { "type": "number" },
+        "bic": { "type": "number" },
+        "rms_residual_db": { "type": "number" }
+      }
+    },
+    "multi_slope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["validity", "selected_slopes", "models"],
+      "properties": {
+        "validity": { "$ref": "#/$defs/validity" },
+        "selected_slopes": { "type": ["integer", "null"], "minimum": 1 },
+        "criterion": { "type": "string" },
+        "delta_bic": { "$ref": "#/$defs/number_or_null" },
+        "fit_start_s": { "$ref": "#/$defs/number_or_null" },
+        "fit_end_s": { "$ref": "#/$defs/number_or_null" },
+        "integration_end_s": { "$ref": "#/$defs/number_or_null" },
+        "knee_time_s": { "$ref": "#/$defs/number_or_null" },
+        "knee_level_db": { "$ref": "#/$defs/number_or_null" },
+        "models": { "type": "array", "items": { "$ref": "#/$defs/decay_slope_model" } },
+        "reason": { "$ref": "#/$defs/string_or_null" },
+        "notes": { "$ref": "#/$defs/string_array" }
+      }
+    },
     "band_decay": {
       "type": "object",
       "properties": {
@@ -106,6 +147,9 @@
         "c80": { "$ref": "#/$defs/energy_metric" },
         "d50": { "$ref": "#/$defs/energy_metric" },
         "centre_time": { "$ref": "#/$defs/energy_metric" },
+        "multi_slope": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/multi_slope" }]
+        },
         "edc_time_s": { "$ref": "#/$defs/number_array" },
         "edc_db": { "$ref": "#/$defs/number_array" }
       }

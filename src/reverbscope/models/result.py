@@ -140,6 +140,159 @@ def _not_computed_energy(name: str, unit: str) -> EnergyMetric:
     return EnergyMetric(name=name, value=None, unit=unit, validity=Validity.NOT_COMPUTED)
 
 
+#: 60 dB of decay as a natural-log energy ratio, ln(10**6): an energy that
+#: decays with reverberation time ``T`` is ``exp(-DECAY_60_DB_NEPER * t / T)``.
+DECAY_60_DB_NEPER = 13.815510557964274
+
+#: ``MultiSlopeFit.criterion``: the Bayesian information criterion (Schwarz 1978).
+MULTI_SLOPE_CRITERION_BIC = "BIC"
+
+
+@dataclass(frozen=True)
+class DecaySlopeModel:
+    """One multi-exponential model of an energy decay curve.
+
+    ``EDC(t) = sum_i A_i * (exp(-13.8155 t / T_i) - exp(-13.8155 L / T_i)) + N * (L - t)``
+    (Xiang 1995; the form of Gotz et al. 2022), with the EDC normalised to 1
+    (0 dB) at the onset, ``t`` in seconds after the direct sound and ``L`` the
+    end of the integration (:attr:`MultiSlopeFit.integration_end_s`).
+    ``decay_times_s`` are the ``T_i`` (60 dB decay times, ascending),
+    ``amplitudes`` the ``A_i`` (linear, fraction of the EDC at the onset) and
+    ``noise_term`` the ``N`` (fraction of the onset EDC per second).
+    """
+
+    slope_count: int
+    decay_times_s: tuple[float, ...]
+    amplitudes: tuple[float, ...]
+    noise_term: float
+    #: Bayesian information criterion of the fit (lower is better).
+    bic: float
+    #: Root-mean-square difference between model and EDC, in dB.
+    rms_residual_db: float
+
+    @property
+    def amplitudes_db(self) -> tuple[float, ...]:
+        """``10 log10(A_i)``: each slope's level at time 0 re the onset (dB)."""
+        return tuple(10.0 * float(np.log10(max(a, 1e-300))) for a in self.amplitudes)
+
+    @property
+    def energy_shares_percent(self) -> tuple[float, ...]:
+        """``100 A_i / sum(A)``: the share of each slope in the decaying energy."""
+        total = sum(self.amplitudes)
+        if total <= 0.0:
+            return tuple(0.0 for _a in self.amplitudes)
+        return tuple(100.0 * a / total for a in self.amplitudes)
+
+    def evaluate(
+        self, time_s: FloatArray, integration_end_s: float, *, include_noise: bool = True
+    ) -> FloatArray:
+        """The model EDC (linear, 1 = the onset) at ``time_s``."""
+        t = np.asarray(time_s, dtype=np.float64)
+        total = np.zeros_like(t)
+        for decay, amplitude in zip(self.decay_times_s, self.amplitudes, strict=True):
+            total += amplitude * (
+                np.exp(-DECAY_60_DB_NEPER * t / decay)
+                - np.exp(-DECAY_60_DB_NEPER * integration_end_s / decay)
+            )
+        if include_noise:
+            total += self.noise_term * (integration_end_s - t)
+        return total
+
+    def component_db(self, index: int, time_s: FloatArray) -> FloatArray:
+        """One slope alone, ``10 log10(A_i exp(-13.8155 t / T_i))``, in dB."""
+        t = np.asarray(time_s, dtype=np.float64)
+        amplitude = max(self.amplitudes[index], 1e-300)
+        level = 10.0 * np.log10(amplitude) - 10.0 * np.log10(np.e) * (
+            DECAY_60_DB_NEPER * t / self.decay_times_s[index]
+        )
+        return np.asarray(level, dtype=np.float64)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "slope_count": self.slope_count,
+            "decay_times_s": list(self.decay_times_s),
+            "amplitudes": list(self.amplitudes),
+            "amplitudes_db": list(self.amplitudes_db),
+            "energy_shares_percent": list(self.energy_shares_percent),
+            "noise_term": self.noise_term,
+            "bic": self.bic,
+            "rms_residual_db": self.rms_residual_db,
+        }
+
+
+@dataclass(frozen=True)
+class MultiSlopeFit:
+    """Single- versus double-slope model of one band's energy decay curve.
+
+    Both models are fitted to the Schroeder integral of the whole record (not
+    the Lundeby-truncated curve: the noise term models what truncation
+    removes). :attr:`selected_slopes` is the number the criterion and the
+    plausibility rules chose; it is ``None`` when nothing was fitted. Numbers
+    are only to be shown as measured when :attr:`validity` is VALID.
+    """
+
+    validity: Validity
+    #: 1 or 2; ``None`` when no model was fitted (insufficient range, ...).
+    selected_slopes: int | None
+    #: The fitted models, one slope first; empty when nothing was fitted.
+    models: tuple[DecaySlopeModel, ...] = ()
+    criterion: str = MULTI_SLOPE_CRITERION_BIC
+    #: ``BIC(one slope) - BIC(two slopes)``; positive favours two slopes.
+    delta_bic: float | None = None
+    #: Fitted range of the EDC and the end of the integration ``L`` (s after
+    #: the direct sound).
+    fit_start_s: float | None = None
+    fit_end_s: float | None = None
+    integration_end_s: float | None = None
+    #: Where the two slopes cross (the turning point): time after the direct
+    #: sound and EDC level of the model there (dB re onset). Two slopes only.
+    knee_time_s: float | None = None
+    knee_level_db: float | None = None
+    #: Why there is no number, or why the numbers are not trusted.
+    reason: str | None = None
+    #: Why a two-slope fit with a better criterion was not chosen, and other
+    #: remarks on the fit (English, through ``diag``).
+    notes: tuple[str, ...] = ()
+
+    @property
+    def selected(self) -> DecaySlopeModel | None:
+        """The chosen model, or ``None``."""
+        if self.selected_slopes is None:
+            return None
+        return next((m for m in self.models if m.slope_count == self.selected_slopes), None)
+
+    def model(self, slope_count: int) -> DecaySlopeModel | None:
+        return next((m for m in self.models if m.slope_count == slope_count), None)
+
+    def marked_unreliable(self, reason: str) -> MultiSlopeFit:
+        """Same rule as :meth:`DecayMetric.marked_unreliable`."""
+        if self.validity not in (Validity.VALID, Validity.UNRELIABLE):
+            return self
+        return replace(
+            self,
+            validity=Validity.UNRELIABLE,
+            reason=_join_reasons(
+                self.reason if self.validity is Validity.UNRELIABLE else None, reason
+            ),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "validity": str(self.validity),
+            "selected_slopes": self.selected_slopes,
+            "criterion": self.criterion,
+            "delta_bic": self.delta_bic,
+            "fit_start_s": self.fit_start_s,
+            "fit_end_s": self.fit_end_s,
+            "integration_end_s": self.integration_end_s,
+            "knee_time_s": self.knee_time_s,
+            "knee_level_db": self.knee_level_db,
+            "models": [m.to_dict() for m in self.models],
+            "reason": self.reason,
+            "notes": list(self.notes),
+        }
+
+
 #: Time origin of all decay times (``edc_time_s``, ``onset_time_s``,
 #: ``truncation_time_s``).
 DECAY_TIME_ORIGIN = diag("direct sound (time 0 = the detected broadband direct sound)")
@@ -205,6 +358,9 @@ class BandDecay:
     d50: EnergyMetric = field(default_factory=lambda: _not_computed_energy("D50", "%"))
     #: Energy-weighted centre time, in seconds.
     centre_time: EnergyMetric = field(default_factory=lambda: _not_computed_energy("Ts", "s"))
+    #: Single- versus double-slope fit of the energy decay (``None`` when not
+    #: computed, e.g. a band outside the excitation or a file from before it).
+    multi_slope: MultiSlopeFit | None = None
 
     def with_all_unreliable(self, reason: str) -> BandDecay:
         """All metrics marked UNRELIABLE with ``reason``; no RT60 estimate and
@@ -218,6 +374,9 @@ class BandDecay:
             c80=self.c80.marked_unreliable(reason),
             d50=self.d50.marked_unreliable(reason),
             centre_time=self.centre_time.marked_unreliable(reason),
+            multi_slope=(
+                self.multi_slope.marked_unreliable(reason) if self.multi_slope is not None else None
+            ),
             rt60_estimate_s=None,
             rt60_basis=None,
             curvature_percent=None,
@@ -247,6 +406,7 @@ class BandDecay:
             "c80": self.c80.to_dict(),
             "d50": self.d50.to_dict(),
             "centre_time": self.centre_time.to_dict(),
+            "multi_slope": self.multi_slope.to_dict() if self.multi_slope is not None else None,
         }
         if include_curves:
             data["edc_time_s"] = _array_to_list(self.edc_time_s)

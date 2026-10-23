@@ -23,6 +23,7 @@ from reverbscope.models.result import (
     ClippingCheck,
     DecayMetric,
     DecayResult,
+    DecaySlopeModel,
     Dropout,
     DropoutCheck,
     EnergyMetric,
@@ -33,6 +34,7 @@ from reverbscope.models.result import (
     HumCandidate,
     ImpulseResponseResult,
     LoopbackResult,
+    MultiSlopeFit,
     NoiseResult,
     PlacementLength,
     PlacementResult,
@@ -152,6 +154,55 @@ def energy_metric_from_dict(data: Any, name: str, unit: str) -> EnergyMetric:
     )
 
 
+def _float_tuple(values: Any) -> tuple[float, ...]:
+    if values is None:
+        return ()
+    if not isinstance(values, (list, tuple)):
+        raise TypeError(_("expected a list of numbers"))
+    return tuple(float(v) for v in values)
+
+
+def decay_slope_model_from_dict(data: Any) -> DecaySlopeModel:
+    payload = _obj(data, "decay slope model")
+    decays = _float_tuple(payload.get("decay_times_s"))
+    amplitudes = _float_tuple(payload.get("amplitudes"))
+    count = _int(payload.get("slope_count", len(decays)), "slope_count", 1)
+    if not (len(decays) == len(amplitudes) == count) or not all(d > 0.0 for d in decays):
+        raise SessionError(
+            _("{kind} is not consistent").format(kind=record_name("decay slope model"))
+        )
+    return DecaySlopeModel(
+        slope_count=count,
+        decay_times_s=decays,
+        amplitudes=amplitudes,
+        noise_term=float(payload["noise_term"]),
+        bic=float(payload["bic"]),
+        rms_residual_db=float(payload["rms_residual_db"]),
+    )
+
+
+def multi_slope_from_dict(data: Any) -> MultiSlopeFit | None:
+    """A band's slope fit; ``None`` for a file written before it existed."""
+    if data is None:
+        return None
+    payload = _obj(data, "multi-slope fit")
+    selected = _opt_int(payload.get("selected_slopes"), "selected_slopes", 1)
+    return MultiSlopeFit(
+        validity=_validity(payload.get("validity", Validity.NOT_COMPUTED)),
+        selected_slopes=selected,
+        models=tuple(decay_slope_model_from_dict(m) for m in payload.get("models") or ()),
+        criterion=str(payload.get("criterion", "BIC")),
+        delta_bic=_opt_float(payload.get("delta_bic")),
+        fit_start_s=_opt_float(payload.get("fit_start_s")),
+        fit_end_s=_opt_float(payload.get("fit_end_s")),
+        integration_end_s=_opt_float(payload.get("integration_end_s")),
+        knee_time_s=_opt_float(payload.get("knee_time_s")),
+        knee_level_db=_opt_float(payload.get("knee_level_db")),
+        reason=_opt_str(payload.get("reason")),
+        notes=_str_tuple(payload.get("notes")),
+    )
+
+
 def band_decay_from_dict(data: Any) -> BandDecay:
     payload = _obj(data, "band decay")
     return BandDecay(
@@ -179,6 +230,7 @@ def band_decay_from_dict(data: Any) -> BandDecay:
         c80=energy_metric_from_dict(payload.get("c80"), "C80", "dB"),
         d50=energy_metric_from_dict(payload.get("d50"), "D50", "%"),
         centre_time=energy_metric_from_dict(payload.get("centre_time"), "Ts", "s"),
+        multi_slope=multi_slope_from_dict(payload.get("multi_slope")),
     )
 
 
