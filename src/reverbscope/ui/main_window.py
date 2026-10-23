@@ -480,6 +480,7 @@ class MainWindow(QMainWindow):
         if not self._closed and not self._leave_take():
             event.ignore()
             return
+        self.strip.remove_escape_filter()
         if not self._closed:
             self._save_layout()
         self._closed = True

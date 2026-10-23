@@ -12,9 +12,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QKeySequence, QResizeEvent, QShortcut
+from PySide6.QtCore import QEvent, QObject, Qt, QTimer, Signal
+from PySide6.QtGui import QKeyEvent, QKeySequence, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
+    QApplication,
     QBoxLayout,
     QComboBox,
     QHBoxLayout,
@@ -258,11 +259,17 @@ class MeasureStrip(QWidget):
         self.phase.setMinimumWidth(72)
         self.phase.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         row.addWidget(self.phase, 0, Qt.AlignmentFlag.AlignVCenter)
-        # Esc stops a take from any view; a QShortcut on the strip, which is
-        # always visible, so it never competes with a hidden page's button.
+        # Esc stops a take from any view. The window shortcut covers children of
+        # this window; a modal dialog or popup is another window, so the
+        # application filter below sees those keys first and only while the
+        # sweep can still be stopped.
+        self._escape_sent = False
         self.stop_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
         self.stop_shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         self.stop_shortcut.activated.connect(self._escape)
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setMaximumWidth(160)
@@ -427,6 +434,8 @@ class MeasureStrip(QWidget):
         # not have started yet when the busy signal arrives).
         running = busy and self.standalone.stop_button.isEnabled()
         self.stop_button.setEnabled(running)
+        if not running:
+            self._escape_sent = False
         self.progress.setVisible(busy)
         if busy and not running:
             # The analysis has no progress of its own: a busy bar.
@@ -490,6 +499,37 @@ class MeasureStrip(QWidget):
         )
         self.status.setVisible(bool(self.status.text()))
 
+    def remove_escape_filter(self) -> None:
+        """Drop the application filter before this strip is destroyed."""
+        app = QApplication.instance()
+        if app is not None:
+            app.removeEventFilter(self)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if isinstance(event, QKeyEvent) and self._sounding_escape(event):
+            # One press stops the take. Repeat and release are eaten too, so a
+            # dialog or popup does not close on the keys that follow.
+            if event.type() == QEvent.Type.KeyPress and not event.isAutoRepeat():
+                self._escape()
+            return True
+        return super().eventFilter(watched, event)
+
+    def _sounding_escape(self, event: QKeyEvent) -> bool:
+        if event.type() not in (
+            QEvent.Type.KeyPress,
+            QEvent.Type.KeyRelease,
+            QEvent.Type.ShortcutOverride,
+        ):
+            return False
+        if event.modifiers():
+            return False
+        return event.key() == Qt.Key.Key_Escape and self.stop_button.isEnabled()
+
     def _escape(self) -> None:
-        if self.stop_button.isEnabled():
-            self.standalone.stop_measurement()
+        # Latched until the sweep ends, so a burst of Esc requests one stop
+        # and cannot publish a second result. Analysis leaves the button off,
+        # so it never takes this path.
+        if self._escape_sent or not self.standalone.is_take_running():
+            return
+        self._escape_sent = True
+        self.standalone.stop_measurement()
