@@ -394,21 +394,21 @@ class ProjectPage(AnalysisView):
         add_needed = max(
             self.add_button.sizeHint().width(),
             self.add_button.minimumSizeHint().width(),
-            self.add_button.fontMetrics().horizontalAdvance(self.add_button.text()) + 26,
+            self.add_button.fontMetrics().horizontalAdvance(self.add_button.text()) + 34,
         )
         comp_needed = max(
             self.compare_button.sizeHint().width(),
             self.compare_button.minimumSizeHint().width(),
-            self.compare_button.fontMetrics().horizontalAdvance(self.compare_button.text()) + 26,
+            self.compare_button.fontMetrics().horizontalAdvance(self.compare_button.text()) + 34,
         )
         meas_needed = max(
             self.measure_button.sizeHint().width(),
             self.measure_button.minimumSizeHint().width(),
-            self.measure_button.fontMetrics().horizontalAdvance(self.measure_button.text()) + 26,
+            self.measure_button.fontMetrics().horizontalAdvance(self.measure_button.text()) + 34,
         )
         sp_act = self._tools_actions1.spacing()
         actions_all_needed = add_needed + comp_needed + meas_needed + (2 * sp_act)
-        actions_add_comp = add_needed + comp_needed + sp_act
+        actions_add_comp = add_needed + comp_needed + sp_act + 16
 
         if actions_all_needed <= available:
             actions_mode = 0
@@ -513,6 +513,8 @@ class ProjectPage(AnalysisView):
         if body is not None:
             body.updateGeometry()
             body.adjustSize()
+            if viewport_w > 0 and body.width() > viewport_w:
+                body.resize(viewport_w, body.height())
 
         QWidget.setTabOrder(self.profile, self.sources)
         QWidget.setTabOrder(self.sources, self.copy_button)
