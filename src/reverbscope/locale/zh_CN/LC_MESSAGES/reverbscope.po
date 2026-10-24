@@ -7054,3 +7054,150 @@ msgstr "1/3 倍频程"
 
 msgid "{metric}, one-third-octave bands"
 msgstr "{metric}，1/3 倍频程频带"
+
+msgid "decay times shared by several positions of one room (common-slope model)"
+msgstr "同一房间多个位置共享的衰减时间（共同斜率模型）"
+
+msgctxt "metavar"
+msgid "INPUT"
+msgstr "输入"
+
+msgid "impulse-response WAVs, session folders or a project folder (each of its positions); one position each"
+msgstr "脉冲响应 WAV、会话文件夹或项目文件夹（取其每个位置）；每项算一个位置"
+
+msgid "declared excitation band in Hz of the WAV inputs (required for WAVs)"
+msgstr "WAV 输入声明的激励频段（Hz，WAV 必填）"
+
+msgid "one-third-octave bands instead of octave bands"
+msgstr "用 1/3 倍频程频段代替倍频程频段"
+
+msgid "largest number of common slopes considered (default 3)"
+msgstr "考虑的共同斜率最大数量（默认 3）"
+
+msgid "decay-time estimator: joint EDC fit (default) or the experimental IS-NMF/SAGE estimator on the band envelopes"
+msgstr "衰减时间估计方法：对各位置能量衰减曲线做联合拟合（默认），或基于频段包络的实验性 IS-NMF/SAGE 估计"
+
+msgid "amplitude estimator for the common decay times: maximum-likelihood LINEX (default) or the EDC fit"
+msgstr "共同衰减时间下的幅度估计方法：最大似然估计（线性指数损失，默认）或能量衰减曲线拟合"
+
+msgid "folder for common-slope.json and the two CSV tables"
+msgstr "存放 common-slope.json 和两个 CSV 表格的文件夹"
+
+msgid "position"
+msgstr "位置"
+
+msgid "no responses to analyse"
+msgstr "没有可分析的响应"
+
+msgid "{path} is a file; --out needs a folder"
+msgstr "{path} 是文件；--out 需要文件夹"
+
+msgid "{path} is a WAV file: give its excitation band with --band LO HI"
+msgstr "{path} 是 WAV 文件：请用 --band LO HI 给出其激励频段"
+
+msgctxt "common-slope column"
+msgid "Slopes"
+msgstr "斜率数"
+
+msgctxt "common-slope column"
+msgid "Common decay times"
+msgstr "共同衰减时间"
+
+msgctxt "common-slope column"
+msgid "Positions"
+msgstr "位置数"
+
+msgctxt "common-slope column"
+msgid "Error (common)"
+msgstr "误差（共同模型）"
+
+msgctxt "common-slope column"
+msgid "Error (per response)"
+msgstr "误差（单个响应）"
+
+msgctxt "common-slope column"
+msgid "Status"
+msgstr "状态"
+
+msgid "Decay times shared by all {n} positions, band by band (common-slope model). Error: median RMS difference between each position's energy decay curve and the common model, and the same for each response's own single/double-slope fit."
+msgstr "全部 {n} 个位置共享的衰减时间，逐频段给出（共同斜率模型）。误差：各位置能量衰减曲线与共同模型之间 RMS 差值的中位数，以及各响应自身单/双斜率拟合的同一指标。"
+
+msgid "{band}: {position} left out ({reason})"
+msgstr "{band}：未纳入 {position}（{reason}）"
+
+msgctxt "diagnostic"
+msgid "common-slope model (Götz et al. 2023): shared decay times from a joint EDC fit over all positions, number of slopes by BIC"
+msgstr "共同斜率模型（Götz 等，2023）：对所有位置联合拟合 EDC 得到共享衰减时间，斜率数量由 BIC 决定"
+
+msgctxt "diagnostic"
+msgid "the common-slope fit did not converge"
+msgstr "共同斜率拟合未收敛"
+
+msgctxt "diagnostic"
+msgid "{n} common slopes not reported: the extra slope lowers the RMS error by at most {gain:.1f} % at any position (limit {limit:.0f} %)"
+msgstr "未报告 {n} 个共同斜率：多出的斜率在任何位置最多只把 RMS 误差降低 {gain:.1f} %（下限 {limit:.0f} %）"
+
+msgctxt "diagnostic"
+msgid "no slope fit"
+msgstr "没有斜率拟合"
+
+msgctxt "diagnostic"
+msgid "decay times from the IS-NMF / SAGE estimator (experimental, validated on synthetic data only); EDC-fit decay times kept for comparison"
+msgstr "衰减时间来自 IS-NMF / SAGE 估计（实验性，仅在合成数据上验证）；保留 EDC 拟合的衰减时间供对比"
+
+msgctxt "diagnostic"
+msgid "one position only: the common slopes are that position's own fit"
+msgstr "只有一个位置：共同斜率就是该位置自身的拟合"
+
+msgctxt "diagnostic"
+msgid "{n} common slopes not reported: adjacent decay times differ by only {ratio:.2f}x (limit {minimum:g})"
+msgstr "未报告 {n} 个共同斜率：相邻衰减时间之比只有 {ratio:.2f} 倍（下限 {minimum:g}）"
+
+msgctxt "diagnostic"
+msgid "{n} common slopes not reported: the slope of {decay:.2f} s is the strongest decay over {limit:g} dB at {count} position(s), {needed} needed"
+msgstr "未报告 {n} 个共同斜率：{decay:.2f} s 的斜率只在 {count} 个位置上于 {limit:g} dB 范围内占主导，需要 {needed} 个"
+
+msgid "the common-slope analysis needs at least one response"
+msgstr "共同斜率分析至少需要一个响应"
+
+msgid "each response needs its own position label"
+msgstr "每个响应都需要各自的位置标签"
+
+msgctxt "diagnostic"
+msgid "the responses have different sample rates"
+msgstr "这些响应的采样率不同"
+
+msgctxt "diagnostic"
+msgid "no position has a usable decay in this band"
+msgstr "此频段没有任何位置有可用的衰减"
+
+msgctxt "diagnostic"
+msgid "the band is outside the excitation range"
+msgstr "该频段在激励范围之外"
+
+msgid "the number of common slopes must be between 1 and {maximum}"
+msgstr "共同斜率数量必须在 1 到 {maximum} 之间"
+
+msgid "unknown estimator {name}"
+msgstr "未知的估计方法 {name}"
+
+msgid "unknown amplitude method {name}"
+msgstr "未知的幅度估计方法 {name}"
+
+msgid "One-third-octave bands"
+msgstr "1/3 倍频程频段"
+
+msgid "Analyse common slopes"
+msgstr "分析共同斜率"
+
+msgid "COMMON SLOPES"
+msgstr "共同斜率"
+
+msgid "Decay times shared by all positions of the room, band by band (common-slope model), with each position's amplitudes. Computed from the takes' impulse responses when you ask; nothing in the takes changes."
+msgstr "房间所有位置共享的衰减时间（共同斜率模型），逐频段给出，并附各位置的幅度。点击后才根据各次测量的脉冲响应计算；不会改动任何测量。"
+
+msgid "{n} position(s). Error: median RMS difference between each position's energy decay curve and the common model, next to each response's own fit. reverbscope common-slope exports the amplitudes (JSON, CSV)."
+msgstr "{n} 个位置。误差：各位置能量衰减曲线与共同模型之间 RMS 差值的中位数，旁边是各响应自身拟合的误差。reverbscope common-slope 可导出幅度（JSON、CSV）。"
+
+msgid "Analysing {n} take(s)..."
+msgstr "正在分析 {n} 次测量……"

@@ -162,3 +162,34 @@ class MeasureWorker(QThread):
             self.failed.emit(unexpected_error_text())
         else:
             self.succeeded.emit(recording)
+
+
+class CommonSlopeWorker(QThread):
+    """Runs :func:`reverbscope.core.common_slope.analyze_common_slopes` off the GUI thread."""
+
+    succeeded = Signal(object)
+    failed = Signal(str)
+
+    def __init__(self, responses: Sequence[object], *, third_octave: bool = False) -> None:
+        super().__init__()
+        self._responses = list(responses)
+        self._third_octave = third_octave
+
+    def run(self) -> None:
+        from reverbscope.core.common_slope import analyze_common_slopes
+
+        try:
+            result = analyze_common_slopes(
+                self._responses,  # type: ignore[arg-type]
+                third_octave=self._third_octave,
+            )
+        except ReverbScopeError as exc:
+            self.failed.emit(analysis_failure_text(exc))
+        except MemoryError:
+            log.exception("common-slope analysis ran out of memory")
+            self.failed.emit(out_of_memory_text())
+        except Exception:
+            log.exception("common-slope analysis failed unexpectedly")
+            self.failed.emit(unexpected_error_text())
+        else:
+            self.succeeded.emit(result)

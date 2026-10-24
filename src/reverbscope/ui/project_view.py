@@ -12,9 +12,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -36,7 +37,7 @@ from PySide6.QtWidgets import (
 from reverbscope.cli.render import REPORT_CONSOLE, render_overview
 from reverbscope.errors import ReverbScopeError
 from reverbscope.health import HealthStatus, status_word
-from reverbscope.i18n import _, list_join, localize
+from reverbscope.i18n import _, list_join, localize, pgettext
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.overview import (
     ProjectEntry,
@@ -277,6 +278,8 @@ class ProjectPage(AnalysisView):
         self.average_card = average
         layout.addWidget(average)
 
+        self._build_common_slopes(layout)
+
         nxt = Card()
         nxt.body.addWidget(label(_("NEXT"), "section"))
         self.next_steps = label("", wrap=True)
@@ -292,6 +295,174 @@ class ProjectPage(AnalysisView):
 
     def title(self) -> str:
         return _("Project")
+
+    # --- common slopes ---------------------------------------------------------------
+
+    def _build_common_slopes(self, layout: QVBoxLayout) -> None:
+        """The COMMON SLOPES card: decay times shared by the project's positions."""
+        card = Card()
+        card.body.addWidget(label(_("COMMON SLOPES"), "section"))
+        card.body.addWidget(
+            label(
+                _(
+                    "Decay times shared by all positions of the room, band by band (common-slope "
+                    "model), with each position's amplitudes. Computed from the takes' impulse "
+                    "responses when you ask; nothing in the takes changes."
+                ),
+                "hint",
+                wrap=True,
+            )
+        )
+        row = QHBoxLayout()
+        self.common_thirds = QCheckBox(_("One-third-octave bands"))
+        row.addWidget(self.common_thirds)
+        row.addStretch(1)
+        self.common_button = QPushButton(_("Analyse common slopes"))
+        self.common_button.clicked.connect(self.analyse_common_slopes)
+        row.addWidget(self.common_button)
+        card.body.addLayout(row)
+        self.common_table = QTableWidget(0, 7)
+        self.common_table.setHorizontalHeaderLabels(
+            [
+                _("Band"),
+                pgettext("common-slope column", "Slopes"),
+                pgettext("common-slope column", "Common decay times"),
+                pgettext("common-slope column", "Positions"),
+                pgettext("common-slope column", "Error (common)"),
+                pgettext("common-slope column", "Error (per response)"),
+                pgettext("common-slope column", "Status"),
+            ]
+        )
+        self.common_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.common_table.verticalHeader().setVisible(False)
+        self.common_table.setShowGrid(False)
+        self.common_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.common_table.setMinimumHeight(120)
+        self.common_table.setVisible(False)
+        card.body.addWidget(self.common_table)
+        self.common_status = label("", "hint", wrap=True)
+        card.body.addWidget(self.common_status)
+        self.common_card = card
+        self.common_result: object | None = None
+        self._common_worker: QThread | None = None
+        self._common_for: Path | None = None
+        layout.addWidget(card)
+
+    def _update_common_button(self) -> None:
+        busy = self._common_worker is not None
+        ready = bool(self._entries) and not busy and not self.model.loading
+        self.common_button.setEnabled(ready)
+        if self._common_for is not None and self._common_for != self.path:
+            self._clear_common()
+
+    def _clear_common(self) -> None:
+        self.common_result = None
+        self._common_for = None
+        self.common_table.setRowCount(0)
+        self.common_table.setVisible(False)
+        self.common_status.setText("")
+
+    def common_responses(self) -> list[object]:
+        """The project's takes as common-slope inputs (one per take)."""
+        import numpy as np
+
+        from reverbscope.core.common_slope import ResponseInput
+
+        responses: list[object] = []
+        used: set[str] = set()
+        for entry in self._entries:
+            ir = entry.result.impulse_response
+            if ir.samples.size == 0:
+                continue
+            base = entry.position or Path(entry.directory).name
+            name, number = base, 2
+            while name in used:
+                name, number = f"{base} ({number})", number + 1
+            used.add(name)
+            responses.append(
+                ResponseInput(
+                    position=name,
+                    samples=np.asarray(ir.samples, dtype=np.float64),
+                    sample_rate=int(ir.sample_rate),
+                    direct_index=int(ir.direct_sound_index),
+                    excitation_band=ir.excitation_band,
+                )
+            )
+        return responses
+
+    def analyse_common_slopes(self) -> None:
+        responses = self.common_responses()
+        if not responses or self._common_worker is not None:
+            return
+        from reverbscope.ui.workers import CommonSlopeWorker
+
+        worker = CommonSlopeWorker(responses, third_octave=self.common_thirds.isChecked())
+        worker.succeeded.connect(self._common_done)
+        worker.failed.connect(self._common_failed)
+        worker.finished.connect(self._common_finished)
+        self._common_worker = worker
+        self._common_for = self.path
+        self.common_status.setText(_("Analysing {n} take(s)...").format(n=len(responses)))
+        self._update_common_button()
+        worker.start()
+
+    def _common_finished(self) -> None:
+        worker = self._common_worker
+        self._common_worker = None
+        if worker is not None:
+            worker.deleteLater()
+        self._update_common_button()
+
+    def _common_failed(self, text: str) -> None:
+        self.common_status.setText(text)
+
+    def _common_done(self, result: object) -> None:
+        self.show_common_slopes(result)
+
+    def show_common_slopes(self, result: object) -> None:
+        """Fill the COMMON SLOPES table from a :class:`CommonSlopeResult`."""
+        import statistics
+
+        from reverbscope.interpretation.profiles import band_text
+        from reverbscope.labels import validity_word
+
+        self.common_result = result
+        bands = getattr(result, "bands", ())
+        self.common_table.setRowCount(len(bands))
+        notes: list[str] = []
+        for row, band in enumerate(bands):
+            common = [p.rms_residual_db for p in band.positions]
+            single = [
+                p.single_rms_residual_db
+                for p in band.positions
+                if p.single_rms_residual_db is not None
+            ]
+            cells = [
+                band_text(band.band_label),
+                "–" if band.selected_slopes is None else str(band.selected_slopes),
+                " / ".join(f"{t:.2f} s" for t in band.decay_times_s) or "–",
+                str(len(band.positions)),
+                f"{statistics.median(common):.2f} dB" if common else "–",
+                f"{statistics.median(single):.2f} dB" if single else "–",
+                validity_word(band.validity),
+            ]
+            for column, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                if column:
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                self.common_table.setItem(row, column, item)
+            for text in (band.reason, *band.notes):
+                if text:
+                    notes.append(f"{band_text(band.band_label)}: {localize(text)}")
+        self.common_table.setVisible(bool(bands))
+        summary = _(
+            "{n} position(s). Error: median RMS difference between each position's energy decay "
+            "curve and the common model, next to each response's own fit. "
+            "reverbscope common-slope exports the amplitudes (JSON, CSV)."
+        ).format(n=len(getattr(result, "positions", ())))
+        self.common_status.setText("\n".join([summary, *notes]))
 
     @property
     def path(self) -> Path | None:
@@ -529,8 +700,15 @@ class ProjectPage(AnalysisView):
         self.overview = overview
         has = overview is not None
         self.empty.setVisible(not has)
-        for card in (self.positions_card, self.takes_card, self.average_card, self.next_card):
+        for card in (
+            self.positions_card,
+            self.takes_card,
+            self.average_card,
+            self.common_card,
+            self.next_card,
+        ):
             card.setVisible(has)
+        self._update_common_button()
         for button in (self.measure_button, self.add_button, self.copy_button):
             button.setEnabled(has)
         self.compare_button.setEnabled(False)

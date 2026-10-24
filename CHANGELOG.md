@@ -8,6 +8,24 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Common-slope analysis across positions.** `reverbscope common-slope`
+  takes several impulse responses of one room (IR WAVs with `--band`,
+  session folders, or a project folder with its positions) and fits, band by
+  band, one to three decay times shared by all positions with per-position
+  amplitudes and noise: the common-slope model of Götz, Schlecht & Pulkki
+  (2023). Decay times from a joint EDC fit over all positions started from
+  k-means clusters of the per-response fits; the number of slopes by a pooled
+  BIC and plausibility rules (distinct slopes, each supported at several
+  positions, a real error reduction); amplitudes by maximum likelihood
+  (LINEX), the best estimator in Bai & Schlecht (DAFx25), or `--amplitudes
+  edc`; `--estimator is-sage` adds the IS-NMF/SAGE estimator of Bai, Elvander
+  & Schlecht (arXiv:2610.05549), experimental. `--third-octave` and
+  `--max-slopes` as named. `--out` writes `common-slope.json`
+  (new schema, `reverbscope schema common-slope`), `common-slope-bands.csv`
+  and `common-slope-positions.csv`. The desktop Project page has a *Common
+  slopes* card that runs it on request. Single-response analysis, files and
+  reports are unchanged. Methodology §3d, ADR 0005, validated on the Aachen
+  St. Nicholas Chapel data (docs/validation/aachen-nikolauskapelle-common-slope.md).
 - **Double-slope decay fit.** Each band's energy decay curve is now also
   fitted with one and with two exponential slopes plus a noise term (the
   model of Xiang 1995 and Xiang, Goggans et al. 2011, in the form DecayFitNet

@@ -775,6 +775,88 @@ weak late tail below the criterion. Three or more slopes are not fitted. The
 model, criterion and thresholds may change between minor releases (the
 stored numbers of a file do not).
 
+### 3d. Common slopes across positions (multi-file, opt-in)
+
+`reverbscope common-slope` (IR WAVs, session folders or a project folder)
+and the *Common slopes* card of the desktop Project page fit **one set of
+decay times to all positions of a room at once**, band by band. This is the
+common-slope model of Götz, Schlecht and Pulkki [32]: the late decay at every
+source–receiver position is a sum of the same few exponential decays, only
+their amplitudes (and the noise) depend on the position. It is a separate
+analysis of several files; nothing in a single analysis, `result.json` or
+the per-response fit of §3c changes. Code: `core/common_slope.py`, ADR 0005.
+
+1. **Observations.** Each response goes through the same band filtering,
+   onset and per-response fit as §3c (`core.decay.analyze_band`). The
+   common fit uses each position's untruncated EDC over that fit's range
+   (100 points), and the band's power envelope `|analytic signal|²/2`
+   sampled every `1/B` s (`B` the bandwidth). A position with less than
+   30 dB of decay range in a band is left out of that band, with its reason.
+2. **Common decay times.** Model of position `r` with `K` common slopes:
+   `EDC_r(t) = Σ_k A_rk (exp(−13.8155 t/T_k) − exp(−13.8155 L_r/T_k)) + N_r (L_r − t)`.
+   Starting values: k-means clusters (log T) of the per-response decay
+   times, the approach [32] found the most general (they cluster DecayFitNet
+   estimates and then fit the amplitudes with the decay times fixed;
+   ReverbScope clusters its own §3c fits and then also refines the decay
+   times jointly). The `T_k` are then
+   refined jointly by least squares of the dB error over all positions, with
+   each position's amplitudes and noise projected out (non-negative least
+   squares of the relative error, re-weighted once; variable projection).
+3. **Number of slopes** (`K` = 1, 2, 3): `BIC_K = Σ_r n_r ln(max(RSS_r/100, 0.05²)) + p_K ln Σ_r n_r`,
+   `p_K = K + R(K+1)`, `n_r` the effective number of independent points of
+   position `r` (§3c). `K+1` replaces `K` only when the BIC falls by 10 or
+   more and: adjacent decay times differ by at least 1.25×; every slope is
+   the largest term of the model, above the noise term, over at least 10 dB
+   of decay at two positions or more and at no fewer than 5 % of them (one
+   position when only one response is given); and the extra slope at least
+   halves the RMS error at one position or more. The last two rules are
+   ReverbScope's: on synthetic rooms a spurious extra slope lowered the RMS
+   error at most 40 % at any position, a real one 55 % or more
+   (`tests/unit/test_common_slope.py`); on the Aachen data, slow slopes of
+   9–18 s supported by one or two of 46 positions were the artefacts the
+   support rule removes (validation/aachen-nikolauskapelle-common-slope.md).
+4. **Amplitudes.** Bai and Schlecht [33] compare amplitude estimators for
+   given common decay times on synthetic responses: least squares on the
+   linear, power-law and log scales, the EDC fit, and their LINEX regression,
+   the maximum-likelihood estimator for a Gaussian response on the log
+   energy. LINEX had the lowest variance with low bias; the EDC fit was close
+   but biased (−0.19 dB in their "classroom" case). ReverbScope therefore
+   reports the **maximum-likelihood (LINEX) amplitudes**: for power samples
+   the LINEX likelihood is the Itakura–Saito loss `Σ (y/v + ln v)`, minimised
+   on the envelope samples by Fisher scoring with the common `T_k` fixed, and
+   converted to the units of the EDC model (fraction of the onset energy;
+   noise per second). `--amplitudes edc` reports the EDC-fit amplitudes
+   instead. Like [33], this has been checked on synthetic data only.
+5. **IS-NMF / SAGE (opt-in, experimental).** Bai, Elvander and Schlecht
+   [34] estimate decay rates and amplitudes together as a parameterised
+   non-negative matrix factorisation with the Itakura–Saito loss, by SAGE
+   (closed-form amplitudes, a convex Newton step per decay rate) with
+   contribution weighting (`p = 1`), per STFT bin and without backward
+   integration. `--estimator is-sage` runs the same algorithm on the band
+   envelope samples (not STFT bins), started from the EDC estimate with the
+   `K` of step 3, 150 iterations with `p = 1` then 100 with `p = 0`. The
+   unit tests reproduce the paper's synthetic setting (T = 0.8/1.4 s): rates
+   within 6 %, the plain iterations never increase the loss, and the weighted
+   iterations reach a lower loss than plain SAGE in the same number of
+   iterations. The paper validates on synthetic data only and shows measured
+   curves without ground truth; on the Aachen data it agrees with the EDC
+   estimate within 4 % where one slope is selected and moves the slopes where
+   two are (validation page). It is not the default.
+6. **Validity.** `INSUFFICIENT_RANGE` when no position has a usable decay;
+   `UNRELIABLE` when `B·T_1 < 4` or the refinement did not converge.
+
+**Outputs.** A per-band table (common decay times, number of positions, the
+median RMS error of the common model next to that of the per-response
+fits); with `--out`, `common-slope.json` (`reverbscope schema
+common-slope`), `common-slope-bands.csv` and `common-slope-positions.csv`
+(amplitude and noise of every slope at every position).
+
+**What is not claimed.** Not ISO 3382, no standard tolerance. A common slope
+is a description shared by the positions, not proof of coupled volumes; one
+slope does not prove there is no weak late decay below the criterion. The
+amplitude and SAGE estimators have been validated on synthetic data only
+(here and in [33], [34]). The rules and thresholds may change.
+
 ## 4. Frequency response
 
 **Source.** Standard FFT of the impulse response; fractional-octave
@@ -1262,6 +1344,10 @@ by position under one recording profile. It stores nothing and ranks nothing.
 29. N. Xiang, P. M. Goggans, "Evaluation of decay times in coupled spaces: Bayesian decay model selection," J. Acoust. Soc. Am. 113(5), 2685–2697, 2003. (bibliographic record confirmed through citing works; not read)
 30. C. J. Geyer, "Practical Markov chain Monte Carlo," Statistical Science 7(4), 473–483, 1992. (bibliographic record; the initial-positive-sequence idea is applied here to single lags, not as published)
 31. R. E. Kass, A. E. Raftery, "Bayes factors," J. Am. Stat. Assoc. 90(430), 773–795, 1995. (bibliographic record; the "very strong" grade for a BIC difference above 10 is as commonly restated)
+
+32. G. Götz, S. J. Schlecht, V. Pulkki, "Common-slope modeling of late reverberation," IEEE/ACM Trans. Audio, Speech, and Language Processing 31, 3945–3957, 2023. doi:10.1109/TASLP.2023.3317572 (open access; the k-means clustering of per-response decay times confirmed from excerpts of the paper's text and the abstract of its ICASSP 2024 poster; the full paper was not read for this change)
+33. J. B. Bai, S. J. Schlecht, "Estimation of multi-slope amplitudes in late reverberation," Proc. DAFx25, Ancona, 2025, paper 28, https://www.dafx.de/paper-archive/2025/DAFx25_paper_28.pdf (read in full on 2026-10-25; Table 1 and §4 are the basis of the amplitude choice)
+34. J. B. Bai, F. Elvander, S. J. Schlecht, "Joint estimation of common-slope decay rates and spatial amplitudes using parameterized nonnegative matrix factorization," arXiv:2610.05549, 2026 (preprint, submitted to ICASSP 2027; read in full on 2026-10-25; eqs. (1)–(14) implemented)
 
 Additional supporting references (A. Mäkivirta et al. 2003; G. Defrance et
 al. 2008; J. Usher 2010; M. Guski & M. Vorländer 2014; C. L. Christensen et

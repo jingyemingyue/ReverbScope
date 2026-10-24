@@ -241,7 +241,7 @@ def _type_name(kind: object) -> str | None:
 COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (N_("Get started"), ("demo", "gui", "profiles")),
     (N_("Measurement"), ("sweep", "analyze", "devices", "measure", "analyze-ir")),
-    (N_("Results"), ("show", "compare", "project", "export", "session")),
+    (N_("Results"), ("show", "compare", "project", "common-slope", "export", "session")),
     (N_("Settings"), ("config",)),
     (N_("Diagnostics"), ("doctor", "schema")),
 )
@@ -1288,6 +1288,72 @@ def build_parser() -> argparse.ArgumentParser:
     # "usage: reverbscope project": the list goes on its own line.
     p_proj.usage = "reverbscope project [-h]\n       " + proj_sub.metavar + " ..."
 
+    p_cs = _command(
+        sub,
+        "common-slope",
+        _("decay times shared by several positions of one room (common-slope model)"),
+        examples=(
+            "reverbscope common-slope studio-a",
+            "reverbscope common-slope a.wav b.wav c.wav --band 20 20000 --out studio-a-slopes",
+            "reverbscope common-slope session-1 session-2 --third-octave",
+        ),
+    )
+    p_cs.add_argument(
+        "inputs",
+        nargs="+",
+        type=Path,
+        metavar=pgettext("metavar", "INPUT"),
+        help=_(
+            "impulse-response WAVs, session folders or a project folder (each of its "
+            "positions); one position each"
+        ),
+    )
+    p_cs.add_argument(
+        "--band",
+        nargs=2,
+        type=float,
+        metavar=(pgettext("metavar", "LO"), pgettext("metavar", "HI")),
+        default=None,
+        help=_("declared excitation band in Hz of the WAV inputs (required for WAVs)"),
+    )
+    p_cs.add_argument(
+        "--third-octave",
+        action="store_true",
+        help=_("one-third-octave bands instead of octave bands"),
+    )
+    p_cs.add_argument(
+        "--max-slopes",
+        type=int,
+        default=3,
+        choices=(1, 2, 3),
+        help=_("largest number of common slopes considered (default 3)"),
+    )
+    p_cs.add_argument(
+        "--estimator",
+        choices=("edc", "is-sage"),
+        default="edc",
+        help=_(
+            "decay-time estimator: joint EDC fit (default) or the experimental IS-NMF/SAGE "
+            "estimator on the band envelopes"
+        ),
+    )
+    p_cs.add_argument(
+        "--amplitudes",
+        choices=("linex", "edc"),
+        default="linex",
+        help=_(
+            "amplitude estimator for the common decay times: maximum-likelihood LINEX "
+            "(default) or the EDC fit"
+        ),
+    )
+    p_cs.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("folder for common-slope.json and the two CSV tables"),
+    )
+
     p_ex = _command(
         sub,
         "export",
@@ -1413,7 +1479,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_schema = _command(
         sub, "schema", _("print a shipped JSON Schema"), examples=("reverbscope schema result",)
     )
-    schemas = ["result", "session", "comparison", "project", "sidecar"]
+    schemas = ["result", "session", "comparison", "project", "sidecar", "common-slope"]
     p_schema.add_argument(
         "name",
         choices=schemas,
@@ -2618,6 +2684,105 @@ def cmd_project(args: argparse.Namespace) -> int:
     raise ReverbScopeError(_("unknown project command {command}").format(command=command))
 
 
+def _common_slope_inputs(args: argparse.Namespace) -> list[Any]:
+    """The responses of ``common-slope``: WAVs, sessions, and projects' positions."""
+    import numpy as np
+
+    from reverbscope.core.common_slope import ResponseInput
+    from reverbscope.io.project_store import is_project, list_project_sessions
+    from reverbscope.io.session_store import load_measurement
+    from reverbscope.io.wav import read_wav
+    from reverbscope.models.result import EXCITATION_SOURCE_DECLARED, ExcitationBand
+
+    band = (float(args.band[0]), float(args.band[1])) if args.band else None
+    if band is not None and not (band[0] > 0.0 and band[1] > band[0] and math.isfinite(band[1])):
+        raise ConfigurationError(
+            _("--band needs two frequencies in Hz, LO then HI, with HI above LO and LO above 0")
+        )
+    responses: list[ResponseInput] = []
+    used: set[str] = set()
+
+    def unique(label: str) -> str:
+        label = label or _("position")
+        name, number = label, 2
+        while name in used:
+            name, number = f"{label} ({number})", number + 1
+        used.add(name)
+        return name
+
+    def add_session(path: Path, label: str) -> None:
+        loaded = load_measurement(path)
+        ir = loaded.result.impulse_response
+        responses.append(
+            ResponseInput(
+                position=unique(
+                    label or loaded.session.measurement_position or loaded.directory.name
+                ),
+                samples=np.asarray(ir.samples, dtype=np.float64),
+                sample_rate=int(ir.sample_rate),
+                direct_index=int(ir.direct_sound_index),
+                excitation_band=ir.excitation_band,
+            )
+        )
+
+    for item in args.inputs:
+        if item.is_dir() and is_project(item):
+            _warn_missing_positions(args, item)
+            for label, path in list_project_sessions(item):
+                add_session(path, label)
+        elif item.is_dir() or item.name.endswith(".json"):
+            add_session(item, "")
+        else:
+            if band is None:
+                raise ConfigurationError(
+                    _("{path} is a WAV file: give its excitation band with --band LO HI").format(
+                        path=item
+                    )
+                )
+            wav = read_wav(item)
+            samples = wav.samples if wav.samples.ndim == 1 else wav.samples[:, 0]
+            samples = np.asarray(samples, dtype=np.float64)
+            responses.append(
+                ResponseInput(
+                    position=unique(item.stem),
+                    samples=samples,
+                    sample_rate=int(wav.sample_rate),
+                    # The import path's time zero: the strongest sample.
+                    direct_index=int(np.argmax(np.abs(samples))) if samples.size else 0,
+                    excitation_band=ExcitationBand(*band, source=EXCITATION_SOURCE_DECLARED),
+                )
+            )
+    if not responses:
+        raise ReverbScopeError(_("no responses to analyse"))
+    return responses
+
+
+def cmd_common_slope(args: argparse.Namespace) -> int:
+    from reverbscope.cli.render import common_slope_table
+    from reverbscope.core.common_slope import analyze_common_slopes
+    from reverbscope.io.common_slope_store import save_common_slope
+
+    if args.out is not None and args.out.exists() and not args.out.is_dir():
+        raise ConfigurationError(_("{path} is a file; --out needs a folder").format(path=args.out))
+    responses = _common_slope_inputs(args)
+    result = analyze_common_slopes(
+        responses,
+        third_octave=bool(args.third_octave),
+        max_slopes=int(args.max_slopes),
+        estimator=str(args.estimator),
+        amplitude_method=str(args.amplitudes),
+    )
+    written = save_common_slope(args.out, result) if args.out is not None else []
+    if _use_json(args):
+        print(json.dumps(result.to_dict(), indent=1))
+        return 0
+    console = _console(args)
+    print("\n".join(common_slope_table(console, result)))
+    for path in written:
+        print(render_status(console, "ok", _("Wrote {path}").format(path=path), keep=True))
+    return 0
+
+
 def cmd_profiles(args: argparse.Namespace) -> int:
     from reverbscope.interpretation.explain import explain_all, explain_profile
     from reverbscope.settings import load_settings
@@ -2764,6 +2929,7 @@ COMMANDS = {
     "session": cmd_session,
     "export": cmd_export,
     "project": cmd_project,
+    "common-slope": cmd_common_slope,
     "config": cmd_config,
     "profiles": cmd_profiles,
 }
