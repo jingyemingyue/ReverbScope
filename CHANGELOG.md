@@ -45,6 +45,27 @@ All notable changes to ReverbScope are documented here. The format follows
   `docs/validation/aachen-nikolauskapelle.md`; the data set is not in the
   repository.
 
+### Changed
+- **Desktop app reads like a measurement tool.** Chart axes no longer
+  rescale: pyqtgraph drew the reverberation-by-band chart's 0.4–0.8 s as
+  "400–800" with "(x0.001)" in the axis title; ticks now stay in the
+  labelled unit and negative ticks use the real minus. Band charts put their
+  ticks on the IEC band centres with their nominal names (63, 125 … 8k; the
+  octave names stay labelled when one-third-octave bands crowd the axis).
+  The cursor readout lists every visible curve at the cursor, the current
+  measurement last, with frequencies written as GUIDELINES §16.5 says
+  (`112 Hz`, `1.2 kHz`). Data tables right-align numbers in tabular
+  figures with compact 28 px rows, copy as tab-separated text (⌘C / Ctrl+C
+  or the context menu), and the Project view's takes table sorts by column.
+  A valid figure carries no "valid" badge any more (GUIDELINES §13.3), so
+  only a figure that is not trusted is marked; the Compare table writes
+  "valid" in the quiet colour. The status bar shows the current
+  measurement's sample rate, bit depth and interface when the session
+  stored them, the recorded peak and the noise floor (dBFS, uncalibrated).
+  Sample rates read `48 kHz`. Display only: no analysis number, file format
+  or CLI output changed. Before/after screenshots (offscreen, synthetic
+  demo) are in `docs/images/gui-professional/`.
+
 ## [0.5.0b6] - 2026-10-21
 
 Software beta 6, the development line on `main`: the light sidebar desktop

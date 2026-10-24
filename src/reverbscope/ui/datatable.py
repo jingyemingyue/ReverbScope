@@ -23,7 +23,7 @@ import math
 import re
 from collections.abc import Iterable
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QAction, QFont, QGuiApplication, QKeySequence
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableWidget, QTableWidgetItem
 
@@ -70,7 +70,7 @@ def tabular_font(base: QFont) -> QFont:
 class DataItem(QTableWidgetItem):
     """A cell that sorts by the number it shows, then by the table's own order."""
 
-    def __lt__(self, other: QTableWidgetItem) -> bool:  # type: ignore[override]
+    def __lt__(self, other: QTableWidgetItem) -> bool:
         mine, theirs = number_in(self.text()), number_in(other.text())
         if mine is not None and theirs is not None and mine != theirs:
             return mine < theirs
@@ -142,13 +142,13 @@ def setup_data_table(
     table.addAction(copy)
     table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
 
-    def menu_at(pos: object) -> None:
+    def menu_at(pos: QPoint) -> None:
         menu = QMenu(table)
         menu.addAction(
             _("Copy selected rows"), lambda: copy_table(table, selected_only=True)
         ).setEnabled(bool(table.selectedItems()))
         menu.addAction(_("Copy table (tab-separated)"), lambda: copy_table(table))
-        menu.exec(table.viewport().mapToGlobal(pos))  # type: ignore[arg-type]
+        menu.exec(table.viewport().mapToGlobal(pos))
 
     table.customContextMenuRequested.connect(menu_at)
     # Compact rows (GUIDELINES §13.9: 28–30 px), whatever the platform style asks.
