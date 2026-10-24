@@ -775,6 +775,94 @@ weak late tail below the criterion. Three or more slopes are not fitted. The
 model, criterion and thresholds may change between minor releases (the
 stored numbers of a file do not).
 
+### 3d. Uncertainty of the slope fit
+
+**Why.** A T1 of 0.99 s means something different when it could as well be
+0.80 s than when it could only be 0.98 s, and a forced two-slope fit of a
+straight decay can return any T2 at all. §3d attaches a standard deviation
+and 68 %/95 % intervals to every parameter of every model of §3c (one slope
+and two slopes, octave and one-third octave): `T_i`, `10·log10 A_i`,
+`10·log10 N` and the turning point. Nothing of §3, §3a, §3b or §3c changes;
+the fit is run exactly as before and the uncertainty is computed afterwards
+from its solution (ADR 0006).
+
+**Source.** Xiang & Sü Gül [32] treat the Bayesian decay analysis of the
+§3c model (likelihood of their Eq. 10, a Student-t from marginalising the
+unknown residual variance; uniform priors, Eq. 12) and ask how its posterior
+width depends on the number `K` of decay data values. Their answer: the
+posterior narrows with `K`, so the width is only meaningful at an *adequate
+decay data rate*, which they derive from the spectrum of an exponential
+decay (Eqs. 4–7): `f_d ≈ 110 / T` (the spectrum kept up to 1/20 of its 0 Hz
+value, about `44/T`, sampled at 2.5 times that; ReverbScope's reading of
+equations shown only as images, checked against the paper's own choices of
+50 Hz for 2.18 s in Ozawa Hall and 10 Hz for 11.5 s in the Süleymaniye
+Mosque). At that rate their Bayesian standard deviations were of the order
+of the spread of ten repeated measurements in three halls; denser sampling
+only made the posterior narrower than that spread (Sec. V).
+
+**Computation** (`core/multislope.py:slope_uncertainty`). In the log
+parameters `θ = (log T_i, log A_i, log N)` of the fit, with `J` the Jacobian
+of the dB residuals at the solution (already used by the Levenberg–Marquardt
+solver) and `Q` the residual sum of squares over the `K = 100` fit points:
+
+1. **Analysis term** [32]. The Laplace approximation of `Q(θ)^(−K/2)` at its
+   maximum is Gaussian with covariance `(Q/K)·(JᵀJ)⁻¹`. Both `Q/K` and
+   `JᵀJ/K` are independent of how finely a smooth EDC is sampled, so the
+   covariance is rescaled from the 100 fit points to the paper's
+   `K_d = f_d · (fit duration) + 1` points, `f_d = 110 / T1` (T1 the fastest
+   slope). This term carries how well the model fits the curve.
+2. **Stochastic-decay term** (derived here, not in [32]). The Schroeder curve
+   of a reverberant response is a random function: for band-limited Gaussian
+   noise of bandwidth `B` and power envelope `e(t)` (the derivative of the
+   fitted model), `Var EDC(t) = (1/B)·∫_t^L e²(τ) dτ`, and two points of the
+   curve share all energy after the later one,
+   `Cov(EDC(t_i), EDC(t_j)) = Var EDC(max(t_i, t_j))`. In dB this gives the
+   covariance `Σ_ij = (10/ln 10)²·Var EDC(max(t_i,t_j)) / (EDC_i·EDC_j)`, and
+   the covariance of the least-squares estimate is the sandwich
+   `(JᵀJ)⁻¹·JᵀΣJ·(JᵀJ)⁻¹`. `B` is the band's bandwidth (half the sample rate
+   for the broadband curve).
+3. The reported covariance is the sum of both. Decay-time intervals are
+   log-normal, `T·exp(±z·σ_logT)` with `z` = 1 (68.3 %) and 1.96 (95 %);
+   amplitudes and the noise term are given in dB; the turning-point
+   deviation follows from the gradient of `ln(A1/A2) / (13.8155·(1/T1 −
+   1/T2))`.
+4. No uncertainty (`None`) when a decay time or amplitude is at its bound
+   (a degenerate forced fit, e.g. T2 at the 4·L limit) or `JᵀJ` is singular;
+   a noise term at its bound, or too small to be identified, is held fixed
+   and gets none.
+
+**Calibration.** The analysis term alone is far too narrow for a random
+decay: on synthetic responses (Gaussian noise under one or two exponential
+envelopes, 150 seeds per case, 17 cases) its 95 % interval contained the
+generating decay time in only 13–36 % of fits, because the residuals of an
+integrated curve are strongly correlated. With the stochastic term the
+pooled coverage of the generating `T1`/`T2` is 74 % (68 % interval) and 97 %
+(95 % interval), for single and double slopes, octave and one-third-octave
+bands, 125 Hz–4 kHz and broadband, noise floors of −55 to −75 dB; the
+turning point is covered in 65–81 % / 95–97 % of fits. The intervals are
+thus slightly conservative. Tables:
+[validation/decay-uncertainty.md](validation/decay-uncertainty.md); unit
+tests `tests/unit/test_decay_uncertainty.py`.
+
+**Data rate of the fit.** The 100-point fit grid is coarser than `110/T1`
+for every Aachen band (its spacing is the fit duration / 99), yet refitting
+four Aachen positions on 50, 200 and 400 points changed the one-slope T by a
+median of 0.1–0.25 % (at most 3.4 %) and never the slope count, and the
+reported deviation by less than 1 %: the grid does not limit the result, as
+[32] argues for decimated decay data. The grid is kept, so every number of
+§3c is unchanged; whether it met the paper's rate is stored as
+`grid_adequate`.
+
+**What it does not include.** The uncertainty is that of analysing *this*
+response at *this* position: it does not include the spread between
+source/receiver positions (§3a), between equipment set-ups or repeated
+measurements, nor the choice of model (it assumes the selected number of
+slopes is right; a forced two-slope model of a straight decay shows up as
+very wide or missing intervals rather than as a warning). It is not an ISO
+3382 measurement uncertainty, and the ISO T20/T30 of §3 get none. It assumes
+a diffuse (Gaussian-noise-like) decay; strong discrete reflections or
+modes in a narrow low band are outside that assumption.
+
 ## 4. Frequency response
 
 **Source.** Standard FFT of the impulse response; fractional-octave
@@ -1262,6 +1350,7 @@ by position under one recording profile. It stores nothing and ranks nothing.
 29. N. Xiang, P. M. Goggans, "Evaluation of decay times in coupled spaces: Bayesian decay model selection," J. Acoust. Soc. Am. 113(5), 2685–2697, 2003. (bibliographic record confirmed through citing works; not read)
 30. C. J. Geyer, "Practical Markov chain Monte Carlo," Statistical Science 7(4), 473–483, 1992. (bibliographic record; the initial-positive-sequence idea is applied here to single lags, not as published)
 31. R. E. Kass, A. E. Raftery, "Bayes factors," J. Am. Stat. Assoc. 90(430), 773–795, 1995. (bibliographic record; the "very strong" grade for a BIC difference above 10 is as commonly restated)
+32. N. Xiang, Z. Sü Gül, "Uncertainty principle for energy decay analysis: Efficiency and accuracy of Bayesian methods," J. Acoust. Soc. Am. 158(4), 2892–2901, 2025. doi:10.1121/10.0039556 (read in full on the publisher's free page, https://pubs.aip.org/asa/jasa/article/158/4/2892/3367942; its equations are images there, so the data-rate constant is ReverbScope's reconstruction from the text, Table I and the mosque example; the paper's nested-sampling evidence and its repeated-measurement data are not reproduced)
 
 Additional supporting references (A. Mäkivirta et al. 2003; G. Defrance et
 al. 2008; J. Usher 2010; M. Guski & M. Vorländer 2014; C. L. Christensen et

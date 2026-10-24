@@ -37,6 +37,11 @@ are, under the same licence and with the attribution in their first line:
   the rule that rejected a two-slope fit, whether the `analyze-ir` import
   check accepted the file, and DecayFitNet's T1, T2 and late share (shares
   recomputed as `100·A2/(A1+A2)` from the published `A1`, `A2`).
+* [`aachen-nikolauskapelle-uncertainty.csv`](aachen-nikolauskapelle-uncertainty.csv):
+  per octave and one-third-octave band, written by `--uncertainty-summary`:
+  the widths of the slope-fit intervals and how often DecayFitNet's T1/T2
+  fall inside them; discussed in [decay-uncertainty.md](decay-uncertainty.md)
+  (methodology §3d, ADR 0006).
 * [`aachen-nikolauskapelle-thirds.csv`](aachen-nikolauskapelle-thirds.csv):
   per one-third-octave band, written by the script's `--thirds-summary`:
   for EDT, T20 and T30 the median, quartiles and range of the relative
