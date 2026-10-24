@@ -398,3 +398,82 @@ def test_an_unreliable_double_slope_is_marked_and_invalid_ones_are_left_out() ->
         ),
     )
     assert _decay_slopes(WIDE, gone) == []
+
+
+def _third_octave_result() -> AnalysisResult:
+    """The double-slope response of :func:`_double_slope_result`, analysed
+    with the one-third-octave bands as well."""
+    import math
+
+    import numpy as np
+
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+    from reverbscope.models.configuration import AnalysisSettings
+    from tests.unit.test_multislope import LEAD, RATE, decay
+
+    signal = decay(0.4, 1.6, -25.0, seed=8)
+    signal[LEAD] = 4.0 * math.sqrt(float(np.sum(signal**2)))
+    return analyze_impulse_response(
+        AudioSignal(signal, RATE),
+        AnalysisSettings(third_octave_decay=True),
+        excitation_band=(90.0, 20_000.0),
+    )
+
+
+def test_third_octave_slopes_get_a_table_only_when_analysed() -> None:
+    """Every one-third-octave band is a row: slope count, T1, T2 and T30; a band
+    outside the excitation has no numbers; the default report has no table."""
+    from reverbscope.cli.render import _third_octave_slopes
+
+    result = _third_octave_result()
+    thirds = result.decay.third_octave_bands
+    assert thirds is not None
+    lines = _third_octave_slopes(WIDE, result)
+    text = WIDE.fit("\n".join(lines))
+    assert "Decay slopes, one-third octave" in text
+    for band in thirds:
+        assert any(line.lstrip().startswith(band.band_label) for line in lines), band.band_label
+    valid = [
+        b.multi_slope
+        for b in thirds
+        if b.multi_slope is not None and b.multi_slope.validity is Validity.VALID
+    ]
+    two = sum(1 for fit in valid if fit.selected_slopes == 2)
+    assert f"Two slopes in {two} of {len(valid)} one-third-octave bands" in text
+    one_k = next(b for b in thirds if b.band_label == "1 kHz")
+    model = one_k.multi_slope.selected  # type: ignore[union-attr]
+    assert model is not None and model.slope_count == 2
+    row = next(line for line in lines if line.lstrip().startswith("1 kHz"))
+    assert f"{model.decay_times_s[0]:.2f} s" in row and f"{model.decay_times_s[1]:.2f} s" in row
+    # 50 Hz lies below the declared 90 Hz: no fit, the skip mark, and the legend.
+    row = next(line for line in lines if line.lstrip().startswith("50 Hz"))
+    assert WIDE.symbol("skip") in row
+    assert "outside the excitation" in text
+    report = render_analysis(WIDE, result)
+    assert report.index("Decay slopes, one-third octave") > report.index("T30")
+
+    octave_only = replace(result, decay=replace(result.decay, third_octave_bands=None))
+    assert _third_octave_slopes(WIDE, octave_only) == []
+    assert "one-third octave" not in render_analysis(WIDE, octave_only)
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_third_octave_table_fits_narrow_and_ascii_terminals(lang: str) -> None:
+    from reverbscope.cli.render import _third_octave_slopes
+    from reverbscope.i18n import activate
+
+    result = _third_octave_result()
+    activate(lang)
+    try:
+        for console in (
+            Console(color=False, unicode=True, width=60),
+            Console(color=False, unicode=False, width=60),
+        ):
+            lines = _third_octave_slopes(console, result)
+            assert lines
+            assert all(cell_width(line) <= 60 for line in lines), lines
+            if not console.unicode and lang == "en":
+                "\n".join(lines).encode("ascii")
+    finally:
+        activate("en")

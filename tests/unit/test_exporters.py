@@ -239,13 +239,14 @@ def test_csv_export_writes_both_decay_models_of_each_band(tmp_path: Path) -> Non
     with (tmp_path / "decay_slopes.csv").open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     assert list(rows[0]) == [
-        "band", "slopes", "validity", "selected", "t1_s", "t2_s", "a1_db", "a2_db",
+        "band", "resolution", "slopes", "validity", "selected", "t1_s", "t2_s", "a1_db", "a2_db",
         "a1_share_percent", "a2_share_percent", "noise_term", "bic", "delta_bic",
         "knee_time_s", "knee_level_db",
     ]  # fmt: skip
     broadband = result.decay.broadband
     fit = broadband.multi_slope
     assert fit is not None and fit.selected_slopes == 2
+    assert {r["resolution"] for r in rows} == {"broadband", "octave"}
     mine = [r for r in rows if r["band"] == broadband.band_label]
     assert [r["slopes"] for r in mine] == ["1", "2"]
     one, two = mine
@@ -274,3 +275,52 @@ def test_csv_export_writes_both_decay_models_of_each_band(tmp_path: Path) -> Non
     )
     assert "decay_slopes.csv" not in {path.name for path in export_csv(bare, tmp_path)}
     assert not (tmp_path / "decay_slopes.csv").exists()
+
+
+def test_csv_export_marks_the_band_resolution_of_third_octave_rows(tmp_path: Path) -> None:
+    """With the one-third-octave analysis, decay_slopes.csv also holds those
+    bands, told apart from the octave bands of the same label (63 Hz, 125 Hz,
+    ...) by the resolution column; the other files keep their rows."""
+    import csv
+    import math
+
+    import numpy as np
+
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+    from reverbscope.models.configuration import AnalysisSettings
+    from tests.unit.test_multislope import LEAD, RATE, decay
+
+    signal = decay(0.4, 1.6, -25.0, seed=8)
+    signal[LEAD] = 4.0 * math.sqrt(float(np.sum(signal**2)))
+    audio = AudioSignal(signal, RATE)
+    result = analyze_impulse_response(
+        audio, AnalysisSettings(third_octave_decay=True), excitation_band=(20.0, 20_000.0)
+    )
+    export_csv(result, tmp_path / "thirds")
+    with (tmp_path / "thirds" / "decay_slopes.csv").open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    thirds = result.decay.third_octave_bands
+    assert thirds is not None
+    third_rows = [r for r in rows if r["resolution"] == "third_octave"]
+    assert {r["band"] for r in third_rows} == {b.band_label for b in thirds}
+    both = {r["resolution"] for r in rows if r["band"] == "63 Hz"}
+    assert both == {"octave", "third_octave"}
+    one_k = next(b for b in thirds if b.band_label == "1 kHz")
+    fit = one_k.multi_slope
+    assert fit is not None and fit.selected_slopes == 2
+    model = fit.model(2)
+    assert model is not None
+    chosen = next(r for r in third_rows if r["band"] == "1 kHz" and r["selected"] == "yes")
+    assert chosen["slopes"] == "2"
+    assert float(chosen["t2_s"]) == pytest.approx(model.decay_times_s[1])
+
+    # The octave files are those of the default analysis.
+    octave = analyze_impulse_response(audio, excitation_band=(20.0, 20_000.0))
+    export_csv(octave, tmp_path / "octave")
+    for name in ("decay_metrics.csv", "energy_metrics.csv", "decay_edc.csv"):
+        assert (tmp_path / "thirds" / name).read_text(encoding="utf-8") == (
+            tmp_path / "octave" / name
+        ).read_text(encoding="utf-8")
+    plain = (tmp_path / "octave" / "decay_slopes.csv").read_text(encoding="utf-8").splitlines()
+    assert all("third_octave" not in line for line in plain)

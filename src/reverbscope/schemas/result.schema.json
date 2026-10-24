@@ -214,6 +214,12 @@
         "time_origin": { "type": "string" },
         "broadband": { "$ref": "#/$defs/band_decay" },
         "bands": { "type": "array", "items": { "$ref": "#/$defs/band_decay" } },
+        "third_octave_bands": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "array", "items": { "$ref": "#/$defs/band_decay" } }
+          ]
+        },
         "notes": { "type": "array", "items": { "type": "string" } }
       }
     },

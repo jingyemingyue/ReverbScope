@@ -102,16 +102,32 @@ def _write_energy_metrics(path: Path, result: AnalysisResult) -> Path:
     return _write(path, ["band", "metric", "value", "unit", "validity"], rows)
 
 
+#: ``resolution`` column of ``decay_slopes.csv``: which analysis a row is from.
+RESOLUTION_BROADBAND = "broadband"
+RESOLUTION_OCTAVE = "octave"
+RESOLUTION_THIRD_OCTAVE = "third_octave"
+
+
 def _write_decay_slopes(path: Path, result: AnalysisResult) -> Path | None:
-    """The single- and double-slope fits of each band, one row per model."""
+    """The single- and double-slope fits of each band, one row per model.
+
+    ``resolution`` says whether a row is the broadband curve, an octave band
+    or a one-third-octave band (only when the analysis asked for them); the
+    63 Hz label, for one, is both an octave and a one-third-octave band.
+    """
     rows: list[list[object]] = []
-    for band in (result.decay.broadband, *result.decay.bands):
+    bands: list[tuple[str, BandDecay]] = [
+        (RESOLUTION_BROADBAND, result.decay.broadband),
+        *((RESOLUTION_OCTAVE, band) for band in result.decay.bands),
+        *((RESOLUTION_THIRD_OCTAVE, band) for band in result.decay.third_octave_bands or ()),
+    ]
+    for resolution, band in bands:
         fit = band.multi_slope
         if fit is None:
             continue
         models = fit.models or ()
         if not models:
-            rows.append([band.band_label, "", str(fit.validity), "", *[""] * 11])
+            rows.append([band.band_label, resolution, "", str(fit.validity), "", *[""] * 11])
             continue
         for model in models:
             times = list(model.decay_times_s) + [""] * (2 - len(model.decay_times_s))
@@ -123,6 +139,7 @@ def _write_decay_slopes(path: Path, result: AnalysisResult) -> Path | None:
             rows.append(
                 [
                     band.band_label,
+                    resolution,
                     model.slope_count,
                     str(fit.validity),
                     "yes" if selected else "no",
@@ -145,6 +162,7 @@ def _write_decay_slopes(path: Path, result: AnalysisResult) -> Path | None:
         path,
         [
             "band",
+            "resolution",
             "slopes",
             "validity",
             "selected",

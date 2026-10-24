@@ -423,6 +423,11 @@ class DecayResult:
     #: reasons for marking every metric unreliable).
     notes: tuple[str, ...] = ()
     time_origin: str = DECAY_TIME_ORIGIN
+    #: One-third-octave bands (IEC 61260-1, base 10), each analysed like an
+    #: octave band including the slope fit; ``None`` when the analysis did
+    #: not ask for them (``AnalysisSettings.third_octave_decay``, off by
+    #: default) and in files written before they existed.
+    third_octave_bands: tuple[BandDecay, ...] | None = None
 
     def with_all_unreliable(self, reason: str) -> DecayResult:
         """Every decay metric (broadband and bands) marked UNRELIABLE with
@@ -432,6 +437,11 @@ class DecayResult:
             self,
             broadband=self.broadband.with_all_unreliable(reason),
             bands=tuple(b.with_all_unreliable(reason) for b in self.bands),
+            third_octave_bands=(
+                tuple(b.with_all_unreliable(reason) for b in self.third_octave_bands)
+                if self.third_octave_bands is not None
+                else None
+            ),
             notes=(
                 *self.notes,
                 diag("all decay metrics are marked unreliable: {reason}", reason=reason),
@@ -439,13 +449,19 @@ class DecayResult:
         )
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
-        return {
+        data: dict[str, Any] = {
             "method": self.method,
             "time_origin": self.time_origin,
             "broadband": self.broadband.to_dict(include_curves),
             "bands": [b.to_dict(include_curves) for b in self.bands],
             "notes": list(self.notes),
         }
+        if self.third_octave_bands is not None:
+            # Only when asked for: a default result.json keeps its keys.
+            data["third_octave_bands"] = [
+                b.to_dict(include_curves) for b in self.third_octave_bands
+            ]
+        return data
 
 
 #: ``ExcitationBand.source`` when the band follows from the sweep definition.

@@ -242,7 +242,17 @@ def decay_result_from_dict(data: Any) -> DecayResult:
         bands=tuple(band_decay_from_dict(b) for b in payload.get("bands") or ()),
         notes=_str_tuple(payload.get("notes")),
         time_origin=str(payload.get("time_origin", "")),
+        third_octave_bands=_third_octave_bands(payload.get("third_octave_bands")),
     )
+
+
+def _third_octave_bands(data: Any) -> tuple[BandDecay, ...] | None:
+    """``None`` when the file has no one-third-octave analysis (the default)."""
+    if data is None:
+        return None
+    if not isinstance(data, list):
+        raise SessionError(_("{field} must be a list").format(field="third_octave_bands"))
+    return tuple(band_decay_from_dict(b) for b in data)
 
 
 def excitation_band_from_dict(data: Any) -> ExcitationBand | None:
