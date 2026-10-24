@@ -19,7 +19,7 @@ pytest.importorskip("PySide6")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QScrollArea, QWidget
+from PySide6.QtWidgets import QApplication, QPushButton, QScrollArea, QWidget
 
 from reverbscope.audio import backend as backend_module
 from reverbscope.audio import inventory as inventory_module
@@ -332,4 +332,59 @@ def test_matrix_layout_responsive_integrity(
 
         window.close()
     finally:
+        activate("en")
+
+
+def test_simulated_wide_font_metrics_containment(app: QApplication, interface: None) -> None:
+    """Verifies that under simulated wide font metrics (e.g. Windows Segoe UI
+    or enlarged DPI settings), both StartPanel and ProjectPage adaptively stack
+    their mode cards and action buttons, completely preventing viewport overflow."""
+    from PySide6.QtGui import QFont
+
+    orig_font = app.font()
+    app.setFont(QFont("Arial", 12))
+    activate("en")
+    try:
+        theme.apply_application_chrome(app)
+        window = MainWindow()
+        window.resize(960, 640)
+        window.show()
+        _pump(app, 0.05)
+        window.set_inspector_open(True)
+
+        # 1. StartPanel check
+        window.show_home()
+        _pump(app, 0.05)
+        home = window.home
+        h_vp = home.scroll_area.viewport()
+        h_body = home.scroll_area.widget()
+        assert h_body is not None
+        assert h_body.width() <= h_vp.width() + 1
+        for child in home.composer.findChildren(QPushButton):
+            if child.isVisible():
+                tr = child.mapTo(h_vp, child.rect().topRight())
+                tl = child.mapTo(h_vp, child.rect().topLeft())
+                assert tl.x() >= 0
+                assert tr.x() <= h_vp.width() + 1
+
+        # 2. ProjectPage check
+        window.show_project()
+        _pump(app, 0.05)
+        pv = window.project
+        p_scroll = pv.findChild(QScrollArea)
+        assert p_scroll is not None
+        p_vp = p_scroll.viewport()
+        for btn in (pv.add_button, pv.compare_button, pv.measure_button, pv.copy_button):
+            assert btn.isVisible()
+            assert btn.focusPolicy() != Qt.FocusPolicy.NoFocus
+            tr = btn.mapTo(p_vp, btn.rect().topRight())
+            tl = btn.mapTo(p_vp, btn.rect().topLeft())
+            assert tl.x() >= 0
+            assert tr.x() <= p_vp.width() + 1, (
+                f"Button {btn.text()!r} right edge {tr.x()} overflows viewport {p_vp.width()}"
+            )
+
+        window.close()
+    finally:
+        app.setFont(orig_font)
         activate("en")

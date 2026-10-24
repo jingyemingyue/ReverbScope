@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
 from PySide6.QtGui import QResizeEvent, QShowEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -192,6 +192,8 @@ class ProjectPage(AnalysisView):
         self._tools_row1.setSpacing(10)
         self._tools_row1_copy = QHBoxLayout()
         self._tools_row1_copy.setSpacing(10)
+        self._tools_row1_copy2 = QHBoxLayout()
+        self._tools_row1_copy2.setSpacing(10)
         self._tools_actions1 = QHBoxLayout()
         self._tools_actions1.setSpacing(10)
         self._tools_actions2 = QHBoxLayout()
@@ -204,6 +206,9 @@ class ProjectPage(AnalysisView):
         self._place_tools()
         tools.body.addWidget(self.status)
         layout.addWidget(tools)
+        scroll = self.findChild(QScrollArea)
+        if scroll is not None:
+            scroll.viewport().installEventFilter(self)
 
         self.empty = label(
             _(
@@ -303,6 +308,16 @@ class ProjectPage(AnalysisView):
     def redraw(self) -> None:
         self._summarize()
 
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802 - Qt override
+        scroll = self.findChild(QScrollArea)
+        if (
+            scroll is not None
+            and watched is scroll.viewport()
+            and event.type() == QEvent.Type.Resize
+        ):
+            self._place_tools()
+        return super().eventFilter(watched, event)
+
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
         self._place_tools()
@@ -321,33 +336,63 @@ class ProjectPage(AnalysisView):
         if not hasattr(self, "tools_card"):
             return
         scroll = self.findChild(QScrollArea)
-        viewport_w = scroll.viewport().width() if scroll and scroll.viewport().width() > 0 else 0
+        vp = scroll.viewport() if scroll is not None else None
+        viewport_w = vp.width() if vp is not None and vp.width() > 0 else 0
         if viewport_w <= 0:
             viewport_w = max(self.width() - 56, 320)
-        margins = self.tools_body.contentsMargins()
-        available = max(viewport_w - (margins.left() + margins.right() + 8), 200)
+        body = scroll.widget() if scroll is not None else None
+        b_lay = body.layout() if body is not None else None
+        b_margins = b_lay.contentsMargins() if b_lay is not None else None
+        b_pad = (b_margins.left() + b_margins.right()) if b_margins is not None else 8
+        card_m = self.tools_card.contentsMargins()
+        c_pad = card_m.left() + card_m.right()
+        t_margins = self.tools_body.contentsMargins()
+        t_pad = t_margins.left() + t_margins.right()
+        available = max(viewport_w - (b_pad + c_pad + t_pad), 120)
 
-        p_needed = self.profile_label.sizeHint().width() + self.profile.sizeHint().width() + 10
-        s_needed = self.sources_label.sizeHint().width() + self.sources.sizeHint().width() + 10
-        copy_needed = self.copy_button.sizeHint().width()
-        r1_all_needed = p_needed + s_needed + copy_needed + 20
-        r1_both_needed = p_needed + s_needed + 10
+        p_label_w = max(
+            self.profile_label.sizeHint().width(), self.profile_label.minimumSizeHint().width()
+        )
+        p_combo_w = max(self.profile.sizeHint().width(), self.profile.minimumSizeHint().width())
+        s_label_w = max(
+            self.sources_label.sizeHint().width(), self.sources_label.minimumSizeHint().width()
+        )
+        s_spin_w = max(self.sources.sizeHint().width(), self.sources.minimumSizeHint().width())
+        copy_w = max(
+            self.copy_button.sizeHint().width(), self.copy_button.minimumSizeHint().width()
+        )
+
+        sp1 = self._tools_row1.spacing()
+        p_needed = p_label_w + p_combo_w + sp1
+        s_needed = s_label_w + s_spin_w + sp1
+        r1_all_needed = p_needed + s_needed + copy_w + sp1
+        r1_both_needed = p_needed + s_needed
 
         if r1_all_needed <= available:
             r1_mode = 0
         elif r1_both_needed <= available:
             r1_mode = 1
-        else:
+        elif s_needed + copy_w <= available:
             r1_mode = 2
+        else:
+            r1_mode = 3
 
-        add_needed = self.add_button.sizeHint().width()
-        comp_needed = self.compare_button.sizeHint().width()
-        meas_needed = self.measure_button.sizeHint().width()
-        actions_all_needed = add_needed + comp_needed + meas_needed + 20
+        add_needed = max(
+            self.add_button.sizeHint().width(), self.add_button.minimumSizeHint().width()
+        )
+        comp_needed = max(
+            self.compare_button.sizeHint().width(), self.compare_button.minimumSizeHint().width()
+        )
+        meas_needed = max(
+            self.measure_button.sizeHint().width(), self.measure_button.minimumSizeHint().width()
+        )
+        sp_act = self._tools_actions1.spacing()
+        actions_all_needed = add_needed + comp_needed + meas_needed + (2 * sp_act)
+        actions_add_comp = add_needed + comp_needed + sp_act
 
         if actions_all_needed <= available:
             actions_mode = 0
-        elif add_needed + comp_needed + 10 <= available:
+        elif actions_add_comp <= available:
             actions_mode = 1
         else:
             actions_mode = 2
@@ -361,6 +406,7 @@ class ProjectPage(AnalysisView):
         for lay in (
             self._tools_row1,
             self._tools_row1_copy,
+            self._tools_row1_copy2,
             self._tools_actions1,
             self._tools_actions2,
             self._tools_actions3,
@@ -388,7 +434,7 @@ class ProjectPage(AnalysisView):
             self._tools_row1_copy.addStretch(1)
             self._tools_row1_copy.addWidget(self.copy_button)
             self.tools_body.addLayout(self._tools_row1_copy)
-        else:
+        elif r1_mode == 2:
             self._tools_row1.addWidget(self.profile_label)
             self._tools_row1.addWidget(self.profile)
             self._tools_row1.addStretch(1)
@@ -399,6 +445,20 @@ class ProjectPage(AnalysisView):
             self._tools_row1_copy.addStretch(1)
             self._tools_row1_copy.addWidget(self.copy_button)
             self.tools_body.addLayout(self._tools_row1_copy)
+        else:
+            self._tools_row1.addWidget(self.profile_label)
+            self._tools_row1.addWidget(self.profile)
+            self._tools_row1.addStretch(1)
+            self.tools_body.addLayout(self._tools_row1)
+
+            self._tools_row1_copy.addWidget(self.sources_label)
+            self._tools_row1_copy.addWidget(self.sources)
+            self._tools_row1_copy.addStretch(1)
+            self.tools_body.addLayout(self._tools_row1_copy)
+
+            self._tools_row1_copy2.addStretch(1)
+            self._tools_row1_copy2.addWidget(self.copy_button)
+            self.tools_body.addLayout(self._tools_row1_copy2)
 
         # Actions
         if actions_mode == 0:
@@ -433,6 +493,9 @@ class ProjectPage(AnalysisView):
 
         QWidget.setTabOrder(self.profile, self.sources)
         QWidget.setTabOrder(self.sources, self.copy_button)
+        QWidget.setTabOrder(self.copy_button, self.add_button)
+        QWidget.setTabOrder(self.add_button, self.compare_button)
+        QWidget.setTabOrder(self.compare_button, self.measure_button)
         QWidget.setTabOrder(self.copy_button, self.add_button)
         QWidget.setTabOrder(self.add_button, self.compare_button)
         QWidget.setTabOrder(self.compare_button, self.measure_button)
