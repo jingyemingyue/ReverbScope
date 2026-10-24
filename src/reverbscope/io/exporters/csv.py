@@ -8,7 +8,7 @@ from pathlib import Path
 from reverbscope.errors import SessionError
 from reverbscope.i18n import _
 from reverbscope.io.jsonutil import make_folder
-from reverbscope.models.result import AnalysisResult, BandDecay
+from reverbscope.models.result import AnalysisResult, BandDecay, DecaySlopeModel
 
 
 class CsvExporter:
@@ -127,7 +127,16 @@ def _write_decay_slopes(path: Path, result: AnalysisResult) -> Path | None:
             continue
         models = fit.models or ()
         if not models:
-            rows.append([band.band_label, resolution, "", str(fit.validity), "", *[""] * 11])
+            rows.append(
+                [
+                    band.band_label,
+                    resolution,
+                    "",
+                    str(fit.validity),
+                    "",
+                    *[""] * (11 + len(_UNCERTAINTY_COLUMNS)),
+                ]
+            )
             continue
         for model in models:
             times = list(model.decay_times_s) + [""] * (2 - len(model.decay_times_s))
@@ -154,6 +163,7 @@ def _write_decay_slopes(path: Path, result: AnalysisResult) -> Path | None:
                     "" if fit.delta_bic is None else fit.delta_bic,
                     "" if not selected or fit.knee_time_s is None else fit.knee_time_s,
                     "" if not selected or fit.knee_level_db is None else fit.knee_level_db,
+                    *_uncertainty_cells(model, selected),
                 ]
             )
     if not rows:
@@ -177,9 +187,59 @@ def _write_decay_slopes(path: Path, result: AnalysisResult) -> Path | None:
             "delta_bic",
             "knee_time_s",
             "knee_level_db",
+            *_UNCERTAINTY_COLUMNS,
         ],
         rows,
     )
+
+
+#: Uncertainty columns of ``decay_slopes.csv`` (ADR 0006), after the fit
+#: columns: standard deviation and 95 % interval of each decay time, standard
+#: deviation of each amplitude, the noise term (dB) and the turning point,
+#: the analysis term alone of each decay time, and the decay data rate.
+_UNCERTAINTY_COLUMNS = (
+    "t1_sd_s",
+    "t1_ci95_low_s",
+    "t1_ci95_high_s",
+    "t2_sd_s",
+    "t2_ci95_low_s",
+    "t2_ci95_high_s",
+    "a1_sd_db",
+    "a2_sd_db",
+    "noise_sd_db",
+    "knee_time_sd_s",
+    "t1_analysis_sd_s",
+    "t2_analysis_sd_s",
+    "data_rate_hz",
+)
+
+
+def _uncertainty_cells(model: DecaySlopeModel, selected: bool) -> list[object]:
+    u = model.uncertainty
+    if u is None:
+        return [""] * len(_UNCERTAINTY_COLUMNS)
+
+    def pick(values: tuple[object, ...], index: int) -> object:
+        return values[index] if index < len(values) else ""
+
+    def bound(index: int, side: int) -> object:
+        return u.decay_times_ci95_s[index][side] if index < len(u.decay_times_ci95_s) else ""
+
+    return [
+        pick(u.decay_times_sd_s, 0),
+        bound(0, 0),
+        bound(0, 1),
+        pick(u.decay_times_sd_s, 1),
+        bound(1, 0),
+        bound(1, 1),
+        pick(u.amplitudes_sd_db, 0),
+        pick(u.amplitudes_sd_db, 1),
+        "" if u.noise_sd_db is None else u.noise_sd_db,
+        "" if not selected or u.knee_time_sd_s is None else u.knee_time_sd_s,
+        pick(u.decay_times_analysis_sd_s, 0),
+        pick(u.decay_times_analysis_sd_s, 1),
+        u.data_rate_hz,
+    ]
 
 
 def _write_decay_edc(path: Path, result: AnalysisResult) -> Path | None:

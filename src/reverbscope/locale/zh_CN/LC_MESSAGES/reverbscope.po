@@ -7054,3 +7054,31 @@ msgstr "1/3 倍频程"
 
 msgid "{metric}, one-third-octave bands"
 msgstr "{metric}，1/3 倍频程频带"
+
+msgid "{time} at {level:.0f} dB"
+msgstr "{time}，{level:.0f} dB"
+
+msgid "± is one standard deviation of the fit (a 68 % interval): the random fluctuation of the decay curve and how well the model fits it (ADR 0006). It is for this one response; it does not include the spread between positions or repeated measurements. 95 % intervals are in decay_slopes.csv."
+msgstr "± 为拟合的一个标准差（68 % 区间）：包括衰减曲线的随机起伏和模型与曲线的吻合程度（ADR 0006）。它只针对这一条响应，不包括不同位置之间或重复测量之间的离散。95 % 区间见 decay_slopes.csv。"
+
+msgid "Uncertainty (1 σ, this response): ±{t1} s."
+msgstr "不确定度（1 σ，本条响应）：±{t1} s。"
+
+msgid "Uncertainty (1 σ, this response): T1 ±{t1} s, T2 ±{t2} s, turning point ±{knee} s."
+msgstr "不确定度（1 σ，本条响应）：T1 ±{t1} s，T2 ±{t2} s，转折点 ±{knee} s。"
+
+msgid "±{t1:.2f} s and ±{t2:.2f} s"
+msgstr "±{t1:.2f} s 和 ±{t2:.2f} s"
+
+msgid "±{t1:.2f} s"
+msgstr "±{t1:.2f} s"
+
+msgid "Slope uncertainty"
+msgstr "斜率不确定度"
+
+msgid "One standard deviation (68 %) of the slope fit for this response: the random fluctuation of the decay curve and how well the model fits it. 95 % intervals are in decay_slopes.csv. Not included: the spread between positions or repeated measurements."
+msgstr "本条响应斜率拟合的一个标准差（68 %）：包括衰减曲线的随机起伏和模型与曲线的吻合程度。95 % 区间见 decay_slopes.csv。不包括不同位置之间或重复测量之间的离散。"
+
+msgctxt "file record"
+msgid "slope uncertainty"
+msgstr "斜率不确定度"

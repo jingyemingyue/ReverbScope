@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QSplitter, QVBoxLa
 from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import band_text
 from reverbscope.labels import validity_word
-from reverbscope.models.result import BandDecay, DecayMetric, Validity
+from reverbscope.models.result import BandDecay, DecayMetric, DecaySlopeModel, Validity
 from reverbscope.ui.plotkit import (
     BAND_DASHES,
     DASHES,
@@ -299,9 +299,10 @@ class DecayView(AnalysisView):
         if model.slope_count == 1:
             if fit.validity is not Validity.VALID:
                 return ""
-            return _("Slope fit: one slope ({seconds:.2f} s) describes this decay.").format(
+            text = _("Slope fit: one slope ({seconds:.2f} s) describes this decay.").format(
                 seconds=model.decay_times_s[0]
             )
+            return _join_spread(text, model)
         if (
             fit.fit_start_s is None
             or fit.fit_end_s is None
@@ -358,6 +359,7 @@ class DecayView(AnalysisView):
                 else "–"
             ),
         )
+        text = _join_spread(text, model)
         if fit.validity is not Validity.VALID:
             text += " " + _("({validity}: shown, not trusted.)").format(
                 validity=validity_word(fit.validity)
@@ -463,3 +465,32 @@ class DecayView(AnalysisView):
         self.chart.restyle()
         self.bands_chart.restyle()
         self.refresh()
+
+
+def _sd_text(seconds: float | None) -> str:
+    if seconds is None:
+        return "–"
+    return f"{seconds:.2f}" if seconds >= 0.005 else "<0.01"
+
+
+def slope_spread_text(model: DecaySlopeModel) -> str:
+    """``Uncertainty (1 σ): …`` for a slope model, or ``""`` without one (ADR 0006)."""
+    u = model.uncertainty
+    if u is None:
+        return ""
+    if model.slope_count == 1:
+        return _("Uncertainty (1 σ, this response): ±{t1} s.").format(
+            t1=_sd_text(u.decay_times_sd_s[0])
+        )
+    return _(
+        "Uncertainty (1 σ, this response): T1 ±{t1} s, T2 ±{t2} s, turning point ±{knee} s."
+    ).format(
+        t1=_sd_text(u.decay_times_sd_s[0]),
+        t2=_sd_text(u.decay_times_sd_s[1]),
+        knee=_sd_text(u.knee_time_sd_s),
+    )
+
+
+def _join_spread(text: str, model: DecaySlopeModel) -> str:
+    spread = slope_spread_text(model)
+    return f"{text} {spread}" if spread else text

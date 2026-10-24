@@ -404,6 +404,24 @@ class Inspector(QWidget):
                 validity_word(slopes.validity),
                 _tone(slopes.validity),
             )
+            spread = model.uncertainty
+            if spread is not None:
+                if model.slope_count == 2:
+                    spread_text = _("±{t1:.2f} s and ±{t2:.2f} s").format(
+                        t1=spread.decay_times_sd_s[0], t2=spread.decay_times_sd_s[1]
+                    )
+                else:
+                    spread_text = _("±{t1:.2f} s").format(t1=spread.decay_times_sd_s[0])
+                section.add_row(
+                    _("Slope uncertainty"),
+                    spread_text,
+                    tip=_(
+                        "One standard deviation (68 %) of the slope fit for this response: "
+                        "the random fluctuation of the decay curve and how well the model "
+                        "fits it. 95 % intervals are in decay_slopes.csv. Not included: "
+                        "the spread between positions or repeated measurements."
+                    ),
+                )
         thirds = result.decay.third_octave_bands
         if thirds:
             fits = [
