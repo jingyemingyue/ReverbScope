@@ -273,7 +273,6 @@ class StartPanel(QWidget):
         (``measure_strip.MODES``), centred as one group (SPEC §7)."""
         hero = QVBoxLayout()
         hero.setSpacing(8)
-        hero.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         mark = QLabel()
         mark.setPixmap(app_icon().pixmap(44, 44))
         mark.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -290,6 +289,8 @@ class StartPanel(QWidget):
             wrap=True,
         )
         lead.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        lead.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        lead.setMinimumWidth(0)
         hero.addWidget(lead)
 
         self.composer = QFrame()
@@ -382,6 +383,8 @@ class StartPanel(QWidget):
             wrap=True,
         )
         keys.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        keys.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        keys.setMinimumWidth(0)
         hero.addWidget(keys)
         return hero
 
