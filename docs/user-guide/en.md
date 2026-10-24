@@ -424,6 +424,24 @@ column is the mean of each session's own RT60 (T30, else T20). `n` is the
 number of sessions averaged in a row; a value that averages fewer shows its
 own count, for example `0.91 s (1)`.
 
+**Common slopes.** `reverbscope common-slope room/` fits, band by band, one
+to three decay times shared by every position of the project, with each
+position's amplitudes (the common-slope model; IR WAVs from another tool work
+too, with `--band`, as for `analyze-ir`):
+
+```bash
+reverbscope common-slope room/ --out room/common-slope
+reverbscope common-slope a.wav b.wav c.wav --band 20 20000 --third-octave
+```
+
+The table gives the common decay times, how many positions were used, and
+the median RMS error of the common model next to that of each response's own
+fit; `--out` writes `common-slope.json` and two CSV files with every
+position's amplitudes. The *Common slopes* card of the Project view runs the
+same analysis on request. Two or three slopes are reported only when several
+positions support each of them (methodology §3d). `--estimator is-sage` is
+experimental.
+
 ## Export and language
 
 `reverbscope export session/ --format csv --out curves/` writes every curve.

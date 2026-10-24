@@ -189,6 +189,15 @@ reverbscope-env/bin/reverbscope gui
 
 `reverbscope project average room/` 只平均有效（VALID）的 T 值，从不平均衰减曲线，并注明测量位置数达到的 ISO 3382-2 等级。RT60 一列是各会话自身 RT60（优先 T30，否则 T20）的平均值。`n` 是该行参与平均的会话数；参与会话较少的数值会附上自己的会话数，例如 `0.91 s (1)`。
 
+**共同斜率。**`reverbscope common-slope room/` 逐频段拟合项目中所有位置共享的 1–3 个衰减时间，并给出每个位置的幅度（共同斜率模型；也可直接用其他工具导出的 IR WAV，和 `analyze-ir` 一样需要 `--band`）：
+
+```bash
+reverbscope common-slope room/ --out room/common-slope
+reverbscope common-slope a.wav b.wav c.wav --band 20 20000 --third-octave
+```
+
+表格列出共同衰减时间、参与的位置数，以及共同模型与各响应自身拟合的 RMS 误差中位数；`--out` 写出 `common-slope.json` 和两个包含各位置幅度的 CSV 文件。“项目”视图的“共同斜率”卡片可按需运行同样的分析。只有当多个位置都支撑某个斜率时才会报告两个或三个斜率（方法说明 §3d）。`--estimator is-sage` 为实验性功能。
+
 ## 导出与语言
 
 `reverbscope export session/ --format csv --out curves/` 导出每一条曲线。把另一个会话导出到同一文件夹时，该会话没有的曲线文件会被删除（`--no-curves` 会话没有任何曲线），因此文件夹里不会混有两个会话的数据。
