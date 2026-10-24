@@ -86,6 +86,7 @@ def test_monkeypatch_undo_keeps_the_english_language_pin(
 
     assert _("cannot write {path}: {error}").startswith("cannot write")
 
+
 def test_an_exception_in_the_test_body_leaves_isolation_in_place(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

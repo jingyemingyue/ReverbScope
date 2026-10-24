@@ -49,17 +49,13 @@ def test_order_english_then_chinese_then_english(
     from tests.frames import invoke
 
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
-    code, _out, err = invoke(
-        ["--lang", "en", "--style", "boxed", "show", "x", "--bogus"], capsys
-    )
+    code, _out, err = invoke(["--lang", "en", "--style", "boxed", "show", "x", "--bogus"], capsys)
     assert code == 2 and err.startswith("╭─ ✗ Error ─")
     code, _out, err = invoke(
         ["--lang", "zh_CN", "--style", "boxed", "show", "x", "--bogus"], capsys
     )
     assert code == 2 and err.startswith("╭─ ✗ 错误 ─")
-    code, _out, err = invoke(
-        ["--lang", "en", "--style", "boxed", "show", "x", "--bogus"], capsys
-    )
+    code, _out, err = invoke(["--lang", "en", "--style", "boxed", "show", "x", "--bogus"], capsys)
     assert code == 2 and err.startswith("╭─ ✗ Error ─")
 
 
