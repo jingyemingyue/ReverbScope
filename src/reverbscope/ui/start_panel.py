@@ -177,23 +177,23 @@ class StartPanel(QWidget):
                 c_avail = min(available, self.composer.maximumWidth()) - c_padding
                 b1_lay = b1.layout()
                 b2_lay = b2.layout()
-                b1_w = (
-                    max(
-                        b1_lay.sizeHint().width(),
-                        b1_lay.minimumSize().width(),
-                        b1.sizeHint().width(),
-                    )
-                    if b1_lay is not None
-                    else b1.sizeHint().width()
+                fm1 = b1.fontMetrics()
+                fm2 = b2.fontMetrics()
+                t1 = _("Standalone Mode")
+                t2 = _("Universal DAW Mode")
+                b1_w = max(
+                    b1_lay.sizeHint().width() if b1_lay is not None else 0,
+                    b1_lay.minimumSize().width() if b1_lay is not None else 0,
+                    b1.sizeHint().width(),
+                    fm1.horizontalAdvance(t1) + 62,
+                    200,
                 )
-                b2_w = (
-                    max(
-                        b2_lay.sizeHint().width(),
-                        b2_lay.minimumSize().width(),
-                        b2.sizeHint().width(),
-                    )
-                    if b2_lay is not None
-                    else b2.sizeHint().width()
+                b2_w = max(
+                    b2_lay.sizeHint().width() if b2_lay is not None else 0,
+                    b2_lay.minimumSize().width() if b2_lay is not None else 0,
+                    b2.sizeHint().width(),
+                    fm2.horizontalAdvance(t2) + 62,
+                    200,
                 )
                 paths_needed = b1_w + b2_w + self._paths_layout.spacing()
                 paths_stacked = paths_needed > c_avail
@@ -262,8 +262,11 @@ class StartPanel(QWidget):
                 self._body_layout.removeItem(self._footer_guide_row)
                 self._footer_row.addWidget(self.guide_button)
 
-        if widget is not None and viewport_w > 0 and widget.width() > viewport_w:
-            widget.resize(viewport_w, widget.height())
+        if widget is not None and viewport_w > 0:
+            widget.updateGeometry()
+            widget.adjustSize()
+            if widget.width() > viewport_w:
+                widget.resize(viewport_w, widget.height())
 
     def _hero(self) -> QVBoxLayout:
         """Icon, title, one sentence and the composer with the two real ways in
