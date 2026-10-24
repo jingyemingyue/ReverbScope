@@ -6906,3 +6906,151 @@ msgstr "请先保存会话：{placeholder} 代表会话文件夹。"
 
 msgid "Commands copied to the clipboard."
 msgstr "命令已复制到剪贴板。"
+
+msgid "Double-slope decay"
+msgstr "双斜率衰减"
+
+msgid "two-exponential fit of the decay curve"
+msgstr "衰减曲线的双指数拟合"
+
+msgid "In these bands the decay curve is better described by two slopes than by one (Bayesian information criterion and plausibility checks): T1 is the early, faster decay and T2 the later, slower one, both extrapolated to 60 dB. Late level is the slower slope's start relative to the faster one's. T20 and T30 above are unchanged and are marked when the curve is not straight."
+msgstr "在这些频带里，用两段斜率描述衰减曲线比用一段更好（依据贝叶斯信息准则和合理性检查）：T1 是较早、较快的衰减，T2 是较晚、较慢的衰减，都外推到 60 dB。后段电平是较慢斜率的起点相对较快斜率起点的电平。上表中的 T20 和 T30 不受影响；曲线不是直线时会另作标记。"
+
+msgid "Late level"
+msgstr "后段电平"
+
+msgid "Turning point"
+msgstr "转折点"
+
+msgid "{time:.2f} s at {level:.0f} dB"
+msgstr "{time:.2f} s，{level:.0f} dB"
+
+msgctxt "diagnostic"
+msgid "the slope fit did not converge"
+msgstr "斜率拟合没有收敛"
+
+msgctxt "diagnostic"
+msgid "two slopes not reported: T2/T1 = {ratio:.2f} < {minimum:g}, the slopes are not distinct"
+msgstr "不报告双斜率：T2/T1 = {ratio:.2f} < {minimum:g}，两段斜率区别不明显"
+
+msgctxt "diagnostic"
+msgid "two slopes not reported: one slope fits the curve within {miss:.2f} dB (limit {limit:g} dB)"
+msgstr "不报告双斜率：单一斜率与曲线的偏差在 {miss:.2f} dB 以内（界限 {limit:g} dB）"
+
+msgctxt "diagnostic"
+msgid "two slopes not reported: the slopes do not cross inside the fitted range"
+msgstr "不报告双斜率：两段斜率在拟合范围内没有交点"
+
+msgctxt "diagnostic"
+msgid "two slopes not reported: the turning point is only {drop:.1f} dB below the fit start (limit {limit:g} dB): the fast part is the early decay, not a second slope"
+msgstr "不报告双斜率：转折点只比拟合起点低 {drop:.1f} dB（界限 {limit:g} dB）：较快的部分是早期衰减，不是第二段斜率"
+
+msgctxt "diagnostic"
+msgid "two slopes not reported: the turning point is only {margin:.1f} dB above the noise (limit {limit:g} dB)"
+msgstr "不报告双斜率：转折点只比噪声高 {margin:.1f} dB（界限 {limit:g} dB）"
+
+msgctxt "diagnostic"
+msgid "two slopes not reported: the slow slope decays only {visible:.1f} dB above the noise after the turning point (limit {limit:g} dB)"
+msgstr "不报告双斜率：转折点之后，较慢斜率在噪声之上只衰减了 {visible:.1f} dB（界限 {limit:g} dB）"
+
+msgctxt "diagnostic"
+msgid "B*T1 = {bt:.1f} < {minimum:g}: the band filter's own decay is comparable to the fast slope"
+msgstr "B*T1 = {bt:.1f} < {minimum:g}：频带滤波器自身的衰减与较快斜率相当"
+
+msgctxt "diagnostic"
+msgid "the response is cut short: the noise term of the slope model does not apply"
+msgstr "响应被提前截断：斜率模型的噪声项不适用"
+
+msgctxt "diagnostic"
+msgid "Insufficient decay range for a slope fit: {available:.1f} dB available, {needed:.0f} dB needed"
+msgstr "衰减范围不足以做斜率拟合：可用 {available:.1f} dB，需要 {needed:.0f} dB"
+
+msgctxt "diagnostic"
+msgid "the decay curve is too short for a slope fit"
+msgstr "衰减曲线太短，无法做斜率拟合"
+
+msgctxt "file record"
+msgid "multi-slope fit"
+msgstr "多斜率拟合"
+
+msgctxt "file record"
+msgid "decay slope model"
+msgstr "衰减斜率模型"
+
+msgid "{kind} is not consistent"
+msgstr "{kind}前后不一致"
+
+msgid "Decay slopes"
+msgstr "衰减斜率"
+
+msgid "two: {t1:.2f} s and {t2:.2f} s"
+msgstr "两段：{t1:.2f} s 和 {t2:.2f} s"
+
+msgid "one: {seconds:.2f} s"
+msgstr "一段：{seconds:.2f} s"
+
+msgid "two-slope model fitted to the decay curve (noise term not drawn)"
+msgstr "拟合到衰减曲线的双斜率模型（未画噪声项）"
+
+msgid "Two-slope fit"
+msgstr "双斜率拟合"
+
+msgid "Fast slope T1"
+msgstr "较快斜率 T1"
+
+msgid "Slow slope T2"
+msgstr "较慢斜率 T2"
+
+msgid "Two-slope fit: T1 = {t1:.2f} s, T2 = {t2:.2f} s, slow slope {late:+.1f} dB re fast; turning point {knee}."
+msgstr "双斜率拟合：T1 = {t1:.2f} s，T2 = {t2:.2f} s，较慢斜率比较快斜率 {late:+.1f} dB；转折点 {knee}。"
+
+msgid "Slope fit: one slope ({seconds:.2f} s) describes this decay."
+msgstr "斜率拟合：单一斜率（{seconds:.2f} s）就能描述这段衰减。"
+
+msgid "({validity}: shown, not trusted.)"
+msgstr "（{validity}：仅显示，不可信。）"
+
+msgid "also analyse the decay in one-third-octave bands (50 Hz-10 kHz), with the single/double-slope fit; slower, octave results unchanged"
+msgstr "另外在 1/3 倍频程频带（50 Hz-10 kHz）中分析衰减，并做单/双斜率拟合；较慢，倍频程结果不变"
+
+msgid "Decay slopes, one-third octave"
+msgstr "衰减斜率（1/3 倍频程）"
+
+msgid "single- or two-slope fit"
+msgstr "单斜率或双斜率拟合"
+
+msgid "Slopes"
+msgstr "斜率数"
+
+msgid "Two slopes in {two} of {fitted} one-third-octave bands with a valid fit. With one slope, T1 is its decay time; with two, T1 is the early, faster decay and T2 the later, slower one, both extrapolated to 60 dB."
+msgstr "在 {fitted} 个拟合有效的 1/3 倍频程频带中，有 {two} 个为两段斜率。单斜率时 T1 即其衰减时间；双斜率时 T1 是早期较快的衰减，T2 是后期较慢的衰减，二者都外推到 60 dB。"
+
+msgid "third_octave_decay must be true or false"
+msgstr "third_octave_decay 必须为 true 或 false"
+
+msgid "Slopes, 1/3 octave"
+msgstr "斜率（1/3 倍频程）"
+
+msgid "two in {two} of {fitted} bands"
+msgstr "{fitted} 个频带中有 {two} 个为两段"
+
+msgid "Also analyse the decay in one-third-octave bands (slower)"
+msgstr "另外在 1/3 倍频程频带中分析衰减（较慢）"
+
+msgid "Adds 50 Hz-10 kHz one-third-octave bands with EDT, T20, T30 and the single/double-slope fit. The octave results stay the same."
+msgstr "增加 50 Hz-10 kHz 的 1/3 倍频程频带，包括 EDT、T20、T30 和单/双斜率拟合。倍频程结果保持不变。"
+
+msgid "One-third-octave bands: two slopes in {two} of {fitted} bands with a valid fit."
+msgstr "1/3 倍频程频带：在 {fitted} 个拟合有效的频带中，有 {two} 个为两段斜率。"
+
+msgid "Resolution"
+msgstr "频带分辨率"
+
+msgid "Octave"
+msgstr "倍频程"
+
+msgid "One-third octave"
+msgstr "1/3 倍频程"
+
+msgid "{metric}, one-third-octave bands"
+msgstr "{metric}，1/3 倍频程频带"

@@ -20,6 +20,7 @@ class CsvExporter:
         writers = {
             "decay_metrics.csv": _write_decay_metrics,
             "energy_metrics.csv": _write_energy_metrics,
+            "decay_slopes.csv": _write_decay_slopes,
             "decay_edc.csv": _write_decay_edc,
             "frequency_response.csv": _write_frequency_response,
             "interface_response.csv": _write_interface_response,
@@ -99,6 +100,86 @@ def _write_energy_metrics(path: Path, result: AnalysisResult) -> Path:
                 ]
             )
     return _write(path, ["band", "metric", "value", "unit", "validity"], rows)
+
+
+#: ``resolution`` column of ``decay_slopes.csv``: which analysis a row is from.
+RESOLUTION_BROADBAND = "broadband"
+RESOLUTION_OCTAVE = "octave"
+RESOLUTION_THIRD_OCTAVE = "third_octave"
+
+
+def _write_decay_slopes(path: Path, result: AnalysisResult) -> Path | None:
+    """The single- and double-slope fits of each band, one row per model.
+
+    ``resolution`` says whether a row is the broadband curve, an octave band
+    or a one-third-octave band (only when the analysis asked for them); the
+    63 Hz label, for one, is both an octave and a one-third-octave band.
+    """
+    rows: list[list[object]] = []
+    bands: list[tuple[str, BandDecay]] = [
+        (RESOLUTION_BROADBAND, result.decay.broadband),
+        *((RESOLUTION_OCTAVE, band) for band in result.decay.bands),
+        *((RESOLUTION_THIRD_OCTAVE, band) for band in result.decay.third_octave_bands or ()),
+    ]
+    for resolution, band in bands:
+        fit = band.multi_slope
+        if fit is None:
+            continue
+        models = fit.models or ()
+        if not models:
+            rows.append([band.band_label, resolution, "", str(fit.validity), "", *[""] * 11])
+            continue
+        for model in models:
+            times = list(model.decay_times_s) + [""] * (2 - len(model.decay_times_s))
+            levels = list(model.amplitudes_db) + [""] * (2 - len(model.amplitudes_db))
+            shares = list(model.energy_shares_percent) + [""] * (
+                2 - len(model.energy_shares_percent)
+            )
+            selected = model.slope_count == fit.selected_slopes
+            rows.append(
+                [
+                    band.band_label,
+                    resolution,
+                    model.slope_count,
+                    str(fit.validity),
+                    "yes" if selected else "no",
+                    times[0],
+                    times[1],
+                    levels[0],
+                    levels[1],
+                    shares[0],
+                    shares[1],
+                    model.noise_term,
+                    model.bic,
+                    "" if fit.delta_bic is None else fit.delta_bic,
+                    "" if not selected or fit.knee_time_s is None else fit.knee_time_s,
+                    "" if not selected or fit.knee_level_db is None else fit.knee_level_db,
+                ]
+            )
+    if not rows:
+        return None
+    return _write(
+        path,
+        [
+            "band",
+            "resolution",
+            "slopes",
+            "validity",
+            "selected",
+            "t1_s",
+            "t2_s",
+            "a1_db",
+            "a2_db",
+            "a1_share_percent",
+            "a2_share_percent",
+            "noise_term",
+            "bic",
+            "delta_bic",
+            "knee_time_s",
+            "knee_level_db",
+        ],
+        rows,
+    )
 
 
 def _write_decay_edc(path: Path, result: AnalysisResult) -> Path | None:

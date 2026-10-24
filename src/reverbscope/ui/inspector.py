@@ -389,6 +389,36 @@ class Inspector(QWidget):
             section.add_row(
                 name, decay_text(metric), validity_word(metric.validity), _tone(metric.validity)
             )
+        slopes = broadband.multi_slope
+        if slopes is not None and slopes.selected is not None:
+            model = slopes.selected
+            if model.slope_count == 2:
+                text = _("two: {t1:.2f} s and {t2:.2f} s").format(
+                    t1=model.decay_times_s[0], t2=model.decay_times_s[1]
+                )
+            else:
+                text = _("one: {seconds:.2f} s").format(seconds=model.decay_times_s[0])
+            section.add_row(
+                _("Decay slopes"),
+                text,
+                validity_word(slopes.validity),
+                _tone(slopes.validity),
+            )
+        thirds = result.decay.third_octave_bands
+        if thirds:
+            fits = [
+                b.multi_slope
+                for b in thirds
+                if b.multi_slope is not None
+                and b.multi_slope.validity is Validity.VALID
+                and b.multi_slope.selected_slopes is not None
+            ]
+            section.add_row(
+                _("Slopes, 1/3 octave"),
+                _("two in {two} of {fitted} bands").format(
+                    two=sum(1 for fit in fits if fit.selected_slopes == 2), fitted=len(fits)
+                ),
+            )
         for name, energy in (
             ("C50", broadband.c50),
             ("C80", broadband.c80),

@@ -214,6 +214,18 @@ def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLine
     return box, room, position, mic
 
 
+def _third_octave_check() -> QCheckBox:
+    """The opt-in for the one-third-octave decay analysis (off by default)."""
+    check = QCheckBox(_("Also analyse the decay in one-third-octave bands (slower)"))
+    check.setToolTip(
+        _(
+            "Adds 50 Hz-10 kHz one-third-octave bands with EDT, T20, T30 and the "
+            "single/double-slope fit. The octave results stay the same."
+        )
+    )
+    return check
+
+
 def _profile_combo(state: MeasurementState) -> QComboBox:
     from reverbscope.interpretation.explain import profile_description
 
@@ -462,6 +474,8 @@ class DawModePage(QWidget):
         self.profile = _profile_combo(state)
         profile_row, self.profile_help = _profile_row(self.profile, self)
         profile_form.addRow(_("Recording profile"), profile_row)
+        self.third_octave = _third_octave_check()
+        profile_form.addRow(self.third_octave)
         v4.addLayout(profile_form)
         row = QHBoxLayout()
         self.analyze_button = primary(QPushButton(_("Analyze")))
@@ -628,6 +642,7 @@ class DawModePage(QWidget):
         self.state.analysis_settings = AnalysisSettings(
             channel=None if channel is None else int(channel),
             loopback_channel=None if loopback is None else int(loopback),
+            third_octave_decay=self.third_octave.isChecked(),
             placement_distance_m=place["placement_distance_m"],
             placement_mic_height_m=place["placement_mic_height_m"],
             placement_temperature_c=place["placement_temperature_c"],
@@ -896,6 +911,8 @@ class StandalonePage(QWidget):
         self.profile = _profile_combo(state)
         profile_row, self.profile_help = _profile_row(self.profile, self)
         form2.addRow(_("Recording profile"), profile_row)
+        self.third_octave = _third_octave_check()
+        form2.addRow(self.third_octave)
         layout.addWidget(sweep)
 
         from reverbscope.edition import is_developer
@@ -1468,6 +1485,7 @@ class StandalonePage(QWidget):
         self._take_analysis_settings = AnalysisSettings(
             channel=plan.analysis_channel,
             loopback_channel=plan.analysis_loopback_channel,
+            third_octave_decay=self.third_octave.isChecked(),
             placement_distance_m=place["placement_distance_m"],
             placement_mic_height_m=place["placement_mic_height_m"],
             placement_temperature_c=place["placement_temperature_c"],

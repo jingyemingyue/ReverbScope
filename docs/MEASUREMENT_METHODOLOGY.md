@@ -615,6 +615,166 @@ room score, not speech intelligibility, and not spatially averaged.
 broadband C50, C80, D50 and `Ts` only when both sides are VALID; per-band
 ratios stay in each result.
 
+### 3c. Single- versus double-slope decay (multi-exponential fit)
+
+**Why.** A room coupled to another volume (a chapel opening onto a nave, a
+stage house, a reverberant side aisle) decays at more than one rate, and its
+Schroeder curve bends from a faster early slope into a slower late one. §3
+only *flags* that: the curvature `C` and non-linearity `ξ` of ISO 3382-2
+Annex B mark T20 and T30 unreliable, and no single reverberation time is
+given. §3c *fits* the bend. It changes none of the numbers of §3, §3a or §3b.
+
+**Model** (`core/multislope.py`). The energy decay is modelled as a sum of
+exponentials plus a noise term, the form of Xiang's nonlinear regression
+[25], extended to several slopes by Xiang, Goggans et al. [26] and used by
+DecayFitNet (Götz et al. [27]):
+
+    EDC(t) = Σ_i A_i · (exp(−13.8155·t/T_i) − exp(−13.8155·L/T_i)) + N·(L − t)
+
+with `t` in seconds after the direct sound, `L` the end of the integration,
+`T_i` the 60 dB decay time of slope `i` (13.8155 = ln 10⁶), `A_i` its
+amplitude as a fraction of the EDC at the onset, and `N` the noise power per
+second. One slope (`i = 1`) and two slopes (`i = 1, 2`) are fitted.
+
+**Procedure.**
+
+1. *Curve.* The squared band response from the §3 onset to the end of the
+   record (trailing exact zeros removed) is integrated backwards, **without**
+   Lundeby truncation or late-decay compensation, and normalised to 0 dB at
+   the onset. The noise term replaces truncation, as in [25].
+2. *Range.* From the first sample at or below −5 dB that is after the direct
+   sound (where T20 and T30 start; the first 5 dB are the direct sound and the
+   earliest reflections) to 95 % of the record (the last samples of a
+   backward integral are too few for a stable logarithm). The curve is
+   resampled onto 100 points evenly spaced in time. (DecayFitNet also
+   resamples the EDC and discards its end; the exact numbers it uses were not
+   checked against its code.)
+3. *Fit.* Least squares of `10·log10(model) − EDC_dB` over `log T_i`,
+   `log A_i` and `log N` (Levenberg–Marquardt with an analytic Jacobian;
+   bounds 5 ms ≤ T ≤ 4·L by clipping). One slope starts from the band's T30,
+   else T20, else EDT; two slopes from several pairs around EDT, the one-slope
+   fit and the Lundeby late slope; the best start is kept.
+4. *Model selection.* The Bayesian information criterion of Schwarz [28],
+   `BIC = K_eff·ln(max(RSS/K, σ²)) + p·ln K_eff`, with `p` = 3 or 5
+   parameters and `σ` = 0.05 dB (a floor so that two near-perfect fits are
+   not told apart by rounding). BIC is the large-sample approximation of the
+   Bayesian evidence that Xiang and Goggans [29] and Xiang et al. [26] use to
+   choose the number of slopes. Because an EDC is a running integral, its
+   deviations from any smooth model are correlated over many points, so `K`
+   = 100 points are not 100 observations: `K_eff = K / τ` with `τ = 1 + 2·Σρ_k`
+   the integrated autocorrelation time of the two-slope residuals, summed over
+   the initial positive lags (after Geyer [30]), and at least 10. In an earlier draft of the
+   same synthetic Monte Carlo as below, without this correction, 8 of 96
+   single-slope decays were split. Two slopes are chosen when `BIC(1) − BIC(2) ≥ 10` ("very
+   strong" on the Kass–Raftery scale [31]) **and** the two-slope model is
+   plausible:
+   * `T2 ≥ 1.25·T1` (the slopes are distinct);
+   * the one-slope model misses the curve somewhere by at least 1 dB;
+   * the two exponentials cross (the *turning point*, `t_k = ln(A1/A2) /
+     (13.8155·(1/T1 − 1/T2))`) inside the fitted range, at least 10 dB below
+     the fit start: a fast part shorter than the EDT range is the early decay
+     that EDT already describes (the early reflections near a source), not a
+     second slope;
+   * the curve at the turning point is at least 10 dB above the noise term,
+     and after it the slow slope decays at least 10 dB before it meets the
+     noise term (otherwise a drifting noise floor fits the "slope").
+
+   A two-slope fit that wins on BIC but fails a rule is reported as one slope
+   with a note naming the rule. These thresholds are ReverbScope's choice.
+
+**Output.** Per band (`multi_slope` in `result.json`, additive, schema 1):
+the chosen number of slopes; both models (`T_i`, `A_i` linear and in dB,
+`A_i/ΣA` as a percentage, `N`, BIC, rms residual); `ΔBIC`; the fitted range
+and `L`; the turning point time and model level (two slopes only); the
+validity, reason and notes. `reverbscope export` writes `decay_slopes.csv`
+(its `resolution` column says broadband, octave or one-third octave);
+the report adds a *Double-slope decay* table only when a band has two
+slopes; the desktop Decay view overlays the fitted model and its two slopes
+on the band's curve.
+
+**Validity.** No model (`insufficient_decay_range`) below 30 dB of decay
+range. `unreliable` (numbers kept, not trusted) when the fit did not
+converge, when `B·T1 < 4` (the §3 time-reversed filtering limit [6]), when
+the response is cut short (§3: a gate is not described by a noise term), or
+when the whole analysis is marked unreliable. Not computed outside the
+excitation range or without a declared band.
+
+**Evidence.** Synthetic (`tests/unit/test_multislope.py`): Gaussian noise
+with one or two exponential envelopes and a noise floor 75 dB down, filtered
+by the §3 octave filters. In a Monte Carlo written for the calibration (4
+seeds × 6 bands × 4 decay times, with and without a strong direct sound) one
+single-slope decay of 96 was split (63 Hz–4 kHz; at 125 Hz, `B·T` = 71); 52
+of 54 double-slope decays (T1/T2 of 0.4/1.6, 0.5/1.0 and 1.0/3.0 s, slow part
+15–25 dB down) were found, the misses at 63 and 125 Hz; median T1 and T2
+errors were within ±1.5 %. In the 63 Hz band at T = 0.3 s (`B·T` = 13) one
+seed of 24 was split; the test allows two. On measured data, see
+[validation/aachen-nikolauskapelle.md](validation/aachen-nikolauskapelle.md):
+on 46 responses of a coupled chapel, the fit chose two slopes in 2–9 % of the
+positions per 63–500 Hz octave band (11 of 184 band values; 22 of 46 at
+8 kHz), where DecayFitNet reports two slopes for every band; of the 49
+two-slope fits there that passed the ΔBIC criterion, 38 failed a
+plausibility rule.
+
+**One-third-octave bands (opt-in).** `AnalysisSettings.third_octave_decay`
+(`--third-octave`, a check box on the desktop measurement pages; off by
+default) adds the IEC 61260-1 one-third-octave bands inside the octave bands
+of §3 (bands `3x − 1`, `3x`, `3x + 1` of octave `x`; 50 Hz–10 kHz for the
+default 63 Hz–8 kHz), `third_octave_bands` in `result.json`. Each is analysed
+exactly as an octave band (time-reversed Butterworth filter of the same
+order, onset, Lundeby truncation, EDT/T20/T30 and this fit), with the band's
+own bandwidth in every bandwidth-dependent rule; the lead-in before the
+direct sound is that of §3 for the narrowest third (`5/B`, 0.43 s at 50 Hz),
+taken as a separate segment so that the octave analysis is computed exactly
+as without the option. It is opt-in because it triples the decay work
+(0.44 s → 1.33 s for a 10 s, 48 kHz response on the Linux aarch64 test
+machine; the default analysis does none of it, and its results are
+bit-identical to before).
+
+*Thresholds re-checked for narrow bands.* A one-third-octave band has a
+third of the bandwidth, so its EDC fluctuates more (the fluctuation of a
+decay estimate grows as `1/√(B·T)`, the scaling of the §3 straightness
+limits) and the band filter decays three times as long. The rules that
+depend on the bandwidth already use the band's own: `B·T1 < 4` marks a fit
+unreliable (`T1` < 0.35 s at 50 Hz), and the onset window and lead-in scale
+with `1/B`. The dB margins (turning point 10 dB below the start and above
+the noise, 10 dB of visible slow decay, 1 dB single-slope miss) and
+`ΔBIC ≥ 10` do not depend on the bandwidth. They were re-checked with the
+synthetic decays of the octave calibration, filtered by the one-third-octave
+filters (24 seeds × 4 decay times 0.3–3 s for one slope, 16 seeds × 3 pairs
+for two, half of the seeds with a strong direct sound):
+
+| | 50–100 Hz thirds | 125 Hz–1 kHz thirds | 63 Hz octave | 125 Hz–1 kHz octaves |
+| --- | --- | --- | --- | --- |
+| one slope split (VALID) | 13 of 384 (3.4 %) | 5 of 288 (1.7 %) | 3 of 96 (3.1 %) | 4 of 288 (1.4 %) |
+| two slopes found (VALID) | 137 of 192 (71 %) | 131 of 144 (91 %) | 47 of 48 | 142 of 144 |
+| T1 / T2 error, median [IQR] | −1.7 % [−14.7, +16.5] / +3.6 % [−2.6, +16.5] | −1.8 % [−7.5, +4.8] / +0.7 % [−2.8, +5.6] | | |
+
+The false-split rate of the 50–100 Hz thirds (bandwidths 12–23 Hz) is that
+of the 63 Hz octave (44 Hz) the octave thresholds were accepted with; a
+sparse modal decay (two, four or eight beating modes in a 50–100 Hz third,
+decay times within ±10 % of each other) was split in 2 of 264 decays, both
+with two modes. The thirds find fewer double slopes:
+every miss failed `ΔBIC ≥ 10`, not a plausibility rule (the narrow band's
+own fluctuation is evidence against the curvature), mostly the weak pair
+0.5/1.0 s with the slow part 15 dB down (31 of 64 found at 50–100 Hz; the
+1.0/3.0 s pair 64 of 64). Lowering `ΔBIC` or a margin for the thirds would buy
+recall with false splits, which ReverbScope avoids (a missed second slope
+leaves the ISO numbers to describe the band; an invented one is a wrong
+statement about the room). **The thresholds are therefore the same for
+one-third-octave bands; no per-band adjustment is made.** The unit tests
+(`tests/unit/test_multislope_thirds.py`) hold recovery at 50–100 Hz and the
+false-split rate there (at most 10 of 96 short decays with `B·T` ≈ 7–9; 7
+when written). On the Aachen data (validation/aachen-nikolauskapelle.md)
+the thirds chose two slopes in 77 of 1 103 band values with a valid fit
+(7 %), most often at 50 Hz (12 of 46) and 63 Hz (6 of 46).
+
+**What is not claimed.** The fit is not ISO 3382 and has no standard
+tolerance. Two slopes are a property of the curve at this position, not a
+proof of coupled volumes; a single slope does not prove the absence of a
+weak late tail below the criterion. Three or more slopes are not fitted. The
+model, criterion and thresholds may change between minor releases (the
+stored numbers of a file do not).
+
 ## 4. Frequency response
 
 **Source.** Standard FFT of the impulse response; fractional-octave
@@ -1095,6 +1255,13 @@ by position under one recording profile. It stores nothing and ranks nothing.
 22. O. Kirkeby, P. A. Nelson, H. Hamada and F. Orduña-Bustamante, "Fast deconvolution of multichannel systems using regularization," IEEE Trans. Speech and Audio Processing 6(2), 189–194, 1998. (bibliographic record; the regularised-inversion form `conj(H) / (|H|² + ε(f))` used in §2 and §2a is the one Farina 2007 [2] §3.1 quotes from it; the primary text was not re-read for v0.4.1)
 23. H. Theil, "A rank-invariant method of linear and polynomial regression analysis," Proc. Koninklijke Nederlandse Akademie van Wetenschappen 53, 386–392, 521–525, 1397–1412, 1950. (bibliographic record; used through `scipy.stats.theilslopes`)
 24. P. K. Sen, "Estimates of the regression coefficient based on Kendall's tau," J. Am. Stat. Assoc. 63(324), 1379–1389, 1968. (bibliographic record; used through `scipy.stats.theilslopes`)
+25. N. Xiang, "Evaluation of reverberation times using a nonlinear regression approach," J. Acoust. Soc. Am. 98(4), 2112–2121, 1995. (bibliographic record, confirmed through citing works incl. Xiang & Goggans 2001 and Xiang 2025, doi:10.1121/10.0035562; the primary text was not read: the model form is the one restated in [26] and [27])
+26. N. Xiang, P. Goggans, T. Jasa, P. Robinson, "Bayesian characterization of multiple-slope sound energy decays in coupled-volume systems," J. Acoust. Soc. Am. 129(2), 741–752, 2011. doi:10.1121/1.3518773 (bibliographic record confirmed on the publisher's page; the paper's Bayesian evidence computation is not reproduced, BIC [28] is used instead)
+27. G. Götz, R. Falcón Pérez, S. J. Schlecht, V. Pulkki, "Neural network for multi-exponential sound energy decay analysis," J. Acoust. Soc. Am. 152(2), 942–953, 2022. doi:10.1121/10.0013416 (open access; abstract confirmed; ReverbScope uses its model form for comparability, not its network)
+28. G. Schwarz, "Estimating the dimension of a model," Annals of Statistics 6(2), 461–464, 1978. (bibliographic record)
+29. N. Xiang, P. M. Goggans, "Evaluation of decay times in coupled spaces: Bayesian decay model selection," J. Acoust. Soc. Am. 113(5), 2685–2697, 2003. (bibliographic record confirmed through citing works; not read)
+30. C. J. Geyer, "Practical Markov chain Monte Carlo," Statistical Science 7(4), 473–483, 1992. (bibliographic record; the initial-positive-sequence idea is applied here to single lags, not as published)
+31. R. E. Kass, A. E. Raftery, "Bayes factors," J. Am. Stat. Assoc. 90(430), 773–795, 1995. (bibliographic record; the "very strong" grade for a BIC difference above 10 is as commonly restated)
 
 Additional supporting references (A. Mäkivirta et al. 2003; G. Defrance et
 al. 2008; J. Usher 2010; M. Guski & M. Vorländer 2014; C. L. Christensen et

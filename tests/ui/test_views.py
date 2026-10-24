@@ -427,3 +427,39 @@ def test_the_strip_shows_the_device_the_page_picked_after_a_refill(app: Any) -> 
     assert strip.currentText() == "z"
     strip.setCurrentIndex(0)
     assert page.currentText() == "x"
+
+
+def test_decay_view_overlays_a_two_slope_fit_and_only_then(
+    app: Any, result: AnalysisResult
+) -> None:
+    """The double-slope fit of the current band is drawn on its curve, with
+    each slope alone and the turning point; a single-slope band draws only
+    its curve and says so in the note."""
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+    from reverbscope.models.configuration import AnalysisSettings
+    from reverbscope.ui.views.decay import BROADBAND, DecayView
+    from tests.unit.test_multislope import LEAD, RATE, decay
+
+    signal = decay(0.4, 1.6, -25.0, seed=3)
+    signal[LEAD] = 4.0 * float(np.sqrt(np.sum(signal**2)))
+    coupled = analyze_impulse_response(
+        AudioSignal(signal, RATE), AnalysisSettings(), excitation_band=(20.0, 20_000.0)
+    )
+    fit = coupled.decay.broadband.multi_slope
+    assert fit is not None and fit.selected_slopes == 2
+    view = _shown(DecayView(_model(coupled)), app)
+    view.band.setCurrentIndex(view.band.findData(BROADBAND))
+    view.redraw()
+    names = [s.name for s in view.chart.series]
+    assert _("Two-slope fit") in names
+    assert _("Fast slope T1") in names and _("Slow slope T2") in names
+    assert all(s.processing for s in view.chart.series if s.legend)
+    assert "Two-slope fit: T1 = " in view.notes.text()
+    view.close()
+
+    single = _shown(DecayView(_model(result)), app)
+    single.band.setCurrentIndex(single.band.findData(BROADBAND))
+    single.redraw()
+    assert [s.name for s in single.chart.series if "slope" in s.name.lower()] == []
+    single.close()

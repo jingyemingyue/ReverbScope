@@ -134,6 +134,9 @@ options:
 analysis:
   --channel N           recording channel to analyse (0-based)
   --smoothing N         fractional-octave smoothing 1/N (0 = off) (default: 6)
+  --third-octave        also analyse the decay in one-third-octave bands
+                        (50 Hz-10 kHz), with the single/double-slope fit;
+                        slower, octave results unchanged
   --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
                         recording profile that shapes the interpretation
                         (default: user settings)
@@ -229,6 +232,9 @@ test signal:
 
 analysis:
   --smoothing N         fractional-octave smoothing 1/N (0 = off) (default: 6)
+  --third-octave        also analyse the decay in one-third-octave bands
+                        (50 Hz-10 kHz), with the single/double-slope fit;
+                        slower, octave results unchanged
   --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
                         recording profile that shapes the interpretation
                         (default: user settings)
@@ -275,6 +281,9 @@ options:
 analysis:
   --channel N           recording channel to analyse (0-based)
   --smoothing N         fractional-octave smoothing 1/N (0 = off) (default: 6)
+  --third-octave        also analyse the decay in one-third-octave bands
+                        (50 Hz-10 kHz), with the single/double-slope fit;
+                        slower, octave results unchanged
   --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
                         recording profile that shapes the interpretation
                         (default: user settings)

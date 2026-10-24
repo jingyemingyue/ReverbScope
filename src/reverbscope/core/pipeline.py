@@ -22,13 +22,18 @@ recording + reference sweep
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
 import numpy as np
 from scipy.signal import fftconvolve, resample_poly
 
-from reverbscope.core.decay import analyze_decay, decay_lead_in_s
+from reverbscope.core.decay import (
+    analyze_decay,
+    analyze_third_octave_decay,
+    decay_lead_in_s,
+    third_octave_lead_in_s,
+)
 from reverbscope.core.deconvolution import (
     PASS_LEVEL_DB,
     LocatedImpulseResponse,
@@ -411,13 +416,28 @@ def _analyze_decay_of_pass(
     segment, direct_index = _segment_around_pass(
         h_full, located, sample_rate, decay_lead_in_s(settings)
     )
-    return analyze_decay(
+    decay = analyze_decay(
         segment,
         sample_rate,
         settings,
         direct_index=direct_index,
         excitation_band=excitation_band,
     )
+    if not settings.third_octave_decay:
+        return decay
+    # Its own segment: the narrower bands need a longer lead-in, and the
+    # octave analysis above must not change when they are asked for.
+    segment, direct_index = _segment_around_pass(
+        h_full, located, sample_rate, third_octave_lead_in_s(settings)
+    )
+    thirds = analyze_third_octave_decay(
+        segment,
+        sample_rate,
+        settings,
+        direct_index=direct_index,
+        excitation_band=excitation_band,
+    )
+    return replace(decay, third_octave_bands=thirds)
 
 
 def frequency_response_lead_in_s(
@@ -1255,12 +1275,18 @@ def _mark_decay_not_computed(decay: DecayResult, reason: str) -> DecayResult:
             rt60_estimate_s=None,
             rt60_basis=None,
             curvature_percent=None,
+            multi_slope=None,
         )
 
     return replace(
         decay,
         broadband=blank_band(decay.broadband),
         bands=tuple(blank_band(b) for b in decay.bands),
+        third_octave_bands=(
+            tuple(blank_band(b) for b in decay.third_octave_bands)
+            if decay.third_octave_bands is not None
+            else None
+        ),
         # The notes of the analysis describe metrics that are no longer
         # reported (e.g. C50 values of a noise-truncation check).
         notes=(reason,),
