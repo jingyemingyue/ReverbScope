@@ -7078,3 +7078,6 @@ msgstr "合成演示"
 
 msgid "Current measurement: sample rate, bit depth, interface, recorded peak and noise floor (dBFS, uncalibrated)."
 msgstr "当前测量：采样率、位深、音频接口、录音峰值和本底噪声（dBFS，未校准）。"
+
+msgid "Export this chart as a PNG at twice the screen resolution, as SVG, or its curves as CSV."
+msgstr "把这张图导出为两倍屏幕分辨率的 PNG 或 SVG，或把曲线导出为 CSV。"

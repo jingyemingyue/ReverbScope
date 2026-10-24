@@ -428,6 +428,11 @@ class ChartPanel(QWidget):
         self.export_button = QToolButton()
         self.export_button.setText(_("Export"))
         self.export_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.export_button.setToolTip(
+            _(
+                "Export this chart as a PNG at twice the screen resolution, as SVG, or its curves as CSV."
+            )
+        )
         menu = QMenu(self.export_button)
         menu.addAction(_("Chart as PNG..."), lambda: self._ask_export("png"))
         menu.addAction(_("Chart as SVG..."), lambda: self._ask_export("svg"))

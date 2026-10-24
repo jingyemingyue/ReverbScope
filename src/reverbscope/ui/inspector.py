@@ -90,8 +90,9 @@ def energy_text(metric: EnergyMetric) -> str:
     return text if metric.validity is Validity.VALID else f"({text})"
 
 
-#: Characters after which a row's value is a sentence and gets a line of its own.
-LONG_VALUE = 34
+#: Width in pixels after which a row's value is a sentence and gets a line
+#: of its own (measured, so a Chinese sentence counts as wide as it is).
+LONG_VALUE_PX = 210
 
 
 class _Section(QWidget):
@@ -191,7 +192,7 @@ class _Section(QWidget):
         if tip:
             name.setToolTip(tip)
         self.grid.addWidget(name, self.rows, 0, Qt.AlignmentFlag.AlignTop)
-        if len(value) > LONG_VALUE and not self.mono:
+        if not self.mono and shown.fontMetrics().horizontalAdvance(value) > LONG_VALUE_PX:
             # A sentence (a health check's reason) reads left to right under
             # its caption, not as a ragged right-aligned column; the chip
             # stays on the caption's line where the eye looks for it.

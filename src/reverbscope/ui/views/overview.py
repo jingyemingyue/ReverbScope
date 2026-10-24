@@ -370,7 +370,8 @@ class _Overview(QWidget):
                     _("Open the chart this check is about. The measurement stays selected.")
                 )
                 button.clicked.connect(lambda _checked=False, v=view_id: self.locate.emit(v))
-                self.health_rows.addWidget(button)
+                # A compact action under its check, not a bar across the page.
+                self.health_rows.addWidget(button, 0, Qt.AlignmentFlag.AlignLeft)
 
     def _fill_metric_table(self, table: QTableWidget, rows: Sequence[tuple[str, ...]]) -> None:
         colours = tokens()
