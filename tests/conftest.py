@@ -25,14 +25,6 @@ if TYPE_CHECKING:
     from tests.terminals import Workspace
 
 
-@pytest.fixture(autouse=True)
-def isolate_reverbscope_home(
-    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Keep recent-session writes out of the real ``~/.reverbscope``."""
-    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path_factory.mktemp("reverbscope_home")))
-
-
 def _snapshot(folder: Path) -> dict[str, bytes] | None:
     if not folder.exists():
         return None
@@ -44,7 +36,41 @@ def _snapshot(folder: Path) -> dict[str, bytes] | None:
 
 
 @pytest.fixture(autouse=True, scope="session")
-def qt_torn_down_before_the_interpreter_exits() -> Iterator[None]:
+def session_isolated_reverbscope_home(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Iterator[None]:
+    """Keep ``REVERBSCOPE_HOME`` off the real home for the whole pytest process.
+
+    Function-scoped isolation overlays a per-test folder. When that overlay
+    ends — or a test calls ``monkeypatch.undo()`` on pytest's shared
+    monkeypatch — the process falls back here, not to ``~/.reverbscope``.
+    Session Qt teardown therefore still writes under a temporary folder.
+    """
+    folder = tmp_path_factory.mktemp("reverbscope_home_session")
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("REVERBSCOPE_HOME", str(folder))
+        yield
+
+
+@pytest.fixture(autouse=True)
+def isolate_reverbscope_home(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
+    """Point each test at its own temporary ReverbScope home.
+
+    Uses a ``MonkeyPatch`` owned by this fixture, so a test that calls
+    ``monkeypatch.undo()`` cannot undo the isolation. Prefer
+    ``pytest.MonkeyPatch.context()`` in tests that need a temporary patch;
+    ``undo()`` on the shared fixture still must not expose the real home.
+    """
+    folder = tmp_path_factory.mktemp("reverbscope_home")
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("REVERBSCOPE_HOME", str(folder))
+        yield
+
+
+@pytest.fixture(autouse=True, scope="session")
+def qt_torn_down_before_the_interpreter_exits(
+    session_isolated_reverbscope_home: None,
+) -> Iterator[None]:
     """Destroy what the GUI tests left to Qt while the QApplication still runs.
 
     The GUI test modules share one QApplication and leave closed windows,
@@ -55,6 +81,10 @@ def qt_torn_down_before_the_interpreter_exits() -> Iterator[None]:
     does not). Closing and deleting the remaining top-level widgets, flushing
     the deferred deletions and shutting the application down here, in a known
     order, is what a long-running program does before it exits.
+
+    Depends on ``session_isolated_reverbscope_home`` so teardown runs while
+    that patch is still active: a late ``close()`` writing ``ui.ini`` stays
+    under the session temp instead of the real home.
     """
     yield
     try:
@@ -94,13 +124,16 @@ def qt_torn_down_before_the_interpreter_exits() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True, scope="session")
-def real_reverbscope_home_untouched() -> Iterator[None]:
+def real_reverbscope_home_untouched(
+    qt_torn_down_before_the_interpreter_exits: None,
+) -> Iterator[None]:
     """No test writes to the developer's real ``~/.reverbscope``.
 
-    ``isolate_reverbscope_home`` points every test at a temporary home, but a
-    test that calls ``monkeypatch.undo()`` undoes that too: the suite then
-    left a pytest path in the real recent-sessions list on every run. This
-    guard fails the run (at teardown of its last test) naming what changed.
+    Infrastructure isolation uses its own ``MonkeyPatch.context()``, so a
+    test that calls ``monkeypatch.undo()`` no longer undoes it. This guard
+    still fails the run if anything reaches the real home, naming what
+    changed. It depends on the Qt teardown fixture so the snapshot is
+    compared after leftover windows have been closed.
     """
     real_home = Path.home() / ".reverbscope"
     before = _snapshot(real_home)
@@ -121,7 +154,7 @@ def real_reverbscope_home_untouched() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
-def pin_language(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+def pin_language() -> Iterator[None]:
     """Run every test in English regardless of the developer's locale (#14).
 
     ``REVERBSCOPE_LANG``, the POSIX locale variables, the Mac's preferred
@@ -129,18 +162,25 @@ def pin_language(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     / GUI language; a test that wants Chinese passes ``--lang`` or calls
     ``activate("zh_CN")``. English is re-activated afterwards so a failing
     test cannot leak its catalog into the next one.
+
+    Uses a ``MonkeyPatch`` owned by this fixture. A test that undoes pytest's
+    shared monkeypatch still cannot restore the developer's preferred
+    languages mid-test (the CLI usage-error panel on a Chinese Mac).
     """
     from reverbscope import i18n
     from reverbscope.i18n import activate
 
-    for name in ("REVERBSCOPE_LANG", "LC_ALL", "LC_MESSAGES", "LANGUAGE"):
-        monkeypatch.delenv(name, raising=False)
-    monkeypatch.setenv("LANG", "C.UTF-8")
-    monkeypatch.setattr(i18n, "MACOS_PREFERENCES", ())
-    monkeypatch.setattr(i18n, "_windows_ui_language", lambda: None)
-    activate("en")
-    yield
-    activate("en")
+    with pytest.MonkeyPatch.context() as patch:
+        for name in ("REVERBSCOPE_LANG", "LC_ALL", "LC_MESSAGES", "LANGUAGE"):
+            patch.delenv(name, raising=False)
+        patch.setenv("LANG", "C.UTF-8")
+        patch.setattr(i18n, "MACOS_PREFERENCES", ())
+        patch.setattr(i18n, "_windows_ui_language", lambda: None)
+        activate("en")
+        try:
+            yield
+        finally:
+            activate("en")
 
 
 @pytest.fixture(scope="session")
