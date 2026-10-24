@@ -170,19 +170,10 @@ NOT RUN means no matching workflow run was returned, not that it passed.
 
 ## Minimum before a well-evidenced application
 
-These are **our recommendations**, not additional official application requirements:
-
-1. Merge reviewed readiness fixes, set About/Topics through an authorized admin,
-   and verify the public download path anonymously. Keep Homepage empty until live.
-2. Finish a dated Apple Silicon physical report and a Fender Studio Pro/Studio One
-   roundtrip; preserve failures. Have a maintainer decide which tested candidate
-   to share publicly, without calling it stable or universally compatible.
-3. Obtain at least one independent tester's consented, reproducible installation
-   or measurement report. Link the report and retest; do not solicit fake stars
-   or count our own downloads as adoption. Record unavailable adoption honestly.
-4. Refresh the snapshot/form text, verify maintainer role/public profile and fill
-   account/organization fields privately. Review the official terms and submit
-   personally. This work never submits the form or exposes account identifiers.
+The recommendations that stood here are now the plan in
+[GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) §5 (S1–S5; English summary in
+[GUIDELINES.md](GUIDELINES.md)), which governs; this file stays the dated
+evidence snapshot of 2026-10-15.
 
 ## Final audit categories
 
