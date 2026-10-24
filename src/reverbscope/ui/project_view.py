@@ -316,7 +316,7 @@ class ProjectPage(AnalysisView):
             and event.type() == QEvent.Type.Resize
         ):
             self._place_tools()
-        return super().eventFilter(watched, event)
+        return bool(super().eventFilter(watched, event))
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
@@ -338,28 +338,42 @@ class ProjectPage(AnalysisView):
         scroll = self.findChild(QScrollArea)
         vp = scroll.viewport() if scroll is not None else None
         viewport_w = vp.width() if vp is not None and vp.width() > 0 else 0
-        if viewport_w <= 0:
+        if self.width() > 0 and (viewport_w <= 0 or viewport_w > self.width()):
             viewport_w = max(self.width() - 56, 320)
+        elif viewport_w <= 0:
+            viewport_w = 320
         body = scroll.widget() if scroll is not None else None
         b_lay = body.layout() if body is not None else None
         b_margins = b_lay.contentsMargins() if b_lay is not None else None
         b_pad = (b_margins.left() + b_margins.right()) if b_margins is not None else 8
         card_m = self.tools_card.contentsMargins()
-        c_pad = card_m.left() + card_m.right()
+        c_pad = card_m.left() + card_m.right() + (self.tools_card.frameWidth() * 2)
         t_margins = self.tools_body.contentsMargins()
         t_pad = t_margins.left() + t_margins.right()
         available = max(viewport_w - (b_pad + c_pad + t_pad), 120)
 
         p_label_w = max(
-            self.profile_label.sizeHint().width(), self.profile_label.minimumSizeHint().width()
+            self.profile_label.sizeHint().width(),
+            self.profile_label.minimumSizeHint().width(),
+            self.profile_label.fontMetrics().horizontalAdvance(self.profile_label.text()) + 8,
         )
-        p_combo_w = max(self.profile.sizeHint().width(), self.profile.minimumSizeHint().width())
+        p_combo_w = max(
+            self.profile.sizeHint().width(),
+            self.profile.minimumSizeHint().width(),
+        )
         s_label_w = max(
-            self.sources_label.sizeHint().width(), self.sources_label.minimumSizeHint().width()
+            self.sources_label.sizeHint().width(),
+            self.sources_label.minimumSizeHint().width(),
+            self.sources_label.fontMetrics().horizontalAdvance(self.sources_label.text()) + 8,
         )
-        s_spin_w = max(self.sources.sizeHint().width(), self.sources.minimumSizeHint().width())
+        s_spin_w = max(
+            self.sources.sizeHint().width(),
+            self.sources.minimumSizeHint().width(),
+        )
         copy_w = max(
-            self.copy_button.sizeHint().width(), self.copy_button.minimumSizeHint().width()
+            self.copy_button.sizeHint().width(),
+            self.copy_button.minimumSizeHint().width(),
+            self.copy_button.fontMetrics().horizontalAdvance(self.copy_button.text()) + 26,
         )
 
         sp1 = self._tools_row1.spacing()
@@ -378,13 +392,19 @@ class ProjectPage(AnalysisView):
             r1_mode = 3
 
         add_needed = max(
-            self.add_button.sizeHint().width(), self.add_button.minimumSizeHint().width()
+            self.add_button.sizeHint().width(),
+            self.add_button.minimumSizeHint().width(),
+            self.add_button.fontMetrics().horizontalAdvance(self.add_button.text()) + 26,
         )
         comp_needed = max(
-            self.compare_button.sizeHint().width(), self.compare_button.minimumSizeHint().width()
+            self.compare_button.sizeHint().width(),
+            self.compare_button.minimumSizeHint().width(),
+            self.compare_button.fontMetrics().horizontalAdvance(self.compare_button.text()) + 26,
         )
         meas_needed = max(
-            self.measure_button.sizeHint().width(), self.measure_button.minimumSizeHint().width()
+            self.measure_button.sizeHint().width(),
+            self.measure_button.minimumSizeHint().width(),
+            self.measure_button.fontMetrics().horizontalAdvance(self.measure_button.text()) + 26,
         )
         sp_act = self._tools_actions1.spacing()
         actions_all_needed = add_needed + comp_needed + meas_needed + (2 * sp_act)
@@ -490,6 +510,9 @@ class ProjectPage(AnalysisView):
             self.tools_body.addLayout(self._tools_actions3)
 
         self.tools_body.addWidget(self.status)
+        if body is not None:
+            body.updateGeometry()
+            body.adjustSize()
 
         QWidget.setTabOrder(self.profile, self.sources)
         QWidget.setTabOrder(self.sources, self.copy_button)

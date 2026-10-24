@@ -143,7 +143,7 @@ class StartPanel(QWidget):
             and event.type() == QEvent.Type.Resize
         ):
             self._place_responsive()
-        return super().eventFilter(watched, event)
+        return bool(super().eventFilter(watched, event))
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
@@ -157,6 +157,8 @@ class StartPanel(QWidget):
         if not hasattr(self, "_sessions_layout"):
             return
         viewport_w = self.scroll_area.viewport().width()
+        if self.width() > 0 and (viewport_w <= 0 or viewport_w > self.width()):
+            viewport_w = max(self.width() - 16, 320)
         widget = self.scroll_area.widget()
         layout = widget.layout() if widget is not None else None
         margins = layout.contentsMargins() if layout is not None else None
@@ -176,14 +178,22 @@ class StartPanel(QWidget):
                 b1_lay = b1.layout()
                 b2_lay = b2.layout()
                 b1_w = (
-                    max(b1_lay.minimumSize().width(), b1.minimumSizeHint().width())
+                    max(
+                        b1_lay.sizeHint().width(),
+                        b1_lay.minimumSize().width(),
+                        b1.sizeHint().width(),
+                    )
                     if b1_lay is not None
-                    else b1.minimumSizeHint().width()
+                    else b1.sizeHint().width()
                 )
                 b2_w = (
-                    max(b2_lay.minimumSize().width(), b2.minimumSizeHint().width())
+                    max(
+                        b2_lay.sizeHint().width(),
+                        b2_lay.minimumSize().width(),
+                        b2.sizeHint().width(),
+                    )
                     if b2_lay is not None
-                    else b2.minimumSizeHint().width()
+                    else b2.sizeHint().width()
                 )
                 paths_needed = b1_w + b2_w + self._paths_layout.spacing()
                 paths_stacked = paths_needed > c_avail
@@ -198,6 +208,9 @@ class StartPanel(QWidget):
                     self._paths_layout.invalidate()
                     if c_lay is not None:
                         c_lay.invalidate()
+                    if widget is not None:
+                        widget.updateGeometry()
+                        widget.adjustSize()
 
         needed = (
             self.sessions_label.sizeHint().width()
@@ -248,6 +261,9 @@ class StartPanel(QWidget):
                     del it
                 self._body_layout.removeItem(self._footer_guide_row)
                 self._footer_row.addWidget(self.guide_button)
+
+        if widget is not None and viewport_w > 0 and widget.width() > viewport_w:
+            widget.resize(viewport_w, widget.height())
 
     def _hero(self) -> QVBoxLayout:
         """Icon, title, one sentence and the composer with the two real ways in
