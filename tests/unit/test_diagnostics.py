@@ -278,3 +278,27 @@ def test_cli_doctor_out_writes_the_same_report_as_utf8(
     assert main(["--backend", "fake", "doctor", "--out", str(tmp_path)]) == 1
     # The error block wraps to the terminal width; compare it unwrapped.
     assert "needs a file name for the report" in " ".join(capsys.readouterr().err.split())
+
+
+def test_a_package_whose_import_fails_late_still_reports_its_version(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """sounddevice sets __version__, then Pa_Initialize fails (no PulseAudio server)."""
+    import sys
+
+    from reverbscope import diagnostics
+
+    (tmp_path / "late_failing_pkg.py").write_text(
+        "__version__ = '9.8.7'\nraise RuntimeError('Error initializing PortAudio')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.delitem(sys.modules, "late_failing_pkg", raising=False)
+
+    def fake_import(module: str) -> object:
+        import late_failing_pkg  # type: ignore[import-not-found]
+
+        return late_failing_pkg
+
+    monkeypatch.setattr(diagnostics, "_import", fake_import)
+    assert diagnostics._package_version("no-such-dist-xyz", "late_failing_pkg") == "9.8.7"

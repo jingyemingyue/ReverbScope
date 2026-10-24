@@ -71,9 +71,25 @@ def _package_version(name: str, module: str) -> str | None:
         pass
     try:
         found = getattr(_import(module), "__version__", None)
-    except Exception:  # not installed, or its native library is missing
-        return None
+    except Exception as exc:  # not installed, or its native library is missing
+        found = _version_from_failed_import(exc, module)
     return str(found) if found else None
+
+
+def _version_from_failed_import(exc: BaseException, module: str) -> object:
+    """``__version__`` of a module whose import raised after setting it.
+
+    sounddevice sets ``__version__`` first and initialises PortAudio last, so a
+    PulseAudio client with no server makes the import raise even though the
+    package is there. Its half-run module namespace is still on the traceback.
+    """
+    tb = exc.__traceback__
+    while tb is not None:
+        namespace = tb.tb_frame.f_globals
+        if namespace.get("__name__") == module:
+            return namespace.get("__version__")
+        tb = tb.tb_next
+    return None
 
 
 def _import(module: str) -> Any:
