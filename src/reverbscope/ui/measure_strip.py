@@ -34,8 +34,9 @@ from reverbscope.ui.pages import DawModePage, StandalonePage
 from reverbscope.ui.widgets import ElidedComboBox, label, native_shortcut, primary, set_banner_text
 from reverbscope.ui.workspace import WorkspaceModel
 
-#: Strip modes, in the order of the mode list. The product has no demo mode;
-#: synthetic takes stay a command-line and test facility.
+#: How the next take is played and recorded, in the order of the list (as on
+#: the New Measurement page). There is no demo entry; synthetic takes stay a
+#: command-line and test facility.
 MODES = (
     ("standalone", N_("Audio interface")),
     ("universal_daw", N_("DAW recording")),
@@ -131,7 +132,7 @@ class MeasureStrip(QWidget):
         for value, text in MODES:
             self.mode.addItem(_(text), value)
         self.mode.setToolTip(_("How the next measurement is made."))
-        self.mode.setAccessibleName(_("Mode"))
+        self.mode.setAccessibleName(_("How the sweep is played and recorded"))
         self.mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.mode.currentIndexChanged.connect(self._mode_selected)
         row.addWidget(self.mode)
@@ -234,7 +235,10 @@ class MeasureStrip(QWidget):
         self.setup_button = QPushButton(_("Set up..."))
         self.setup_button.setIcon(icons.icon("sliders-vertical", 16))
         self.setup_button.setToolTip(
-            _("All settings of this mode: level, sweep, profile, room and placement.")
+            _(
+                "Every setting of the New Measurement page: level, sweep, profile, room and "
+                "placement."
+            )
         )
         self.setup_button.clicked.connect(
             lambda: self.setup_requested.emit(str(self.mode.currentData()))
@@ -373,7 +377,7 @@ class MeasureStrip(QWidget):
         self.advanced_button.setVisible(live)
         self.advanced_bar.setVisible(live and self.advanced_button.isChecked())
         self.start_button.setText(_("Start") if live else _("Import recording..."))
-        # In DAW mode Ctrl+Return belongs to the DAW page's Analyze: two
+        # On the DAW way in Ctrl+Return belongs to the DAW page's Analyze: two
         # visible buttons with one shortcut would make Qt fire neither.
         shortcut = QKeySequence("Ctrl+Return") if live else QKeySequence()
         self.start_button.setShortcut(shortcut)
@@ -381,7 +385,7 @@ class MeasureStrip(QWidget):
         self.start_button.setToolTip(
             _("Play the sweep and record it ({shortcut}).").format(shortcut=native)
             if live
-            else _("Open the DAW recording page to import the recorded WAV file.")
+            else _("Show the steps for importing a recording made in your DAW.")
         )
         self.mode_changed.emit(mode)
         self._show_page_status()

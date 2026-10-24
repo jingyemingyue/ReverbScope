@@ -2286,7 +2286,7 @@ def render_measure_plan(
     c = console
     inp = _find(devices, input_device, "is_default_input")
     out = _find(devices, output_device, "is_default_output")
-    lines = c.title(_("ReverbScope standalone measurement"))
+    lines = c.title(_("ReverbScope measurement through the audio interface"))
 
     def device_text(device: DeviceInfo | None, fallback: str) -> str:
         return f"[{device.index}] {device.name}" if device is not None else fallback

@@ -1,7 +1,7 @@
 """Audio device enumeration through PortAudio (``sounddevice``).
 
-``sounddevice`` is imported lazily so that the DSP core and the Universal DAW
-Mode work on systems without a usable PortAudio backend.
+``sounddevice`` is imported lazily so that the DSP core and importing a DAW
+recording work on systems without a usable PortAudio backend.
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ def sounddevice_module() -> Any:
     except (ImportError, OSError) as exc:
         raise AudioBackendUnavailableError(
             _(
-                "the audio backend (sounddevice / PortAudio) is not available; "
-                "Standalone Mode needs it, Universal DAW Mode does not"
+                "the audio backend (sounddevice / PortAudio) is not available; measuring "
+                "through an audio interface needs it, importing a recording does not"
             )
         ) from exc
     return sounddevice

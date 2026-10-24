@@ -374,7 +374,7 @@ def build_inventory(
     probes = _mark_recommended(probes, platform, probe_rates, host_apis)
     inventory_notes: list[str] = []
     if not probes:
-        inventory_notes.append(diag("no audio device found; Universal DAW Mode still works"))
+        inventory_notes.append(diag("no audio device found; you can still import a recording"))
     return DeviceInventory(
         platform=platform,
         backend=getattr(backend, "name", "unknown"),

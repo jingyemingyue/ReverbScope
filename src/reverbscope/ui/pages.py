@@ -1,4 +1,12 @@
-"""The measurement set-up pages (Universal DAW Mode, Standalone Mode) and the first-measurement card."""
+"""The New Measurement page and the first-measurement card.
+
+One page, one flow: the user picks how the sweep is played and recorded
+(through the audio interface, or in a DAW whose recording is imported) and
+the rest is shared - the measurement details, the recording profile, the
+pinned action bar and the analysis (``core.pipeline.analyze``). The two ways
+in are :class:`StandalonePage` and :class:`DawModePage`; the names are kept
+for the code and the tests, the interface never shows them as modes.
+"""
 
 from __future__ import annotations
 
@@ -28,6 +36,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSpinBox,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -53,6 +62,7 @@ from reverbscope.models.result import AnalysisResult
 from reverbscope.models.session import MeasurementSession
 from reverbscope.ui import icons
 from reverbscope.ui.state import MeasurementState
+from reverbscope.ui.theme import tokens
 from reverbscope.ui.widgets import (
     Card,
     PageHeader,
@@ -149,7 +159,7 @@ class WalkthroughCard(Card):
                     "With an audio interface: ReverbScope plays the sweep and records the "
                     "microphone itself."
                 ),
-                _("Standalone Mode"),
+                _("Audio interface"),
                 "standalone",
             ),
             (
@@ -157,7 +167,7 @@ class WalkthroughCard(Card):
                     "In your DAW: write the test signal, play it and record it on a track, "
                     "then import the recording here."
                 ),
-                _("Universal DAW Mode"),
+                _("DAW recording"),
                 "universal_daw",
             ),
         )
@@ -352,6 +362,45 @@ class PlacementInputs(QGroupBox):
         }
 
 
+def _ensure_visible(target: QWidget) -> None:
+    """Scroll the page that holds ``target`` until it is in view."""
+    parent = target.parentWidget()
+    while parent is not None and not isinstance(parent, QScrollArea):
+        parent = parent.parentWidget()
+    if isinstance(parent, QScrollArea):
+        parent.ensureWidgetVisible(target, 8, 24)
+
+
+class MeasureDetails(QWidget):
+    """What both ways of measuring share: the names, the tape measurements,
+    the recording profile and the analysis options.
+
+    One instance sits on the New Measurement page under whichever way in is
+    chosen; :class:`StandalonePage` and :class:`DawModePage` read the same
+    widgets (``room``, ``position``, ``mic``, ``placement``, ``profile``,
+    ``third_octave``), so switching the way in keeps what was typed.
+    """
+
+    def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        meta, self.room, self.position, self.mic = _metadata_form(state)
+        self.metadata_box = meta
+        layout.addWidget(meta)
+        self.placement = PlacementInputs()
+        layout.addWidget(self.placement)
+        self.analysis_box = QGroupBox(_("Analysis"))
+        form = QFormLayout(self.analysis_box)
+        self.profile = _profile_combo(state)
+        profile_row, self.profile_help = _profile_row(self.profile, self)
+        form.addRow(_("Recording profile"), profile_row)
+        self.third_octave = _third_octave_check()
+        form.addRow(self.third_octave)
+        layout.addWidget(self.analysis_box)
+
+
 class DawModePage(QWidget):
     analysis_finished = Signal()
     back = Signal()
@@ -360,9 +409,15 @@ class DawModePage(QWidget):
     #: The page's status line: ``(text, tone)``.
     status_changed = Signal(str, str)
 
-    def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        state: MeasurementState,
+        details: MeasureDetails | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.state = state
+        self.details = details if details is not None else MeasureDetails(state)
         self._worker: AnalysisWorker | None = None
         #: Asked before an analysis replaces the take on screen; ``False`` cancels.
         #: The window asks about an unsaved take here.
@@ -371,26 +426,31 @@ class DawModePage(QWidget):
         self._generation = -1
         self._busy_flag = False
         # The recording this page imported. The shared state holds the take
-        # of the session on the Results page, which a Standalone or Demo take
+        # of the session on the Results page, which an interface or Demo take
         # replaces: analysing that one put a take the page never showed
-        # (a synthetic demo among them) into a Universal DAW session.
+        # (a synthetic demo among them) into a DAW-recording session.
         self._recording: AudioSignal | None = None
         self._recording_path: Path | None = None
         # The sweep of Step 1 (or the reference file chosen), kept here for
-        # the same reason: a Standalone take used to replace it, and the
+        # the same reason: an interface take used to replace it, and the
         # recording was deconvolved with a sweep the page did not show.
         self._reference: Reference | None = None
         self._sweep_settings = state.sweep_settings
         self._sweep_path: Path | None = None
-        layout = scroll_page(
-            self,
-            PageHeader(
-                _("Universal DAW Mode"),
+        # A body for the New Measurement page, which scrolls it, puts the
+        # shared details under it and pins :attr:`action_bar` below.
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        layout.addWidget(
+            label(
                 _(
-                    "Four steps: generate the test signal, play and record it in your DAW, "
-                    "import the recording, analyse. ReverbScope never talks to the DAW."
+                    "ReverbScope writes the test signal and never talks to the DAW: play "
+                    "and record it there, then import the recording."
                 ),
-            ),
+                "hint",
+                wrap=True,
+            )
         )
         # The four steps of PR #71's DAW path. ReverbScope plays nothing here:
         # it only writes the sweep file (SPEC §8.4).
@@ -399,6 +459,13 @@ class DawModePage(QWidget):
         )
         self.steps.step_clicked.connect(self._reveal_step)
         layout.addWidget(self.steps)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 0)
+        self.progress.hide()
+        self.status = QLabel("")
+        self.status.setWordWrap(True)
+        layout.addWidget(self.progress)
+        layout.addWidget(self.status)
 
         # Step 1
         step1 = QGroupBox(_("Step 1 - Generate Test Signal"))
@@ -462,39 +529,38 @@ class DawModePage(QWidget):
         form3.addRow(_("Loopback channel"), self.loopback_channel)
         layout.addWidget(step3)
 
-        # Step 4
-        step4 = QGroupBox(_("Step 4 - Analyze"))
-        self.step_boxes.append(step4)
-        v4 = QVBoxLayout(step4)
-        meta, self.room, self.position, self.mic = _metadata_form(state)
-        v4.addWidget(meta)
-        self.placement = PlacementInputs()
-        v4.addWidget(self.placement)
-        profile_form = QFormLayout()
-        self.profile = _profile_combo(state)
-        profile_row, self.profile_help = _profile_row(self.profile, self)
-        profile_form.addRow(_("Recording profile"), profile_row)
-        self.third_octave = _third_octave_check()
-        profile_form.addRow(self.third_octave)
-        v4.addLayout(profile_form)
+        # Step 4 is the shared part of the page: details, profile, Analyze.
+        self.room = self.details.room
+        self.position = self.details.position
+        self.mic = self.details.mic
+        self.placement = self.details.placement
+        self.profile = self.details.profile
+        self.profile_help = self.details.profile_help
+        self.third_octave = self.details.third_octave
+        self.step_boxes.append(self.details)
+
         row = QHBoxLayout()
+        row.setSpacing(8)
         self.analyze_button = primary(QPushButton(_("Analyze")))
         self.analyze_button.setShortcut("Ctrl+Return")
         self.analyze_button.clicked.connect(self.start_analysis)
         self.back_button = QPushButton(_("Back"))
+        self.back_button.setIcon(icons.icon("chevron-left", 16))
         self.back_button.clicked.connect(self.back.emit)
+        #: Why Analyze cannot run yet, beside it.
+        self.readiness = label("", "reason", wrap=True)
+        self.readiness.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         row.addWidget(self.back_button)
-        row.addStretch(1)
+        row.addWidget(self.readiness, 1)
         row.addWidget(self.analyze_button)
-        v4.addLayout(row)
-        self.progress = QProgressBar()
-        self.progress.setRange(0, 0)
-        self.progress.hide()
-        self.status = QLabel("")
-        self.status.setWordWrap(True)
-        v4.addWidget(self.progress)
-        v4.addWidget(self.status)
-        layout.addWidget(step4)
+        #: Pinned under the page's scrolling body, as on the interface way in.
+        self.action_bar = QWidget()
+        self.action_bar.setProperty("actionbar", True)
+        self.action_bar.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        bar = QVBoxLayout(self.action_bar)
+        bar.setContentsMargins(0, 8, 8, 0)
+        bar.setSpacing(6)
+        bar.addLayout(row)
         layout.addStretch(1)
         self.sync_steps()
 
@@ -512,12 +578,26 @@ class DawModePage(QWidget):
                 "current" if recorded else "locked",
             )
         self.steps.set_states(states)
+        if hasattr(self, "readiness"):
+            reason = "" if self._busy_flag else self.readiness_reason()
+            self.readiness.setText(reason)
+            self.readiness.setVisible(bool(reason))
+
+    def readiness_reason(self) -> str:
+        """What Analyze still needs, or ``""`` (Analyze stays clickable and asks)."""
+        if self._recording is None:
+            return _("Import the recording (Step 3) to analyse it.")
+        if self._reference is None:
+            return _("Generate the test signal (Step 1) or choose the sweep file.")
+        return ""
 
     def _reveal_step(self, index: int) -> None:
         target = self.step_boxes[index]
-        scroll = self.findChild(QScrollArea)
-        if scroll is not None:
-            scroll.ensureWidgetVisible(target, 8, 24)
+        _ensure_visible(target)
+
+    def restyle_icons(self) -> None:
+        self.back_button.setIcon(icons.icon("chevron-left", 16))
+        self.steps.restyle()
 
     # --- step 1 -----------------------------------------------------------------
     def current_sweep_settings(self) -> SweepSettings:
@@ -613,6 +693,7 @@ class DawModePage(QWidget):
         if reference.settings is not None:
             self._sweep_settings = reference.settings
         self.reference_label.setText(_("Reference: {name}").format(name=path.name))
+        self.sync_steps()
 
     # --- step 4 -----------------------------------------------------------------
     def start_analysis(self, *, blocking: bool = False) -> None:
@@ -748,10 +829,18 @@ class StandalonePage(QWidget):
     status_changed = Signal(str, str)
     #: Whether a take may start, and why not: ``(ready, reason)`` (OUT-4, SAFE).
     readiness_changed = Signal(bool, str)
+    #: No device to play on: the user asks for the DAW import way in instead.
+    import_requested = Signal()
 
-    def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        state: MeasurementState,
+        details: MeasureDetails | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.state = state
+        self.details = details if details is not None else MeasureDetails(state)
         self.demo_mode = False
         self._ready = (False, "")
         self._busy_flag = False
@@ -767,7 +856,7 @@ class StandalonePage(QWidget):
         self._take_synthetic = False
         # The take's sweep, analysis settings and profile. They join the
         # shared state with its recording, not before: a refused or stopped
-        # Run replaced the reference the Universal DAW page analyses with.
+        # Run replaced the reference the DAW import analyses with.
         self._take_settings = state.sweep_settings
         self._take_reference: Reference | None = None
         self._take_analysis_settings = AnalysisSettings()
@@ -778,16 +867,10 @@ class StandalonePage(QWidget):
         self._inventory_backend: str | None = None
         # The state generation the running take belongs to.
         self._generation = -1
-        layout = scroll_page(
-            self,
-            PageHeader(
-                _("Standalone Mode"),
-                _(
-                    "ReverbScope plays the sweep and records the microphone through your audio "
-                    "interface, then runs the same analysis as Universal DAW Mode."
-                ),
-            ),
-        )
+        # A body for the New Measurement page (see :class:`DawModePage`).
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
 
         # The stepwise flow of PR #71, as a readiness strip over the one
         # page: connect the devices, set the signal and level, measure. Each
@@ -797,6 +880,13 @@ class StandalonePage(QWidget):
         )
         self.steps.step_clicked.connect(self._reveal_step)
         layout.addWidget(self.steps)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 100)
+        self.progress.hide()
+        self.status = QLabel("")
+        self.status.setWordWrap(True)
+        layout.addWidget(self.progress)
+        layout.addWidget(self.status)
 
         self.demo_banner = QLabel(
             _("Demo mode: the fake backend synthesises a room. Nothing is sent to a loudspeaker.")
@@ -908,12 +998,10 @@ class StandalonePage(QWidget):
         form2.addRow(_("Sweep duration"), self.duration)
         form2.addRow(_("Playback level"), self.level)
         form2.addRow(self.safe_band)
-        self.profile = _profile_combo(state)
-        profile_row, self.profile_help = _profile_row(self.profile, self)
-        form2.addRow(_("Recording profile"), profile_row)
-        self.third_octave = _third_octave_check()
-        form2.addRow(self.third_octave)
         layout.addWidget(sweep)
+        self.profile = self.details.profile
+        self.profile_help = self.details.profile_help
+        self.third_octave = self.details.third_octave
 
         from reverbscope.edition import is_developer
 
@@ -935,10 +1023,10 @@ class StandalonePage(QWidget):
         self.advanced.setVisible(is_developer())
         layout.addWidget(self.advanced)
 
-        meta, self.room, self.position, self.mic = _metadata_form(state)
-        layout.addWidget(meta)
-        self.placement = PlacementInputs()
-        layout.addWidget(self.placement)
+        self.room = self.details.room
+        self.position = self.details.position
+        self.mic = self.details.mic
+        self.placement = self.details.placement
 
         row = QHBoxLayout()
         row.setSpacing(8)
@@ -955,8 +1043,16 @@ class StandalonePage(QWidget):
         #: Why Start is off, next to it rather than in a tooltip (OUT-4, SAFE-05).
         self.readiness = label("", "reason", wrap=True)
         self.readiness.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        #: With no device at all, the way out is one click away (D11 merge).
+        self.import_button = QPushButton(_("Import a recording instead"))
+        self.import_button.setToolTip(
+            _("Play the sweep in your DAW, record it there and import the recording.")
+        )
+        self.import_button.clicked.connect(self.import_requested.emit)
+        self.import_button.hide()
         row.addWidget(self.back_button)
         row.addWidget(self.readiness, 1)
+        row.addWidget(self.import_button)
         row.addWidget(self.stop_button)
         row.addWidget(self.run_button)
         self._action_row = row
@@ -971,14 +1067,6 @@ class StandalonePage(QWidget):
         self._action_layout.setSpacing(6)
         self._action_layout.addLayout(row)
         self._reason_above = False
-        add_page_footer(self, self.action_bar)
-        self.progress = QProgressBar()
-        self.progress.setRange(0, 100)
-        self.progress.hide()
-        self.status = QLabel("")
-        self.status.setWordWrap(True)
-        layout.addWidget(self.progress)
-        layout.addWidget(self.status)
         layout.addStretch(1)
         self.refresh_devices()
         self._sync_readiness()
@@ -999,7 +1087,7 @@ class StandalonePage(QWidget):
     def readiness_reason(self) -> str:
         """Why a take cannot start now, or ``""``."""
         if not self._devices:
-            return _("No audio device found; Universal DAW Mode still works.")
+            return _("No audio device found; you can still import a recording.")
         if not self.output_chosen():
             return _("Choose the audio interface output first: nothing plays until you do.")
         if self.level.value() > SAFE_MAX_LEVEL_DBFS and not self.acknowledge.isChecked():
@@ -1035,6 +1123,7 @@ class StandalonePage(QWidget):
             self.run_button.setEnabled(not reason)
         self.readiness.setText("" if busy else reason)
         self.readiness.setVisible(bool(reason) and not busy)
+        self.import_button.setVisible(not self._devices and not busy)
         self._place_reason()
         connected = bool(self._devices) and self.output_chosen()
         level_ok = not above or self.acknowledge.isChecked()
@@ -1061,9 +1150,11 @@ class StandalonePage(QWidget):
         if not hasattr(self, "_action_row"):
             return
         row = self._action_row
-        buttons = (self.back_button, self.stop_button, self.run_button)
+        buttons = [self.back_button, self.stop_button, self.run_button]
+        if not self.import_button.isHidden():
+            buttons.append(self.import_button)
         gap = self.action_bar.width() - sum(b.sizeHint().width() for b in buttons)
-        gap -= 3 * row.spacing() + self._action_layout.contentsMargins().right()
+        gap -= len(buttons) * row.spacing() + self._action_layout.contentsMargins().right()
         text = self.readiness.text()
         needed = self.readiness.fontMetrics().horizontalAdvance(text) if text else 0
         above = bool(text) and (gap < 160 or needed > 2 * gap)
@@ -1086,9 +1177,7 @@ class StandalonePage(QWidget):
 
     def _reveal_step(self, index: int) -> None:
         target = (self.devices_box, self.sweep_box, self.run_button)[index]
-        scroll = self.findChild(QScrollArea)
-        if scroll is not None and scroll.isAncestorOf(target):
-            scroll.ensureWidgetVisible(target, 8, 24)
+        _ensure_visible(target)
         target.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def restyle_icons(self) -> None:
@@ -1159,7 +1248,9 @@ class StandalonePage(QWidget):
         if self.demo_mode:
             self._report_status(_("Demo mode: fake backend, no loudspeaker."))
         elif not self._devices:
-            self._report_status(_("No audio device found; Universal DAW Mode still works."), "warn")
+            self._report_status(
+                _("No audio device found; you can still import a recording."), "warn"
+            )
         else:
             self._report_status(_("{n} audio device(s) found.").format(n=len(self._devices)))
 
@@ -1311,7 +1402,7 @@ class StandalonePage(QWidget):
             QMessageBox.critical(
                 self,
                 _("Audio backend unavailable"),
-                _("No audio device list is available; Universal DAW Mode still works."),
+                _("No audio device list is available; you can still import a recording."),
             )
             return None
         try:
@@ -1622,3 +1713,218 @@ class StandalonePage(QWidget):
         )
         if not self._stale():
             error_box(self, _("Measurement failed"), message)
+
+
+def measurement_routes() -> tuple[tuple[str, str, str, str], ...]:
+    """The ways in, in the order the page offers them: ``(route, icon, title, caption)``.
+
+    The route ids are the stored session modes (``MeasurementSession.mode``).
+    """
+    return (
+        (
+            "standalone",
+            "audio-lines",
+            _("Play and record through the audio interface"),
+            _(
+                "ReverbScope plays the sweep only on the output you choose and records the "
+                "microphone."
+            ),
+        ),
+        (
+            "universal_daw",
+            "music",
+            _("Play it in your DAW and import the recording"),
+            _(
+                "Save the test signal, play and record it in your DAW, then import the "
+                "recording. Works without an audio device."
+            ),
+        ),
+    )
+
+
+class MeasurePage(QWidget):
+    """New Measurement: one flow, two ways to play and record the sweep.
+
+    The choice at the top swaps only the steps that differ (the audio
+    devices and level, or the test-signal file, the DAW and the import).
+    The sample rate and sweep duration carry over between the two, the
+    details under them (names, tape measurements, profile, one-third-octave
+    option) are one set of widgets, and the action bar is pinned in the same
+    place. Both end in the same analysis.
+    """
+
+    #: The user picked a way in: ``standalone`` or ``universal_daw``.
+    route_requested = Signal(str)
+
+    def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.state = state
+        self.header = PageHeader(
+            _("New Measurement"),
+            _(
+                "Play a sweep, record the room's answer and analyse it. Choose how the sweep "
+                "is played and recorded; the analysis is the same either way."
+            ),
+        )
+        layout = scroll_page(self, self.header)
+        self.chooser = QWidget()
+        chooser = QVBoxLayout(self.chooser)
+        chooser.setContentsMargins(0, 0, 0, 4)
+        chooser.setSpacing(6)
+        self.chooser_title = label(_("How is the sweep played and recorded?"), "section")
+        chooser.addWidget(self.chooser_title)
+        cards = QHBoxLayout()
+        cards.setSpacing(12)
+        self.route_buttons: dict[str, QPushButton] = {}
+        self._route_marks: dict[str, QLabel] = {}
+        for route, icon_name, title, caption in measurement_routes():
+            button = self._route_card(route, icon_name, title, caption)
+            cards.addWidget(button, 1)
+        chooser.addLayout(cards)
+        layout.addWidget(self.chooser)
+
+        self.details = MeasureDetails(state)
+        self.standalone = StandalonePage(state, self.details)
+        self.daw = DawModePage(state, self.details)
+        self.route_stack = QStackedWidget()
+        self.route_stack.addWidget(self.standalone)
+        self.route_stack.addWidget(self.daw)
+        layout.addWidget(self.route_stack)
+        layout.addWidget(self.details)
+        layout.addStretch(1)
+        self.footer = QStackedWidget()
+        self.footer.addWidget(self.standalone.action_bar)
+        self.footer.addWidget(self.daw.action_bar)
+        add_page_footer(self, self.footer)
+
+        self.standalone.import_requested.connect(lambda: self.route_requested.emit("universal_daw"))
+        self._busy: set[str] = set()
+        self.standalone.busy_changed.connect(lambda busy: self._busy_changed("standalone", busy))
+        self.daw.busy_changed.connect(lambda busy: self._busy_changed("universal_daw", busy))
+        # The signal the two ways write is the same: rate and duration follow.
+        _follow(self.standalone.sample_rate, self.daw.sample_rate)
+        _follow(self.standalone.duration, self.daw.duration)
+        self.set_route("standalone")
+
+    def _route_card(self, route: str, icon_name: str, title: str, caption: str) -> QPushButton:
+        """A selectable card, drawn like the start panel's two ways in."""
+        button = QPushButton()
+        button.setProperty("pathcard", True)
+        button.setCheckable(True)
+        button.setAutoExclusive(True)
+        button.setToolTip(caption)
+        button.setAccessibleName(title)
+        button.setAccessibleDescription(caption)
+        button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        card = QHBoxLayout(button)
+        card.setContentsMargins(14, 10, 14, 10)
+        card.setSpacing(10)
+        mark = QLabel()
+        mark.setAlignment(Qt.AlignmentFlag.AlignTop)
+        mark.setPixmap(icons.pixmap(icon_name, tokens()["accent_ink"], 20))
+        mark.setProperty("icon_name", icon_name)
+        words = QVBoxLayout()
+        words.setSpacing(2)
+        heading = label(title, "panel-title", wrap=True)
+        detail = label(caption, "caption", wrap=True)
+        words.addWidget(heading)
+        words.addWidget(detail)
+        card.addWidget(mark)
+        card.addLayout(words, 1)
+        for part in (mark, heading, detail):
+            part.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        button.setMinimumHeight(72)
+        button.clicked.connect(lambda _checked=False, r=route: self._card_clicked(r))
+        self.route_buttons[route] = button
+        self._route_marks[route] = mark
+        return button
+
+    def _card_clicked(self, route: str) -> None:
+        # The window decides (it switches the backend and the measure strip
+        # too); until it does, the card shows the way in that is on.
+        self.route_buttons[self.route()].setChecked(True)
+        if route != self.route():
+            self.route_requested.emit(route)
+
+    def route(self) -> str:
+        """The way in on show: ``standalone`` or ``universal_daw``."""
+        return "universal_daw" if self.route_stack.currentWidget() is self.daw else "standalone"
+
+    def current_route_page(self) -> StandalonePage | DawModePage:
+        return self.daw if self.route() == "universal_daw" else self.standalone
+
+    def set_route(self, route: str) -> None:
+        page: StandalonePage | DawModePage = (
+            self.daw if route == "universal_daw" else self.standalone
+        )
+        other: StandalonePage | DawModePage = self.standalone if page is self.daw else self.daw
+        # A stack is as tall as its tallest page: the hidden one gives way, so
+        # the shorter steps are not followed by the other's empty height.
+        for shown, hidden in ((page, other), (page.action_bar, other.action_bar)):
+            hidden.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+            shown.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        self.route_stack.setCurrentWidget(page)
+        self.footer.setCurrentWidget(page.action_bar)
+        self.route_stack.updateGeometry()
+        self.footer.updateGeometry()
+        self.route_buttons[self.route()].setChecked(True)
+
+    def _busy_changed(self, route: str, busy: bool) -> None:
+        if busy:
+            self._busy.add(route)
+        else:
+            self._busy.discard(route)
+        # Switching the way in while a sweep plays or a take is analysed
+        # would hide its Stop; the choice waits (SPEC §8.3 BUSY).
+        locked = bool(self._busy)
+        for button in self.route_buttons.values():
+            button.setEnabled(not locked)
+            button.setToolTip(
+                _("Measuring · available after Stop or when it ends")
+                if locked
+                else button.accessibleDescription()
+            )
+
+    def restyle_icons(self) -> None:
+        for mark in self._route_marks.values():
+            mark.setPixmap(
+                icons.pixmap(str(mark.property("icon_name")), tokens()["accent_ink"], 20)
+            )
+        self.standalone.restyle_icons()
+        self.daw.restyle_icons()
+
+
+def _follow(first: QComboBox | QDoubleSpinBox, second: QComboBox | QDoubleSpinBox) -> None:
+    """Keep two inputs of the same setting on the same value, both ways."""
+    if isinstance(first, QComboBox) and isinstance(second, QComboBox):
+        combo_a, combo_b = first, second
+
+        def to_b(index: int) -> None:
+            row = combo_b.findData(combo_a.itemData(index))
+            if row >= 0 and row != combo_b.currentIndex():
+                combo_b.setCurrentIndex(row)
+
+        def to_a(index: int) -> None:
+            row = combo_a.findData(combo_b.itemData(index))
+            if row >= 0 and row != combo_a.currentIndex():
+                combo_a.setCurrentIndex(row)
+
+        combo_a.currentIndexChanged.connect(to_b)
+        combo_b.currentIndexChanged.connect(to_a)
+        to_b(combo_a.currentIndex())
+        return
+    assert isinstance(first, QDoubleSpinBox) and isinstance(second, QDoubleSpinBox)
+    spin_a, spin_b = first, second
+
+    def spin_to_b(value: float) -> None:
+        if spin_b.value() != value:
+            spin_b.setValue(value)
+
+    def spin_to_a(value: float) -> None:
+        if spin_a.value() != value:
+            spin_a.setValue(value)
+
+    spin_a.valueChanged.connect(spin_to_b)
+    spin_b.valueChanged.connect(spin_to_a)
+    spin_to_b(spin_a.value())
