@@ -1,5 +1,5 @@
 name: DAW 兼容性报告（简体中文）
-description: 你以通用 DAW 模式通过某个 DAW 完成了测量。无论成功还是失败，都有帮助。
+description: 你在某个 DAW 中播放扫频并导入录音，完成了测量。无论成功还是失败，都有帮助。
 title: "[daw] <DAW 及版本> / <操作系统>"
 labels: ["daw-report"]
 body:
@@ -38,9 +38,9 @@ body:
       label: 工作流程
       description: 你按照哪些步骤操作。指南为 docs/user-guide/daw-setup.zh-CN.md（英文版 docs/user-guide/daw-setup.md）。
       options:
-        - 按指南中该 DAW 的步骤使用通用 DAW 模式
-        - 通用 DAW 模式，但用了自己的步骤（请在“结果”中说明）
-        - 用同一个音频接口以独立模式测量，作为对照
+        - 按指南中该 DAW 的步骤在 DAW 中播放
+        - 在 DAW 中播放，但用了自己的步骤（请在“结果”中说明）
+        - 由 ReverbScope 通过同一个音频接口播放并录音，作为对照
     validations:
       required: true
   - type: input

@@ -79,7 +79,7 @@ Windows 上通过了自动化测试。**但还没有任何一次测量经过真�
 | 带图表的工作台窗口 | ✅ | — |
 | 命令行（`reverbscope`） | ✅ | ✅ |
 | 房间分析与对比 | ✅ | ✅ |
-| 独立模式测量（播放并录音） | ✅ | ✅ |
+| 通过音频接口测量（播放并录音） | ✅ | ✅ |
 | English / 简体中文 | ✅ | ✅ |
 | 需要 Python | 不需要 | 不需要 |
 | 适合 | 大多数用户 | 自动化、轻量或无图形界面的电脑 |
@@ -110,19 +110,19 @@ ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显�
 打开保存下来的那个会话，就能在同样的数据上看到工作台。
 
 **然后进行真实测量：** 先把监听音箱音量**调低**（ReverbScope 不会改动系统音量），然后二选一：让 ReverbScope
-通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW 模式**）。
+通过你的音频接口自己播放并录音，或者在 DAW 中播放它的扫频再导入录音。两种方式都在同一个 **新测量** 页面里。
 [用户指南](docs/user-guide/zh-CN.md)（[English](docs/user-guide/en.md)）逐页说明各项功能。
 
 ## 桌面应用怎么用
 
-1. **启动。** 打开 ReverbScope（桌面版，见[下载](#下载)）。第一次启动时，窗口中间会给出三个入口：演示、DAW 路线和独立模式路线。
+1. **启动。** 打开 ReverbScope（桌面版，见[下载](#下载)）。第一次启动时，窗口中间会给出播放和录制扫频的两种方式：通过音频接口，或在 DAW 中。
    **帮助 ▸ 首次测量说明** 可以把这张卡片调回来。
 2. **先看一个结果。** 先运行一次 `reverbscope demo`（见上文），再点侧栏的 **打开会话…**，选演示文件夹里的 `position-a`。
    你看到的一切都来自模拟房间。
-3. **测量。** 先把监听音箱音量调低，再点 **新测量**。
-   * *音频接口：* 在底部的测量条里选输入、输出、采样率和话筒声道，然后点 **开始**。扫频只会从你选定的接口输出播放；
+3. **测量。** 先把监听音箱音量调低，再点 **新测量**。在页面顶部选择扫频的播放和录音方式；下面的测量信息、录音配置和分析两种方式完全相同。
+   * *通过音频接口播放并录音：* 在底部的测量条里选输入、输出、采样率和话筒声道，然后点 **开始**。扫频只会从你选定的接口输出播放；
      选定之前“开始”保持不可用，并说明原因。电平高于 −12 dBFS 时，改动电平之后要再确认一次。
-   * *DAW 录音：* 按工程采样率生成测试信号，在 DAW 里播放并录音，把录好的轨道完整导出，然后点
+   * *在 DAW 中播放，导入录音：* 按工程采样率生成测试信号，在 DAW 里播放并录音，把录好的轨道完整导出，然后点
      **选择录音…** 和 **选择参考扫频…**，再分析。
 4. **读结果。** 视图栏可以打开总览、频率、时间、衰减、频谱和报告。右边的检查器先显示测量健康度：
    发现了什么、影响哪些数值、下一步该做什么。标记为无效的数值会放在括号里，不要采信。
@@ -174,7 +174,7 @@ ReverbScope 回答录音师按下录音键之前会问的问题：
 
 1. 安装一个构建（[下载](#下载)；出现 Gatekeeper 或 SmartScreen 警告是正常的）。先从[公开 beta](docs/PUBLIC_TESTING.zh-CN.md) 开始。
 2. 在终端里运行一次 `reverbscope demo`，看看结果是什么样。
-3. 把音箱音量调低，然后用你的接口和话筒运行**独立模式**，或者通过 DAW 运行**通用 DAW 模式**
+3. 把音箱音量调低，然后用你的接口和话筒通过音频接口测量，或者在 DAW 中播放扫频并导入录音
    （[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。
 4. 报告发生了什么，并贴上 **帮助 → 用于错误报告的环境信息 → 探测采样率** 的输出：
    * [音频接口测试报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)：
@@ -188,7 +188,7 @@ ReverbScope 回答录音师按下录音键之前会问的问题：
 
 ## 测量是怎么进行的
 
-**通用 DAW 模式**适用于任何能导入、播放、录音并导出 WAV 的 DAW。ReverbScope 从不与 DAW 通信：它读取 DAW 导出的文件
+**在 DAW 中播放，再导入录音。** 适用于任何能导入、播放、录音并导出 WAV 的 DAW。ReverbScope 从不与 DAW 通信：它读取 DAW 导出的文件
 （Broadcast WAV、RF64、Wave64、AIFF、CAF、FLAC；16/24/32 位 PCM 或 32 位浮点；单声道或多声道），并且在使用扫频
 附带的 sidecar 文件时，指出扫频被以错误速度播放的常见原因。依据各厂商文档写成的分步说明覆盖 Pro Tools、
 Logic Pro / GarageBand、Cubase / Nuendo、Fender Studio Pro（Studio One）、Ableton Live、REAPER、FL Studio、
@@ -200,11 +200,11 @@ Bitwig、Digital Performer 和 Audacity：[docs/user-guide/daw-setup.zh-CN.md](d
 3. **导入录音**：把录好的轨道导出为 WAV。
 4. **分析**：ReverbScope 找到扫频、解卷积并给出报告。
 
-**独立模式**由 ReverbScope 自己通过你选择的接口播放扫频并录下话筒（通过 `sounddevice` 使用 PortAudio）。默认扫频电平
+**通过音频接口播放并录音。** ReverbScope 自己通过你选择的接口播放扫频并录下话筒（通过 `sounddevice` 使用 PortAudio）。默认扫频电平
 偏保守，ReverbScope 不会改动系统音量或音频设置（唯一的可选例外，是一个设置设备采样率的 macOS 选项，见
 [SECURITY.zh-CN.md](SECURITY.zh-CN.md)）。
 
-两种模式调用同一条分析管线（`reverbscope.core.pipeline.analyze`）。
+两种方式调用同一条分析管线（`reverbscope.core.pipeline.analyze`）。没有音频设备或 PortAudio 时，仍然可以导入录音。
 
 ## 命令行
 
@@ -225,7 +225,7 @@ reverbscope analyze --recording recording.wav --sweep sweep_48k.wav --profile vo
 reverbscope show results/
 reverbscope compare results/ position-b/ --same-input-gain
 
-# 独立模式：列出设备，然后测量
+# 通过音频接口：列出设备，然后测量
 reverbscope devices
 reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000

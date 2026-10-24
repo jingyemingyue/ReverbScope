@@ -9,6 +9,6 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>ReverbScope 在独立模式扫频时录制测量话筒，录音只保存在这台电脑上。</string>
+	<string>ReverbScope 通过音频接口播放扫频时录制测量话筒，录音只保存在这台电脑上。</string>
 </dict>
 </plist>

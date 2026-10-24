@@ -1,7 +1,7 @@
 """Audio-backend protocol, device record and backend selection.
 
 ``core`` never imports this module. Front ends call :func:`get_backend` so
-Standalone Mode can run against PortAudio or the synthetic ``fake`` backend.
+A take through the audio interface can run against PortAudio or the synthetic ``fake`` backend.
 """
 
 from __future__ import annotations
@@ -131,7 +131,7 @@ class AudioBackend(Protocol):
 
 @dataclass(frozen=True)
 class ChannelPlan:
-    """How Standalone Mode's hardware inputs map onto the analysed recording.
+    """How the hardware inputs of a take through the interface map onto the analysed recording.
 
     Two conventions meet here and must not be mixed: hardware channels of the
     interface are **1-based** (what the user reads on the front panel and what

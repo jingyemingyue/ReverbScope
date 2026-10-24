@@ -19,8 +19,8 @@ body:
     id: chain
     attributes:
       label: 信号链
-      description: DAW 或独立模式、音频接口、采样率、话筒。
-      placeholder: "通用 DAW 模式 / REAPER / 48 kHz / 测量话筒接入音频接口输入 1"
+      description: 在 DAW 中播放或通过音频接口、音频接口、采样率、话筒。
+      placeholder: "DAW 录音 / REAPER / 48 kHz / 测量话筒接入音频接口输入 1"
     validations:
       required: true
   - type: textarea
@@ -41,8 +41,8 @@ body:
     attributes:
       label: 模式
       options:
-        - 通用 DAW 模式
-        - 独立模式
+        - DAW 录音（导入）
+        - 音频接口（由 ReverbScope 播放并录音）
         - 用 CLI 分析已有录音
         - Python API
         - 合成信号 / 单元测试

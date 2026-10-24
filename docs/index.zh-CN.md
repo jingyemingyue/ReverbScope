@@ -10,7 +10,7 @@
 
 [English](index.md) | **简体中文**
 
-ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上测量并与参考仪器对照过，安装包没有用于分发的签名，通用 DAW 模式的各 DAW 步骤是按厂商文档编写、尚未在 DAW 中实测的流程。ReverbScope 不给房间打分。
+ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上测量并与参考仪器对照过，安装包没有用于分发的签名，在 DAW 中播放并导入录音时的各 DAW 步骤是按厂商文档编写、尚未在 DAW 中实测的流程。ReverbScope 不给房间打分。
 
 用户文档提供英文和简体中文两种版本，**以英文版为准**；每篇中文文档顶部都有指向英文原文的链接。开发者与内部文档（架构、ADR、研究笔记、依赖与许可证审查、代码来源、项目状态、发布计划）只提供英文版，其中发布计划和 v1.0 架构另有中文摘要。
 执行准则是例外：[GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) 是全项目的执行依据，[GUIDELINES.md](GUIDELINES.md) 是它的英文摘要。
@@ -19,7 +19,7 @@ ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上�
 
 - [项目简介（README.zh-CN.md）](https://github.com/jingyemingyue/ReverbScope/blob/main/README.zh-CN.md)
 - **[下载与安装](INSTALLATION.zh-CN.md)**：macOS、Windows、Linux 和 Python 的安装、更新、卸载、未签名构建的警告与故障排查
-- [用户指南](user-guide/zh-CN.md)：安装、通用 DAW 模式、独立模式、读懂结果、故障排查、报告问题
+- [用户指南](user-guide/zh-CN.md)：安装、新测量（DAW 录音或音频接口）、读懂结果、故障排查、报告问题
 - [用 DAW 测量](user-guide/daw-setup.zh-CN.md)：Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、Fender Studio Pro、Ableton Live、REAPER、FL Studio、Bitwig Studio、Digital Performer、Audacity 及其他 DAW
 - [兼容性](COMPATIBILITY.zh-CN.md)：支持的系统和文件格式，以及每一项的验证方式
 - [桌面版、终端版与开发者工具](EDITIONS.zh-CN.md)

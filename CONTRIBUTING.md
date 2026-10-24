@@ -80,7 +80,7 @@ python scripts/benchmark.py --quick   # timings and peak memory (docs/PERFORMANC
 # add --no-gui only for a CLI-only install; bundles run gui --smoke offscreen
 ```
 
-On Linux, Standalone Mode and the GUI tests also need PortAudio and a few Qt
+On Linux, measuring through an audio interface and the GUI tests also need PortAudio and a few Qt
 platform libraries (CI installs them automatically):
 
 ```bash

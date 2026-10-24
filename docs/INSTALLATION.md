@@ -113,7 +113,7 @@ we recommend you do not.** ReverbScope needs no Terminal commands to open.
 
 ### Microphone access
 
-The first **Standalone Mode** measurement asks *“ReverbScope” would like to
+The first measurement **through the audio interface** asks *“ReverbScope” would like to
 access the microphone*: click **Allow**. If you clicked *Don't Allow*, turn it
 on later in **System Settings → Privacy & Security → Microphone**. The
 recording stays on your computer; ReverbScope has no network code.

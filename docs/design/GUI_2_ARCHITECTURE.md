@@ -69,8 +69,9 @@ to the command line.
   splitter state that does not restore, or that leaves the chart under
   320 px, is replaced by the default sizes.
 * `MainWindow.stack` is the workspace's `QStackedWidget`. It holds the start
-  panel, the two measurement set-up pages (Universal DAW Mode and Standalone
-  Mode), every analysis view, the project view and the compare view. The
+  panel, the one New Measurement page (`MeasurePage`: a choice of how the
+  sweep is played and recorded, the steps of that way in, shared details and
+  a pinned action bar), every analysis view, the project view and the compare view. The
   product GUI has no Demo mode. `show_mode("demo")` remains for tests and
   the fake backend; it is not in the Measure menu, the strip, or the
   first-measurement card.
@@ -81,11 +82,12 @@ to the command line.
   `default_views()`; `Ctrl+0` opens Compare. The view bar groups them
   (Overview, Frequency, Time, Decay, Spectral, Compare, Report).
   Spectral has a second selector for the spectrogram, the waterfall and
-  noise. Project is a separate button, not an analysis group. The
-  measurement set-up pages are `Ctrl+Shift+1` (Universal DAW Mode) and
-  `Ctrl+Shift+2` (Standalone Mode). `QKeySequence` is used so macOS shows
+  noise. Project is a separate button, not an analysis group. The Measure
+  menu opens New Measurement on either way in: `Ctrl+Shift+1` (play in your
+  DAW, import the recording) and `Ctrl+Shift+2` (play and record through the
+  audio interface). `QKeySequence` is used so macOS shows
   Command where other systems show Ctrl.
-* Switching views never stops a take. The Standalone page used to stop the
+* Switching views never stops a take. The interface page used to stop the
   take when it was hidden; the measure strip now carries Stop (and `Esc`),
   so the take keeps running while the user looks at another view.
 
@@ -106,10 +108,11 @@ is added to the list beside the take, and a project keeps the unsaved take
 take replaces the previous one once the previous one is saved or
 discarded.
 
-The measure strip mirrors the active set-up page: its device, rate and
+The measure strip mirrors the New Measurement page: its device, rate and
 channel controls share the page's models, so a choice in either place is
 the same choice. **Set up...** opens the page for what the strip does not
-carry (sweep length, level, tape measurements, the DAW files). In DAW mode
+carry (sweep length, level, tape measurements, the DAW files). Its list
+("Audio interface", "DAW recording") is the page's choice. On the DAW way in
 Start reads "Import recording..." and analyses the chosen files. Choosing a
 position in the navigator's menu ("Measure at …") or in the project view
 fills the strip's position and the pages' position and room fields. The

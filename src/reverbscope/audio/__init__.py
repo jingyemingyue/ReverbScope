@@ -1,4 +1,4 @@
-"""Audio device access for Standalone Mode (optional; needs ``sounddevice``)."""
+"""Audio device access for takes through the audio interface (optional; needs ``sounddevice``)."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
-ReverbScope standalone measurement
-──────────────────────────────────
+ReverbScope measurement through the audio interface
+───────────────────────────────────────────────────
 
   Input        [#] ReverbScope fake interface · input #
   Output       [#] ReverbScope fake interface · output #

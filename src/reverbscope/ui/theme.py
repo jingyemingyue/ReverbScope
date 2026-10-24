@@ -418,6 +418,9 @@ QPushButton[pathcard="true"] {{ text-align: left; padding: 10px 14px; border-rad
     background: {t["surface_alt"]}; border: 1px solid {t["sep"]}; font-weight: 600; }}
 QPushButton[pathcard="true"]:hover {{ background: {t["accent_soft"]};
     border-color: {t["accent"]}; }}
+QPushButton[pathcard="true"]:checked {{ background: {t["accent_soft"]};
+    border: 2px solid {t["accent"]}; }}
+QPushButton[pathcard="true"]:disabled {{ color: {t["disabled"]}; }}
 
 QToolButton {{ background: transparent; border: 1px solid transparent;
     border-radius: 7px; padding: 3px 6px; min-height: 18px; }}

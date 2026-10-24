@@ -1,7 +1,7 @@
 """Audio device enumeration through PortAudio (``sounddevice``).
 
-``sounddevice`` is imported lazily so that the DSP core and the Universal DAW
-Mode work on systems without a usable PortAudio backend.
+``sounddevice`` is imported lazily so that the DSP core and importing a DAW
+recording work on systems without a usable PortAudio backend.
 """
 
 from __future__ import annotations
@@ -16,11 +16,14 @@ from reverbscope.i18n import _
 def sounddevice_module() -> Any:
     try:
         import sounddevice
-    except (ImportError, OSError) as exc:
+    except Exception as exc:
+        # ImportError/OSError when PortAudio is missing; sounddevice also raises
+        # PortAudioError at import when Pa_Initialize fails (for example a
+        # PulseAudio client with no server running).
         raise AudioBackendUnavailableError(
             _(
-                "the audio backend (sounddevice / PortAudio) is not available; "
-                "Standalone Mode needs it, Universal DAW Mode does not"
+                "the audio backend (sounddevice / PortAudio) is not available; measuring "
+                "through an audio interface needs it, importing a recording does not"
             )
         ) from exc
     return sounddevice

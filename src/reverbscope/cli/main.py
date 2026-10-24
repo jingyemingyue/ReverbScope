@@ -876,7 +876,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--backend",
         default=None,
         metavar=pgettext("metavar", "NAME"),
-        help=_("audio backend for Standalone Mode: portaudio (default) or fake"),
+        help=_(
+            "audio backend for playing and recording through an audio interface: "
+            "portaudio (default) or fake"
+        ),
     )
     parser.add_argument(
         "--copy-recording",
@@ -988,7 +991,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_dev = _command(
         sub,
         "devices",
-        _("list audio devices (Standalone Mode)"),
+        _("list audio devices (for measuring through an audio interface)"),
         examples=("reverbscope devices", "reverbscope devices --probe"),
     )
     p_dev.add_argument(
@@ -1009,7 +1012,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_me = _command(
         sub,
         "measure",
-        _("Standalone Mode: play the sweep and record the microphone"),
+        _("play the sweep through the audio interface and record the microphone"),
         examples=(
             "reverbscope devices",
             "reverbscope measure --out session-1 --input-device 2 --output-device 2",
@@ -1651,8 +1654,9 @@ def _run_analysis(
 ) -> int:
     """Analyse a recording and optionally save a session.
 
-    ``hardware`` is the Standalone channel plan; the session then records the
-    1-based interface channels. In Universal DAW Mode the DAW did the routing,
+    ``hardware`` is the channel plan of a take through the audio interface; the
+    session then records the 1-based interface channels. For an imported DAW
+    recording the DAW did the routing,
     so the session leaves them empty and the analysed WAV column stays in
     ``analysis_settings`` (0-based). ``take`` marks a sweep and a recording
     written for this session (``reverbscope measure``): both are copied into
@@ -2207,10 +2211,10 @@ def cmd_show(args: argparse.Namespace) -> int:
     return 0
 
 
-#: Display names of the stored session modes.
+#: How a stored session was played and recorded (``MeasurementSession.mode``).
 SESSION_MODES = {
-    "standalone": N_("Standalone Mode"),
-    "universal_daw": N_("Universal DAW Mode"),
+    "standalone": N_("Audio interface"),
+    "universal_daw": N_("DAW recording"),
     "analyze_ir": N_("impulse-response file"),
     "synthetic_demo": N_("Synthetic demo"),
 }
@@ -2227,7 +2231,7 @@ def _session_inputs(session: Any, directory: Path) -> list[tuple[str, str]]:
     rows: list[tuple[str, str]] = [(_("Session"), Verbatim(str(directory)))]
     mode = SESSION_MODES.get(str(session.mode))
     if mode:
-        rows.append((_("Mode"), _(mode)))
+        rows.append((_("Measured with"), _(mode)))
     for label, value in (
         (_("Room"), session.room_name),
         (_("Position"), session.measurement_position),

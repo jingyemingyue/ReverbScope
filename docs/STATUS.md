@@ -1074,8 +1074,8 @@ discovery follows files under `.dist-info/licenses/`; macOS
 | Averaging | `average_decay`: VALID T values only, each with its own count; RT60 = mean of each session's own RT60 (T30, else T20); ISO 3382-2 class from 4.3.1 Table 1 (combinations, source and microphone positions all checked); `project average` counts distinct position labels |
 | Export | CSV exporter for decay, FR, noise PSD, reflections, resonances; `reverbscope.exporters` entry points |
 | i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings (`reverbscope config language`) / `REVERBSCOPE_LANG` / the system's language (the Mac's preferred languages, the Windows display language, GNU `LANGUAGE`, the POSIX locale variables) |
-| GUI | PySide6 window: Home, Universal DAW Mode, Standalone Mode, Results (including Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
-| Standalone Mode | Device enumeration and play+record through the selected backend with safety defaults |
+| GUI | PySide6 window: Home, one New Measurement page (through the audio interface, or in a DAW with the recording imported), Results (including Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
+| Measuring through the audio interface | Device enumeration and play+record through the selected backend with safety defaults |
 | Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/reverbscope.spec`, `release.yml` (the version-driven workflow on `main` since PR #18; it opened the v0.4.1 draft and refreshes it while `v0.4.1` has no tag, see RELEASE_PLAN.md §3), `scripts/smoke_bundle.py` |
 | Documentation | Hub at `docs/index.md`; themed HTML site from `scripts/build_docs_site.py` (S7); release plan in `docs/RELEASE_PLAN.md` |
 
@@ -1241,7 +1241,7 @@ algebra and the refusals, not the acoustics of any real surface.
 * Noise levels are dBFS only; no SPL calibration; mains-hum thresholds are
   engineering choices.
 * No clock-drift correction between separate playback and recording
-  devices (Universal DAW Mode relies on the DAW/interface clocking).
+  devices (an imported DAW recording relies on the DAW/interface clocking).
 * `result.json` with curves is several MB for long IRs (`--no-curves` to
   shrink); the raw IR WAV is the authoritative record.
 * The analysis of a long recording holds roughly 140 bytes per sample in

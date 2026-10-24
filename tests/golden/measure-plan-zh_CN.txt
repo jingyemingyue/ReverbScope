@@ -1,5 +1,5 @@
-ReverbScope 独立测量
-────────────────────
+ReverbScope 音频接口测量
+────────────────────────
 
   输入      [#] ReverbScope fake interface · 输入 #
   输出      [#] ReverbScope fake interface · 输出 #

@@ -4,10 +4,10 @@
 
 > 本文是 [AUDIO_DEVICES.md](AUDIO_DEVICES.md) 的简体中文翻译；两者不一致时以英文版为准。
 
-最后核对：2026-09-24。本文针对**独立模式**：ReverbScope 通过 python-sounddevice
+最后核对：2026-09-24。本文针对**通过音频接口测量**：ReverbScope 通过 python-sounddevice
 0.5.6 调用 PortAudio 自己播放并录音。sounddevice 的 Windows 和 macOS wheel
 内置 PortAudio v19.7.0；在 Linux 上它加载发行版的 `libportaudio2` [14][15]。
-文中 PortAudio 的行为依据 v19.7.0 源码 [9]–[12]。通用 DAW 模式下设备链路由 DAW
+文中 PortAudio 的行为依据 v19.7.0 源码 [9]–[12]。在 DAW 中播放扫频并导入录音时，设备链路由 DAW
 掌管，但同样的规则适用（[user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md)）。
 
 ## 1. 为什么设备链路很重要

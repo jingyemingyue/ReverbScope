@@ -22,8 +22,8 @@ All notable changes to ReverbScope are documented here. The format follows
   desktop Decay view and a "Decay slopes" row in the inspector). EDT, T20,
   T30, RT60 and every other number are unchanged. Methodology §3c, ADR 0004.
 - **One-third-octave decay bands (opt-in).** `--third-octave` on `analyze`,
-  `measure` and `analyze-ir`, and a check box on both desktop measurement
-  pages, add the IEC 61260-1 one-third-octave bands inside the octave bands
+  `measure` and `analyze-ir`, and a check box on the desktop New Measurement
+  page, add the IEC 61260-1 one-third-octave bands inside the octave bands
   (50 Hz–10 kHz by default), each with EDT, T20, T30 and the double-slope
   fit, analysed exactly as an octave band with its own bandwidth. Off by
   default: a default analysis runs no extra work, and its octave results and
@@ -46,6 +46,27 @@ All notable changes to ReverbScope are documented here. The format follows
   repository.
 
 ### Changed
+- **One New Measurement flow instead of two modes.** The desktop app no longer
+  has a "Universal DAW Mode" page and a "Standalone Mode" page. **New
+  Measurement** is one page: at the top the user chooses how the sweep is
+  played and recorded, *Play and record through the audio interface* or *Play
+  it in your DAW and import the recording*; the page then shows only the
+  steps of that way in, and one shared set of measurement metadata, tape
+  measurements, recording profile and the one-third-octave option, with Back,
+  the reason a button is off, Stop, *Run Measurement* or *Analyze* in one
+  pinned action bar. The sample rate and sweep duration carry over when the
+  choice changes; the levels stay separate (the interface keeps its −20 dBFS
+  default and the SAFE acknowledgement). With no audio device the interface
+  steps say "you can still import a recording" and offer *Import a recording
+  instead*; the import works without PortAudio. The Measure menu entries keep
+  their shortcuts (Ctrl+Shift+1 DAW import, Ctrl+Shift+2 audio interface)
+  and are named after the two ways in. No mode name is left in the GUI, the
+  CLI help (`devices`, `measure`, `--backend`), the "no audio device"
+  diagnostics, the `measure` plan title, the session report's *Measured with*
+  row, the macOS microphone prompt, the issue forms or the user docs. The
+  analysis, every number, `session.json` (`mode` stays `universal_daw` /
+  `standalone`), the file formats, the schemas and the CLI commands and flags
+  are unchanged.
 - **Desktop app reads like a measurement tool.** Chart axes no longer
   rescale: pyqtgraph drew the reverberation-by-band chart's 0.4–0.8 s as
   "400–800" with "(x0.001)" in the axis title; ticks now stay in the

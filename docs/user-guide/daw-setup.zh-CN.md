@@ -2,7 +2,7 @@
 
 [English](daw-setup.md) | **简体中文**
 
-通用 DAW 模式面向任何能在播放一个 WAV 的同时录制另一个的 DAW。ReverbScope 从不与 DAW 通信，它只需要完整导出的录音。本页先列出每个 DAW 都必须做对的事，再给出多数录音棚常用 DAW 的具体步骤。英文原文见 [daw-setup.md](daw-setup.md)；两者不一致时以英文版为准。
+在 DAW 中播放扫频再导入录音，适用于任何能在播放一个 WAV 的同时录制另一个的 DAW。ReverbScope 从不与 DAW 通信，它只需要完整导出的录音。本页先列出每个 DAW 都必须做对的事，再给出多数录音棚常用 DAW 的具体步骤。英文原文见 [daw-setup.md](daw-setup.md)；两者不一致时以英文版为准。
 
 > **按文档编写的流程，尚未在 DAW 中实测。** 下面的步骤和菜单名称依据各厂商当前的官方文档编写，每一步都标有编号来源（少数第三方来源已注明）。其中没有任何一步已经在真实 DAW 中配合 ReverbScope 运行过：[HARDWARE_TESTS.zh-CN.md](../HARDWARE_TESTS.zh-CN.md) 中的 DAW 矩阵是空的。如果你实际跑过，或者你的版本与此不同，请提交 [DAW 兼容性报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)或英文的 [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)。
 >
@@ -25,7 +25,7 @@
 reverbscope analyze --recording "Mic_01.wav" --sweep sweep_44k.wav --out session/
 ```
 
-或在界面的通用 DAW 模式中选择这些文件。
+或在界面的新测量页面（“在 DAW 中播放，导入录音”）中选择这些文件。
 
 ## Avid Pro Tools
 

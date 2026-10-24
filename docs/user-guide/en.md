@@ -87,7 +87,8 @@ bundled licenses.
 
 On its first start the desktop app shows a **Your first measurement** card on
 the start panel (the middle of the window while nothing is open): the demo,
-the DAW route and the standalone route, each with its button, and a link to
+the two ways to play and record the sweep (audio interface or DAW recording),
+each with its button, and a link to
 this guide. **Don't show this again** hides it;
 **Help ▸ Getting started** brings it back.
 
@@ -105,10 +106,29 @@ the demo never overwrites a folder it did not write. `reverbscope demo --out
 the demo gives its sessions are written in the language it ran in, and shown
 in the interface language when a session is opened, listed or reported.
 
-## Universal DAW Mode
+## New Measurement: one page, two ways to play and record
 
-1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav` (or the GUI
-   “Universal DAW Mode” generate button, with the project's sample rate).
+**New Measurement** (Ctrl+N, then a card; or the **Measure** menu) opens one
+page. At the top, choose how the sweep is played and recorded:
+
+* **Play and record through the audio interface** (Ctrl+Shift+2):
+  ReverbScope plays the sweep only on the interface output you choose and
+  records the microphone. See the next section.
+* **Play it in your DAW and import the recording** (Ctrl+Shift+1):
+  ReverbScope writes the test signal; you play and record it in your DAW and
+  import the recording. This needs no audio device or PortAudio at all; when
+  no device is found, the page offers **Import a recording instead**.
+
+The sample rate and sweep duration carry over when you switch. The
+measurement metadata, the tape measurements, the recording profile and the
+one-third-octave option sit under the steps and are the same for both, and
+both end in the same analysis.
+
+## Playing the sweep in your DAW
+
+1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav` (or, on
+   the New Measurement page with “Play it in your DAW and import the
+   recording” chosen, **Save Test Signal WAV...** at the project's sample rate).
    Keep the `.reverbscope-sweep.json` sidecar next to the WAV.
 2. Import the WAV on a new DAW track, with time-stretching (Warp, Flex,
    Follow Tempo) off and no plug-in on its path. Route it to one loudspeaker.
@@ -118,7 +138,7 @@ in the interface language when a session is opened, listed or reported.
 4. Optional loopback: bounce a two-channel export (microphone + electrical
    return) and pass `--channel 0 --loopback-channel 1`.
 5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`,
-   or in the GUI's “Universal DAW Mode” choose the files with “Choose
+   or on the New Measurement page choose the files with “Choose
    Recording...” and “Choose Reference Sweep...”.
 
 **Step-by-step notes for Pro Tools, Logic Pro / GarageBand, Cubase / Nuendo,
@@ -126,7 +146,7 @@ Fender Studio Pro (formerly PreSonus Studio One), Ableton Live, REAPER, FL Studi
 what each report message means in DAW terms:
 [daw-setup.md](daw-setup.md).**
 
-## Standalone Mode and the loopback cable
+## Playing through the audio interface, and the loopback cable
 
 `reverbscope devices` lists interfaces. `reverbscope measure --out session/` plays
 the sweep and records. `--input-channels 1,2 --loopback-channel 2` records an
@@ -164,7 +184,7 @@ desktop app shows `[index] name (host API)`.
   (Settings ▸ Privacy & security ▸ Microphone). The bundles carry no ASIO
   support (the ASIO DLLs are built with Steinberg's proprietary SDK and are
   removed, DEPENDENCIES.md §3); an interface that only works through ASIO is
-  measured in Universal DAW Mode.
+  measured by playing the sweep in a DAW and importing the recording.
 * **macOS.** Core Audio. Allow ReverbScope in System Settings ▸ Privacy &
   Security ▸ Microphone; without that permission the recording is silent and
   ReverbScope reports *"recording is silent"*. Set the interface's rate in Audio
@@ -343,8 +363,8 @@ separation. It never names a wall or gives room length or width, and
 ReverbScope draws no room model: it is a measurement tool, not a room
 modeller.
 
-Enter the tape numbers in Universal DAW Mode or Standalone Mode before
-Analyze, or pass `--speaker-distance` / `--mic-height` / `--temperature`
+Enter the tape numbers under **Tape measurements** on the New Measurement
+page before the take or Analyze, or pass `--speaker-distance` / `--mic-height` / `--temperature`
 on the CLI.
 
 ## Comparing two positions

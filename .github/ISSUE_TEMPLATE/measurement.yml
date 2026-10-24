@@ -19,8 +19,8 @@ body:
     id: chain
     attributes:
       label: Signal chain
-      description: DAW or Standalone Mode, interface, sample rate, microphone.
-      placeholder: "Universal DAW Mode / REAPER / 48 kHz / measurement mic into interface input 1"
+      description: Played in a DAW or through the audio interface, interface, sample rate, microphone.
+      placeholder: "DAW recording / REAPER / 48 kHz / measurement mic into interface input 1"
     validations:
       required: true
   - type: textarea
@@ -42,8 +42,8 @@ body:
     attributes:
       label: Mode
       options:
-        - Universal DAW Mode
-        - Standalone Mode
+        - DAW recording (imported)
+        - Audio interface (played and recorded by ReverbScope)
         - CLI analyze of an existing recording
         - Python API
         - Synthetic / unit test

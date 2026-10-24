@@ -9,10 +9,10 @@
 | # | 能力 | 源码 file:function | 输出 / 参数（单位、默认、范围） | GUI(main) | #91 |
 |---|---|---|---|---|---|
 | A1 | 指数正弦扫频 ESS 生成 | `core/sweep.py:generate_ess`, `measurement_signal`; `models/configuration.py:SweepSettings` | 20 Hz–20 kHz；时长默认 10 s（GUI 1–60 s）；峰值 −12 dBFS（GUI −40…0）；淡入 50 ms / 淡出 10 ms；前静音 1 s、后静音 3 s；采样率 44.1/48/88.2/96/176.4/192 kHz | ✓ | 02、03、12a |
-| A2 | 独立模式（音频接口播放+录音） | `ui/pages.py:StandalonePage`; `audio/playrec.py`; `audio/portaudio.py` | 输入/输出设备、输入声道（话筒）、输出声道（扬声器）、回采声道、采样率；独立模式默认电平 −20 dBFS（`audio/backend.py:DEFAULT_STANDALONE_LEVEL_DBFS`） | ✓ | 02、02b、03、04 |
+| A2 | 通过音频接口播放并录音 | `ui/pages.py:StandalonePage`; `audio/playrec.py`; `audio/portaudio.py` | 输入/输出设备、输入声道（话筒）、输出声道（扬声器）、回采声道、采样率；通过音频接口播放的默认电平 −20 dBFS（`audio/backend.py:DEFAULT_STANDALONE_LEVEL_DBFS`） | ✓ | 02、02b、03、04 |
 | A3 | 电平安全确认（SAFE） | `audio/backend.py:SAFE_MAX_LEVEL_DBFS = −12`; `ui/pages.py` 复选框 | 高于 −12 dBFS 必须勾选“我已调低监听音量”；`settings.save_settings` 永不保存确认 | ✓ | 03、10b |
 | A4 | 双设备时钟警告 | `ui/pages.py:separate_clocks_box` | 输入、输出不是同一设备时警告，默认按钮是“不测” | ✓ | 02（就绪检查“同一设备，一个时钟”） |
-| A5 | 通用 DAW 模式（4 步） | `ui/pages.py:DawModePage`, `DAW_INSTRUCTIONS`; `io/wav.py:write_sweep_file` | 步骤 1 生成测试信号 / 2 在 DAW 中录制 / 3 导入录音（录音、参考扫频、话筒声道“自动（电平最高）”、回采声道）/ 4 分析（录音配置） | ✓ | 12a、12b、12c |
+| A5 | 在 DAW 中播放，导入录音（4 步） | `ui/pages.py:DawModePage`, `DAW_INSTRUCTIONS`; `io/wav.py:write_sweep_file` | 步骤 1 生成测试信号 / 2 在 DAW 中录制 / 3 导入录音（录音、参考扫频、话筒声道“自动（电平最高）”、回采声道）/ 4 分析（录音配置） | ✓ | 12a、12b、12c |
 | A6 | DAW 设置提示表 | `health.py:DAW_SAMPLE_RATE_SETTINGS`, `DAW_STRETCH_SETTINGS` | 各 DAW 设采样率、关时间伸缩的位置 | ✓（健康修复步骤里） | 12b |
 | A7 | 导入外部脉冲响应 | `core/pipeline.py:analyze_impulse_response`; CLI `analyze-ir` | 不反卷积 | **CLI** | 不画入口（已从首页移除） |
 | A8 | 测量进度 | `ui/pages.py` `QProgressBar` 0–100 | 只有百分比 | ✓ | 04 |

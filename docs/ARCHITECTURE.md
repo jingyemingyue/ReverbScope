@@ -62,7 +62,7 @@ src/reverbscope/
     project_store.py     project.json index
     exporters/           csv.py + reverbscope.exporters entry points
   schemas/               result / session / comparison / project / sidecar JSON Schemas
-  audio/                 optional (needs PortAudio); Standalone Mode only
+  audio/                 optional (needs PortAudio); takes through the audio interface only
     backend.py           AudioBackend protocol, DeviceInfo, get_backend()
     devices.py           PortAudio enumeration
     portaudio.py         callback stream with progress and Stop
@@ -93,7 +93,7 @@ ui / cli  -->  interpretation  -->  models
    |               |
    +--> io --------+--> core --> models
    |
-   +--> audio (Standalone Mode only)
+   +--> audio (takes through the audio interface only)
 ```
 
 `core` never imports `io`, `audio`, `ui` or `cli`. `models` imports nothing
@@ -140,9 +140,14 @@ Key decisions:
 * **Interpretation is separate.** `interpretation` reads an `AnalysisResult`
   and never changes it. Profiles implement `RecordingProfile.interpret`.
 
-## 4. Two workflows, one core
+## 4. One measurement flow, two ways to play and record, one core
 
-| | Universal DAW Mode | Standalone Mode |
+The GUI has one New Measurement page (`ui.pages.MeasurePage`); the user picks
+how the sweep is played and recorded, and the page swaps only the steps that
+differ (`DawModePage`, `StandalonePage` keep their names in code; the stored
+`MeasurementSession.mode` stays `universal_daw` / `standalone`).
+
+| | In the DAW, recording imported | Through the audio interface |
 | --- | --- | --- |
 | Excitation | `io.wav.write_sweep_file` -> user's DAW | `audio.playrec.play_and_record` |
 | Recording | WAV exported from the DAW | returned by PortAudio |

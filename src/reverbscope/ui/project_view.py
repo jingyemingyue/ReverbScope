@@ -86,8 +86,8 @@ class NewPositionDialog(QDialog):
         )
         form.addRow(_("Position"), self.label_edit)
         self.mode = QComboBox()
-        self.mode.addItem(_("Universal DAW Mode"), "universal_daw")
-        self.mode.addItem(_("Standalone Mode"), "standalone")
+        self.mode.addItem(_("Audio interface"), "standalone")
+        self.mode.addItem(_("DAW recording"), "universal_daw")
         self.mode.setCurrentIndex(max(self.mode.findData(mode), 0))
         form.addRow(_("Measure with"), self.mode)
         form.addRow(

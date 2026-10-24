@@ -254,9 +254,6 @@ msgstr "{name} 的全部频带；此模式下不绘制叠加曲线。"
 msgid "All host APIs"
 msgstr "所有主机 API"
 
-msgid "All settings of this mode: level, sweep, profile, room and placement."
-msgstr "此模式的全部设置：电平、扫频、配置、房间和摆位。"
-
 msgid "Amplitude (relative)"
 msgstr "幅度（相对）"
 
@@ -968,9 +965,6 @@ msgstr "保存会话的文件夹（留空：只显示）"
 msgid "Follow the system"
 msgstr "跟随系统"
 
-msgid "Four steps: generate the test signal, play and record it in your DAW, import the recording, analyse. ReverbScope never talks to the DAW."
-msgstr "四个步骤：生成测试信号、在 DAW 中播放并录音、导入录音、分析。ReverbScope 从不与 DAW 通信。"
-
 msgid "Frame centres {start_ms:g} ms to {end_ms:g} ms after the direct sound ({frames} frames)."
 msgstr "帧中心位于直达声之后 {start_ms:g} ms 至 {end_ms:g} ms（共 {frames} 帧）。"
 
@@ -1465,12 +1459,6 @@ msgstr "可执行文件旁没有 THIRD_PARTY_LICENSES 目录。源码树中见 d
 
 msgid "No audio device found."
 msgstr "未找到音频设备。"
-
-msgid "No audio device found; Universal DAW Mode still works."
-msgstr "未找到音频设备；通用 DAW 模式仍然可用。"
-
-msgid "No audio device list is available; Universal DAW Mode still works."
-msgstr "无法获取音频设备列表；通用 DAW 模式仍然可用。"
 
 msgid "No audio device was used and nothing was played. The numbers below describe the simulation; every session is marked as a synthetic demo."
 msgstr "没有使用任何音频设备，也没有播放任何声音。下面的数值描述的是模拟结果；每个会话都标记为合成演示。"
@@ -2075,9 +2063,6 @@ msgstr "ReverbScope 播放扫频、录下它，并从录音中读出房间。用
 msgid "ReverbScope plays a sweep, records it and reads the room from the recording. Three ways in; the demo needs no hardware."
 msgstr "ReverbScope 播放扫频、录下它，再从录音中读出房间。有三种入口；演示不需要任何硬件。"
 
-msgid "ReverbScope plays the sweep and records the microphone through your audio interface, then runs the same analysis as Universal DAW Mode."
-msgstr "ReverbScope 通过你的音频接口播放扫频并录制话筒，然后运行与通用 DAW 模式相同的分析。"
-
 msgid "ReverbScope plays the sweep and records the microphone through your audio interface."
 msgstr "ReverbScope 通过你的音频接口播放扫频并录制话筒。"
 
@@ -2089,9 +2074,6 @@ msgstr "ReverbScope 录音配置"
 
 msgid "ReverbScope settings"
 msgstr "ReverbScope 设置"
-
-msgid "ReverbScope standalone measurement"
-msgstr "ReverbScope 独立测量"
 
 msgid "ReverbScope test signal"
 msgstr "ReverbScope 测试信号"
@@ -2155,9 +2137,6 @@ msgstr "房间话筒或环境拾音：房间本身就是乐器。"
 
 msgid "Run Measurement"
 msgstr "开始测量"
-
-msgid "Run Standalone Mode on the fake backend. Nothing is sent to a loudspeaker."
-msgstr "在模拟后端上运行独立模式，不会向扬声器发送任何信号。"
 
 msgid "Run a command with --help for its options, for example:"
 msgstr "在命令后加 --help 可查看它的选项，例如："
@@ -2387,12 +2366,6 @@ msgstr "对旁白来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {t
 msgid "Speed of sound"
 msgstr "声速"
 
-msgid "Standalone Mode"
-msgstr "独立模式"
-
-msgid "Standalone Mode: play the sweep and record the microphone"
-msgstr "独立模式：播放扫频并录制话筒"
-
 msgid "Start"
 msgstr "开始"
 
@@ -2428,9 +2401,6 @@ msgstr "步骤 2 — 在 DAW 中录音"
 
 msgid "Step 3 - Import Recording"
 msgstr "步骤 3 — 导入录音"
-
-msgid "Step 4 - Analyze"
-msgstr "步骤 4 — 分析"
 
 msgid "Stop"
 msgstr "停止"
@@ -2906,9 +2876,6 @@ msgstr "两个设备，两个时钟"
 msgid "Type a level from {low:g} to {high:g} dBFS."
 msgstr "电平须在 {low:g} 到 {high:g} dBFS 之间。"
 
-msgid "Universal DAW Mode"
-msgstr "通用 DAW 模式"
-
 msgid "Unknown normalisation {value!r}; use peak, direct or none."
 msgstr "未知的归一化方式 {value!r}；可选：按峰值、按直达声或不归一化。"
 
@@ -3215,9 +3182,6 @@ msgstr "至少需要一个倍频程频带"
 
 msgid "at {temp:.0f} °C"
 msgstr "气温 {temp:.0f} °C"
-
-msgid "audio backend for Standalone Mode: portaudio (default) or fake"
-msgstr "独立模式的音频后端：portaudio（默认）或 fake"
 
 msgid "audio editor: untick Follow Tempo and Pitch, leave Enable Flex off"
 msgstr "音频编辑器：取消勾选 Follow Tempo and Pitch，保持 Enable Flex 关闭"
@@ -3811,10 +3775,6 @@ msgstr "未提供气温，因此假定为 {temperature:.0f} °C（声速 {speed:
 msgctxt "diagnostic"
 msgid "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) was assumed; a 5 °C error moves every distance by about 0.9 %"
 msgstr "未提供气温，因此假定为 {temperature:.0f} °C（声速 {speed:.1f} m/s）；气温误差 5 °C 会使每个距离偏差约 0.9 %"
-
-msgctxt "diagnostic"
-msgid "no audio device found; Universal DAW Mode still works"
-msgstr "未找到音频设备；通用 DAW 模式仍然可用"
 
 msgctxt "diagnostic"
 msgid "no common excitation band"
@@ -4961,9 +4921,6 @@ msgstr "level_dbfs 不能超过 0 dBFS"
 msgid "light"
 msgstr "浅色"
 
-msgid "list audio devices (Standalone Mode)"
-msgstr "列出音频设备（独立模式）"
-
 msgid "list positions and sessions"
 msgstr "列出位置与会话"
 
@@ -5962,9 +5919,6 @@ msgstr "WAV 文件已损坏，或被截断了"
 
 msgid "the Windows display language: {value}"
 msgstr "Windows 显示语言：{value}"
-
-msgid "the audio backend (sounddevice / PortAudio) is not available; Standalone Mode needs it, Universal DAW Mode does not"
-msgstr "音频后端（sounddevice / PortAudio）不可用；独立模式需要它，通用 DAW 模式不需要"
 
 msgid "the audio stream ended after {done} of {total} frames"
 msgstr "音频流在 {total} 帧中只处理了 {done} 帧就结束了"
@@ -7081,3 +7035,79 @@ msgstr "当前测量：采样率、位深、音频接口、录音峰值和本底
 
 msgid "Export this chart as a PNG at twice the screen resolution, as SVG, or its curves as CSV."
 msgstr "把这张图导出为两倍屏幕分辨率的 PNG 或 SVG，或把曲线导出为 CSV。"
+
+msgid "Analysis"
+msgstr "分析"
+
+msgid "ReverbScope writes the test signal and never talks to the DAW: play and record it there, then import the recording."
+msgstr "ReverbScope 只写出测试信号，从不与 DAW 通信：请在 DAW 中播放并录音，然后导入录音。"
+
+msgid "Import the recording (Step 3) to analyse it."
+msgstr "导入录音（步骤 3）后即可分析。"
+
+msgid "Import a recording instead"
+msgstr "改为导入录音"
+
+msgid "Play the sweep in your DAW, record it there and import the recording."
+msgstr "在 DAW 中播放扫频并录音，然后导入录音。"
+
+msgid "No audio device found; you can still import a recording."
+msgstr "未找到音频设备；仍可导入录音。"
+
+msgid "No audio device list is available; you can still import a recording."
+msgstr "无法获取音频设备列表；仍可导入录音。"
+
+msgid "Play and record through the audio interface"
+msgstr "通过音频接口播放并录音"
+
+msgid "ReverbScope plays the sweep only on the output you choose and records the microphone."
+msgstr "ReverbScope 只在你选择的输出上播放扫频，并录制话筒。"
+
+msgid "Play it in your DAW and import the recording"
+msgstr "在 DAW 中播放，导入录音"
+
+msgid "Save the test signal, play and record it in your DAW, then import the recording. Works without an audio device."
+msgstr "保存测试信号，在 DAW 中播放并录音，然后导入录音。没有音频设备也能用。"
+
+msgid "Play a sweep, record the room's answer and analyse it. Choose how the sweep is played and recorded; the analysis is the same either way."
+msgstr "播放扫频，录下房间的响应并加以分析。请选择扫频的播放和录音方式；两种方式的分析完全相同。"
+
+msgid "How is the sweep played and recorded?"
+msgstr "扫频如何播放和录音？"
+
+msgid "Play in Your DAW, Import the Recording"
+msgstr "在 DAW 中播放，导入录音"
+
+msgid "Play and Record Through the Audio Interface"
+msgstr "通过音频接口播放并录音"
+
+msgid "How the sweep is played and recorded"
+msgstr "扫频的播放和录音方式"
+
+msgid "Show the steps for importing a recording made in your DAW."
+msgstr "显示导入 DAW 录音的步骤。"
+
+msgid "audio backend for playing and recording through an audio interface: portaudio (default) or fake"
+msgstr "通过音频接口播放和录音时使用的音频后端：portaudio（默认）或 fake"
+
+msgid "list audio devices (for measuring through an audio interface)"
+msgstr "列出音频设备（用于通过音频接口测量）"
+
+msgid "play the sweep through the audio interface and record the microphone"
+msgstr "通过音频接口播放扫频并录制话筒"
+
+msgid "Measured with"
+msgstr "测量方式"
+
+msgid "ReverbScope measurement through the audio interface"
+msgstr "ReverbScope 音频接口测量"
+
+msgid "the audio backend (sounddevice / PortAudio) is not available; measuring through an audio interface needs it, importing a recording does not"
+msgstr "音频后端（sounddevice / PortAudio）不可用；通过音频接口测量需要它，导入录音不需要"
+
+msgctxt "diagnostic"
+msgid "no audio device found; you can still import a recording"
+msgstr "未找到音频设备；仍可导入录音"
+
+msgid "Every setting of the New Measurement page: level, sweep, profile, room and placement."
+msgstr "新测量页面上的全部设置：电平、扫频、配置、房间和摆位。"

@@ -257,7 +257,8 @@ def test_switching_modes_from_another_page_leaves_a_busy_standalone_page_alone(
     monkeypatch.setattr(page, "is_busy", lambda: True)
     window.show_compare()
     window.show_mode("standalone")  # Ctrl+2 from Compare while the analysis runs
-    assert window.stack.currentWidget() is page
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.current_route_page() is page
     assert page.demo_mode
     assert page.status.text() == "Recorded. Analyzing..."
     window.close()

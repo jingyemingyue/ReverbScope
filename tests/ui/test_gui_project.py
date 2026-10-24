@@ -115,7 +115,8 @@ def test_measuring_a_new_position_saves_the_take_into_the_project(
     assert window.model.wait_until_loaded()
     assert suggest_label(window.project.labels()) == "C"
     window.project.start_position("C", "universal_daw")
-    assert window.stack.currentWidget() is window.daw
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route() == "universal_daw"
     assert window.model.project_path == project
     assert window.strip.position.currentText() == "C"
     assert window.daw.position.text() == "C" and window.daw.room.text() == "Booth"

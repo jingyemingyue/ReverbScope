@@ -42,7 +42,7 @@ from reverbscope.ui.compare_view import ComparePage
 from reverbscope.ui.inspector import Inspector
 from reverbscope.ui.measure_strip import MeasureStrip
 from reverbscope.ui.navigator import Navigator
-from reverbscope.ui.pages import DawModePage, StandalonePage
+from reverbscope.ui.pages import MeasurePage
 from reverbscope.ui.plotkit import dispose_charts
 from reverbscope.ui.project_view import ProjectPage
 from reverbscope.ui.start_panel import StartPanel
@@ -124,14 +124,16 @@ class MainWindow(QMainWindow):
         self.model = WorkspaceModel(self)
 
         self.home = StartPanel()
-        self.daw = DawModePage(self.state)
-        self.standalone = StandalonePage(self.state)
+        #: New Measurement: one page, two ways to play and record the sweep.
+        self.measure = MeasurePage(self.state)
+        self.daw = self.measure.daw
+        self.standalone = self.measure.standalone
         views = default_views(self.model, self.state)
         self.workspace = AnalysisWorkspace(views)
         #: The workspace's stack: start panel, set-up pages, every view.
         self.stack = self.workspace.stack
-        for page in (self.home, self.daw, self.standalone):
-            self.workspace.add_page(page)
+        for setup in (self.home, self.measure):
+            self.workspace.add_page(setup)
         self.views = self.workspace.views
         compare = self.views["compare"]
         project = self.views["project"]
@@ -164,6 +166,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.home.choose_mode.connect(self.show_mode)
+        self.measure.route_requested.connect(self.show_mode)
         self.home.open_session.connect(self.choose_session)
         self.home.open_recent.connect(self.open_session_path)
         self.home.compare_requested.connect(self.show_compare)
@@ -322,11 +325,13 @@ class MainWindow(QMainWindow):
         self.workspace.navigator_button.toggled.connect(self.set_navigator_open)
         self.workspace.inspector_button.toggled.connect(self.set_inspector_open)
 
+        # One New Measurement page; the two entries open it on either way of
+        # playing and recording the sweep (the shortcuts are unchanged).
         measure_menu = self.menuBar().addMenu(_("&Measure"))
-        daw_action = QAction(_("Universal DAW Mode"), self)
+        daw_action = QAction(_("Play in Your DAW, Import the Recording"), self)
         daw_action.setShortcut(QKeySequence("Ctrl+Shift+1"))
         daw_action.triggered.connect(self._show_mode_action("universal_daw"))
-        standalone_action = QAction(_("Standalone Mode"), self)
+        standalone_action = QAction(_("Play and Record Through the Audio Interface"), self)
         standalone_action.setShortcut(QKeySequence("Ctrl+Shift+2"))
         standalone_action.triggered.connect(self._show_mode_action("standalone"))
         measure_menu.addAction(daw_action)
@@ -539,11 +544,7 @@ class MainWindow(QMainWindow):
         place = self._place
         current = self.model.current()
         subtitle = ""
-        if current is not None and self.stack.currentWidget() not in (
-            self.home,
-            self.daw,
-            self.standalone,
-        ):
+        if current is not None and self.stack.currentWidget() not in (self.home, self.measure):
             subtitle = entry_label(current)
             if current.synthetic:
                 subtitle = _("{name} · synthetic demo data").format(name=subtitle)
@@ -730,7 +731,7 @@ class MainWindow(QMainWindow):
         self.navigator.refresh_recent()
         self.show_view(
             self._preferred_view
-            if self.stack.currentWidget() in (self.home, self.daw, self.standalone)
+            if self.stack.currentWidget() in (self.home, self.measure)
             else (self.current_view_id() or self._preferred_view)
         )
         return True
@@ -816,20 +817,23 @@ class MainWindow(QMainWindow):
             # Ctrl+Shift+2 / 3 while a take or its analysis runs: switching the
             # backend under it would show the demo banner over a real sweep (or
             # the reverse). The page is shown as it is.
-            self.stack.setCurrentWidget(self.standalone)
-            self._set_place(_("Standalone Mode"))
+            self.measure.set_route("standalone")
+            self.stack.setCurrentWidget(self.measure)
+            self._set_place(_("Measure"))
+            return
+        if mode == "universal_daw" and self.standalone.is_busy():
+            # The interface take keeps the page until it ends (its Stop).
+            self.stack.setCurrentWidget(self.measure)
+            self._set_place(_("Measure"))
             return
         self.strip.set_mode(mode)
         self._apply_mode(mode)
-        if mode == "universal_daw":
-            self.stack.setCurrentWidget(self.daw)
-            self._set_place(_("Universal DAW Mode"))
-        else:
-            self.stack.setCurrentWidget(self.standalone)
-            # ``demo`` stays reachable for tests and the fake backend. It is
-            # not a Measure-menu or strip mode, and the status line does not
-            # advertise it as one.
-            self._set_place(_("Standalone Mode"))
+        # ``demo`` stays reachable for tests and the fake backend. It is not
+        # a Measure-menu or strip choice, and the status line does not
+        # advertise it as one.
+        self.measure.set_route("universal_daw" if mode == "universal_daw" else "standalone")
+        self.stack.setCurrentWidget(self.measure)
+        self._set_place(_("Measure"))
 
     def _apply_mode(self, mode: str) -> None:
         if mode == "universal_daw":
@@ -844,6 +848,8 @@ class MainWindow(QMainWindow):
     def _strip_mode(self, mode: str) -> None:
         if not self.standalone.is_busy():
             self._apply_mode(mode)
+            # The strip and the page's choice are the same choice.
+            self.measure.set_route(mode)
 
     def _strip_start(self, mode: str) -> None:
         if mode == "universal_daw":
@@ -879,7 +885,7 @@ class MainWindow(QMainWindow):
         )
         if self.model.project_path is not None and position:
             self.model.add_position(position)
-        if self.stack.currentWidget() in (self.home, self.daw, self.standalone):
+        if self.stack.currentWidget() in (self.home, self.measure):
             self.show_view("overview")
 
     # --- saving --------------------------------------------------------------------------
@@ -1023,10 +1029,10 @@ class MainWindow(QMainWindow):
         if profile != before.default_profile and profile in available_profiles():
             # A new default profile applies now, as the output folder does.
             # Only the combos: a running take keeps the profile it started with.
-            for combo in (self.daw.profile, self.standalone.profile):
-                combo.setCurrentIndex(max(combo.findData(profile), 0))
+            combo = self.measure.details.profile
+            combo.setCurrentIndex(max(combo.findData(profile), 0))
         if settings.audio_backend != before.audio_backend and not self.standalone.is_busy():
-            # The Standalone page lists the new backend's devices: a take
+            # The interface steps list the new backend's devices: a take
             # would otherwise open that backend's device of the number
             # chosen from the old list. A running take keeps its list, and
             # the page makes it again before the next one.
@@ -1050,11 +1056,10 @@ class MainWindow(QMainWindow):
         self.navigator.restyle_icons()
         self.workspace.restyle_icons()
         self.home.restyle_icons()
-        self.standalone.restyle_icons()
+        self.measure.restyle_icons()
         self.strip.restyle_icons()
         self.inspector.refresh()
-        for page in (self.daw, self.standalone):
-            page.placement.redraw()
+        self.measure.details.placement.redraw()
 
     def _follow_system_scheme(self, *_scheme: object) -> None:
         # A theme chosen in Settings (or REVERBSCOPE_COLOR_SCHEME) does not
@@ -1069,7 +1074,11 @@ class MainWindow(QMainWindow):
         flag after a take, and a bug report sent from Results or Compare
         must describe the user's real interface.
         """
-        on_demo = self.stack.currentWidget() is self.standalone and self.standalone.demo_mode
+        on_demo = (
+            self.stack.currentWidget() is self.measure
+            and self.measure.route() == "standalone"
+            and self.standalone.demo_mode
+        )
         return "fake" if on_demo else None
 
     def show_device_inspector(self) -> None:

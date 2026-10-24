@@ -302,6 +302,15 @@ def _system_copies(name: str) -> list[Path]:
     folders = [Path(base, multiarch) for base in ("/lib", "/usr/lib") if multiarch]
     folders += [Path(base) for base in ("/lib64", "/usr/lib64", "/lib", "/usr/lib")]
     found += [folder / name for folder in folders if (folder / name).is_file()]
+    # Private libraries reached through a RUNPATH, not the loader cache, such
+    # as libpulsecommon-*.so in <multiarch>/pulseaudio/.
+    found += [
+        path
+        for folder in folders[: 2 if multiarch else 0]
+        if folder.is_dir()
+        for path in sorted(folder.glob(f"*/{name}"))
+        if path.is_file()
+    ]
     return list(dict.fromkeys(found))
 
 

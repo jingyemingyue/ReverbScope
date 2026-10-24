@@ -44,7 +44,7 @@ cannot be installed (no wheels) and a resolver picks newer versions (e.g.
 PySide6_Essentials 6.8.0.2 on 3.13); only the Python 3.12 floor set was
 tested. The desktop bundles pin `requirements/bundle.lock`.
 
-## Recording files (Universal DAW Mode)
+## Recording files (imported from a DAW)
 
 Tested with the same take in every container (`tests/integration/test_daw_exports.py`):
 WAV (16 / 24 / 32-bit PCM, 32-bit float), WAVE_FORMAT_EXTENSIBLE, Broadcast
@@ -65,7 +65,7 @@ sources are marked): a documented workflow. **No DAW has been run with
 ReverbScope on real hardware yet**; the per-DAW matrix in
 [HARDWARE_TESTS.md](HARDWARE_TESTS.md) is empty.
 
-## Audio host APIs (Standalone Mode)
+## Audio host APIs (measuring through an audio interface)
 
 Every host API PortAudio offers is listed and probed (`reverbscope devices
 --probe`): MME, DirectSound, WASAPI (shared, or exclusive with

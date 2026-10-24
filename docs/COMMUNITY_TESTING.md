@@ -82,7 +82,7 @@ all physical rows. Avoid absolute SPL/accuracy claims without calibration/refere
 
 ## Fender Studio Pro / Studio One: first DAW report
 
-Use **Universal DAW Mode**. Current source/candidate buttons are **Save Test Signal WAV...**,
+On **New Measurement**, choose **Play it in your DAW and import the recording**. Current source/candidate buttons are **Save Test Signal WAV...**,
 **Choose Recording...**, **Choose Reference Sweep...** and **Analyze**;
 newer Draft GUI branches can differ. Capture
 actual labels/version rather than silently following a different PR's screenshots.
