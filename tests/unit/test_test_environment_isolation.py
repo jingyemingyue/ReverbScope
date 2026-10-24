@@ -79,11 +79,13 @@ def test_monkeypatch_undo_keeps_the_english_language_pin(
     monkeypatch.setattr(sys, "platform", "darwin", raising=False)
     for name in ("LANG", "LC_ALL", "LC_MESSAGES", "LANGUAGE", "REVERBSCOPE_LANG"):
         monkeypatch.delenv(name, raising=False)
-    choice = language_choice()
-    assert choice.lang.split("_", 1)[0] == "en", choice
+    assert language_choice().lang != "zh_CN", language_choice()
     activate(None)
-    from reverbscope.i18n import _
+    from reverbscope.i18n import _, current_locale
 
+    # Windows getlocale() can report "English_United States"; the active
+    # catalog must still be English, not Simplified Chinese.
+    assert current_locale() == "en"
     assert _("cannot write {path}: {error}").startswith("cannot write")
 
 
