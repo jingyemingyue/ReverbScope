@@ -447,6 +447,49 @@ def test_escape_before_the_worker_exists_cancels_before_playback(
         window.close()
 
 
+def test_escape_on_the_next_start_cancels_the_new_worker(
+    app: QApplication,
+    held_take: threading.Event,
+    stop_calls: list[MeasureWorker],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The previous worker is still referenced when Stop comes on for the next take."""
+    window = _window(app)
+    try:
+        _start_take(app, window)
+        page = window.standalone
+        previous = page._measure_worker
+        assert previous is not None
+        _press_escape(window)
+        _settle(app, previous)
+        assert not previous.isRunning()
+        assert page._measure_worker is previous
+        assert window.state.result is None
+        assert not window.strip.stop_button.isEnabled()
+
+        real_set_busy = page._set_busy
+
+        def busy_then_escape(busy: bool, text: str = "", *, tone: str = "") -> None:
+            real_set_busy(busy, text, tone=tone)
+            if busy and page._measure_worker is previous and window.strip.stop_button.isEnabled():
+                for _ in range(3):
+                    _press_escape(window)
+
+        monkeypatch.setattr(page, "_set_busy", busy_then_escape)
+        marked = len(stop_calls)
+        page.run_button.click()
+        new = page._measure_worker
+        assert new is not None and new is not previous
+        assert new._cancel.is_set()
+        assert stop_calls[marked:] == [new]
+        _settle(app, new)
+        assert window.state.result is None
+        assert "Stopped" in page.status.text()
+    finally:
+        held_take.set()
+        window.close()
+
+
 def test_closing_the_window_drops_the_escape_filter(
     app: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:

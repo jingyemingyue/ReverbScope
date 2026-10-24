@@ -746,6 +746,9 @@ class StandalonePage(QWidget):
         # Esc between enabling Stop and assigning the worker. Applied once,
         # immediately before the thread starts, so that take never plays.
         self._stop_before_start = False
+        # True only while the next worker is being built. The previous worker
+        # is still referenced then, and must not receive this take's cancel.
+        self._arming_take = False
         #: As :attr:`DawModePage.before_take`.
         self.before_take: Callable[[], bool] | None = None
         self._channel_plan: ChannelPlan | None = None
@@ -1488,38 +1491,44 @@ class StandalonePage(QWidget):
                 device=self.output_device.currentText().lstrip("★ "),
                 channel=self._take_output_channel,
             )
-        self._set_busy(True, playing)
-        self._generation = self.state.generation
-        self._measure_worker = MeasureWorker(
-            measurement_signal(settings),
-            settings.sample_rate,
-            input_device=input_device,
-            output_device=output_device,
-            input_channels=list(plan.input_channels),
-            output_channel=self._take_output_channel,
-            level_dbfs=settings.level_dbfs,
-            backend=backend,
-            options=self.stream_options(),
-            loopback_channel=plan.loopback_channel,
-        )
-        self._measure_worker.succeeded.connect(self._on_recorded)
-        self._measure_worker.failed.connect(self._on_failure)
-        self._measure_worker.progress.connect(self._on_progress)
-        self._measure_worker.stopped.connect(self._on_stopped)
-        # Stop was pressed after the button came on and before this assignment.
-        if self._stop_before_start:
-            self._stop_before_start = False
-            self._measure_worker.request_stop()
-        self._measure_worker.start()
+        # Stop comes on inside _set_busy, before this assignment replaces the
+        # previous worker. Esc in between is for the take being built.
+        self._arming_take = True
+        worker: MeasureWorker | None = None
+        try:
+            self._set_busy(True, playing)
+            self._generation = self.state.generation
+            worker = MeasureWorker(
+                measurement_signal(settings),
+                settings.sample_rate,
+                input_device=input_device,
+                output_device=output_device,
+                input_channels=list(plan.input_channels),
+                output_channel=self._take_output_channel,
+                level_dbfs=settings.level_dbfs,
+                backend=backend,
+                options=self.stream_options(),
+                loopback_channel=plan.loopback_channel,
+            )
+            self._measure_worker = worker
+            worker.succeeded.connect(self._on_recorded)
+            worker.failed.connect(self._on_failure)
+            worker.progress.connect(self._on_progress)
+            worker.stopped.connect(self._on_stopped)
+            if self._stop_before_start:
+                self._stop_before_start = False
+                worker.request_stop()
+        finally:
+            self._arming_take = False
+        if worker is not None:
+            worker.start()
 
     def stop_measurement(self) -> None:
-        """Cancel the take, including one whose thread has not started yet."""
-        worker = self._measure_worker
-        if worker is None:
-            # Stop is already enabled. The worker is assigned a few lines later.
+        """Cancel the take being armed, or the one whose thread is running."""
+        if self._arming_take or self._measure_worker is None:
             self._stop_before_start = True
             return
-        worker.request_stop()
+        self._measure_worker.request_stop()
 
     def _on_progress(self, fraction: float) -> None:
         self.progress.setValue(int(fraction * 100.0))
