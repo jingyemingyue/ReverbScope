@@ -16,7 +16,10 @@ from reverbscope.i18n import _
 def sounddevice_module() -> Any:
     try:
         import sounddevice
-    except (ImportError, OSError) as exc:
+    except Exception as exc:
+        # ImportError/OSError when PortAudio is missing; sounddevice also raises
+        # PortAudioError at import when Pa_Initialize fails (for example a
+        # PulseAudio client with no server running).
         raise AudioBackendUnavailableError(
             _(
                 "the audio backend (sounddevice / PortAudio) is not available; measuring "

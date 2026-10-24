@@ -524,3 +524,30 @@ def test_cli_daw_mode_session_leaves_hardware_channels_empty(
     # The analysed WAV column (0-based) is recorded by the analysis instead.
     result = json.loads((out / "result.json").read_text(encoding="utf-8"))
     assert result["analysis_settings"]["channel_analysed"] == 0
+
+
+def test_a_portaudio_init_failure_at_import_means_no_backend(monkeypatch):
+    """sounddevice raises PortAudioError at import when Pa_Initialize fails
+    (a PulseAudio client with no server); that must read as "no backend"."""
+    import builtins
+    import sys
+
+    from reverbscope.audio.devices import sounddevice_module
+    from reverbscope.errors import AudioBackendUnavailableError
+
+    class PortAudioError(Exception):
+        pass
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "sounddevice":
+            raise PortAudioError("Error initializing PortAudio: Can't connect to server")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.delitem(sys.modules, "sounddevice", raising=False)
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    import pytest
+
+    with pytest.raises(AudioBackendUnavailableError):
+        sounddevice_module()
