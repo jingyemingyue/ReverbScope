@@ -295,3 +295,32 @@ def test_a_usage_error_follows_the_style_that_was_asked_for(
     monkeypatch.setenv("REVERBSCOPE_HOME", str(home / "home"))
     code, _out, err = invoke(["show", "somewhere", "--bogus"], capsys)
     assert code == 2 and err.startswith("╭─ ✗ Error ─")
+
+
+def test_a_usage_error_stays_english_after_undo_on_a_chinese_mac(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``monkeypatch.undo()`` used to restore the Mac's preferred languages.
+
+    On a Chinese Mac the panel then started with ``错误`` while this suite
+    still expected ``Error``. The language pin owns its own MonkeyPatch, so
+    undoing the test's patches leaves ``MACOS_PREFERENCES`` empty and the
+    panel stays English.
+    """
+    import sys
+
+    from reverbscope import i18n
+
+    assert main(["config", "style", "boxed"]) == 0
+    capsys.readouterr()
+    monkeypatch.undo()
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(home / "home"))
+    monkeypatch.setattr(sys, "platform", "darwin", raising=False)
+    for name in ("LANG", "LC_ALL", "LC_MESSAGES", "LANGUAGE", "REVERBSCOPE_LANG"):
+        monkeypatch.delenv(name, raising=False)
+    assert i18n.MACOS_PREFERENCES == ()
+    assert i18n._macos_languages() == []
+    code, _out, err = invoke(["show", "somewhere", "--bogus"], capsys)
+    assert code == 2
+    assert err.startswith("╭─ ✗ Error ─"), err.splitlines()[0] if err else err
+    assert not err.startswith("╭─ ✗ 错误")
