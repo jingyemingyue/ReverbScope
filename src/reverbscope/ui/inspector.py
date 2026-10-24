@@ -404,6 +404,21 @@ class Inspector(QWidget):
                 validity_word(slopes.validity),
                 _tone(slopes.validity),
             )
+        thirds = result.decay.third_octave_bands
+        if thirds:
+            fits = [
+                b.multi_slope
+                for b in thirds
+                if b.multi_slope is not None
+                and b.multi_slope.validity is Validity.VALID
+                and b.multi_slope.selected_slopes is not None
+            ]
+            section.add_row(
+                _("Slopes, 1/3 octave"),
+                _("two in {two} of {fitted} bands").format(
+                    two=sum(1 for fit in fits if fit.selected_slopes == 2), fitted=len(fits)
+                ),
+            )
         for name, energy in (
             ("C50", broadband.c50),
             ("C80", broadband.c80),

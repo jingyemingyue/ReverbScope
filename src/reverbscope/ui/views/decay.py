@@ -34,10 +34,38 @@ METRICS = ("edt", "t20", "t30")
 BROADBAND = "__broadband__"
 #: Every band of the current measurement in one chart, as the 0.5 Decay tab.
 ALL_BANDS = "__all__"
+#: Band resolutions of the Resolution list: the octave bands every result has,
+#: and the one-third-octave bands of a result analysed with them.
+OCTAVE = "octave"
+THIRD_OCTAVE = "third_octave"
 
 
 def metric_of(band: BandDecay, name: str) -> DecayMetric:
     return {"edt": band.edt, "t20": band.t20, "t30": band.t30}[name]
+
+
+def bands_of(entry: Entry, resolution: str) -> tuple[BandDecay, ...]:
+    """The octave or one-third-octave bands of ``entry`` (none when it has none)."""
+    if entry.result is None:
+        return ()
+    if resolution == THIRD_OCTAVE:
+        return entry.result.decay.third_octave_bands or ()
+    return entry.result.decay.bands
+
+
+def _third_octave_note(bands: tuple[BandDecay, ...]) -> str:
+    """How many one-third-octave bands have two slopes (valid fits only)."""
+    fits = [
+        b.multi_slope
+        for b in bands
+        if b.multi_slope is not None
+        and b.multi_slope.validity is Validity.VALID
+        and b.multi_slope.selected_slopes is not None
+    ]
+    two = sum(1 for fit in fits if fit.selected_slopes == 2)
+    return _(
+        "One-third-octave bands: two slopes in {two} of {fitted} bands with a valid fit."
+    ).format(two=two, fitted=len(fits))
 
 
 class DecayView(AnalysisView):
@@ -49,6 +77,14 @@ class DecayView(AnalysisView):
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(6)
         controls = QHBoxLayout()
+        # Only shown for a measurement analysed in one-third-octave bands too.
+        self.resolution_label = QLabel(_("Resolution"))
+        controls.addWidget(self.resolution_label)
+        self.resolution = QComboBox()
+        self.resolution.addItem(_("Octave"), OCTAVE)
+        self.resolution.addItem(_("One-third octave"), THIRD_OCTAVE)
+        self.resolution.currentIndexChanged.connect(self._resolution_changed)
+        controls.addWidget(self.resolution)
         controls.addWidget(QLabel(_("Band")))
         self.band = QComboBox()
         self.band.currentIndexChanged.connect(self.refresh)
@@ -100,17 +136,41 @@ class DecayView(AnalysisView):
     def title(self) -> str:
         return _("Decay")
 
+    def resolution_value(self) -> str:
+        """The band resolution shown: octave unless one-third octave is chosen
+        and the current measurement has those bands."""
+        current = self.model.current()
+        if (
+            self.resolution.currentData() == THIRD_OCTAVE
+            and current is not None
+            and current.result is not None
+            and current.result.decay.third_octave_bands
+        ):
+            return THIRD_OCTAVE
+        return OCTAVE
+
+    def _resolution_changed(self) -> None:
+        self._bands_of = ""
+        self.refresh()
+
     def _fill_bands(self, entry: Entry | None) -> None:
         """The band list of the current entry, keeping the chosen band by label."""
-        if entry is None or entry.result is None or entry.key == self._bands_of:
+        has_thirds = bool(
+            entry is not None and entry.result is not None and entry.result.decay.third_octave_bands
+        )
+        self.resolution_label.setVisible(has_thirds)
+        self.resolution.setVisible(has_thirds)
+        resolution = self.resolution_value()
+        key = f"{entry.key}#{resolution}" if entry is not None else ""
+        if entry is None or entry.result is None or key == self._bands_of:
             return
-        self._bands_of = entry.key
+        self._bands_of = key
         chosen = self.band.currentData()
         self.band.blockSignals(True)
         self.band.clear()
         self.band.addItem(_("Broadband"), BROADBAND)
         self.band.addItem(_("All bands of the current measurement"), ALL_BANDS)
-        for band in entry.result.decay.bands:
+        for band in bands_of(entry, resolution):
             self.band.addItem(band_text(band.band_label), band.band_label)
         row = self.band.findData(chosen)
         self.band.setCurrentIndex(max(row, 0))
@@ -121,7 +181,9 @@ class DecayView(AnalysisView):
         chosen = self.band.currentData() or BROADBAND
         if chosen in (BROADBAND, ALL_BANDS):
             return entry.result.decay.broadband
-        return next((b for b in entry.result.decay.bands if b.band_label == chosen), None)
+        return next(
+            (b for b in bands_of(entry, self.resolution_value()) if b.band_label == chosen), None
+        )
 
     def redraw(self) -> None:
         t = tokens()
@@ -141,7 +203,8 @@ class DecayView(AnalysisView):
         )
         decay = shown.result.decay if shown is not None and shown.result is not None else None
         if decay is not None and not any(
-            band.edc_db.size for band in (decay.broadband, *decay.bands)
+            band.edc_db.size
+            for band in (decay.broadband, *decay.bands, *(decay.third_octave_bands or ()))
         ):
             # A session saved without curves keeps the figures only; an empty
             # chart with a legend looked like a broken measurement.
@@ -206,6 +269,8 @@ class DecayView(AnalysisView):
                 slope_note = self._draw_slope_fit(current, band)
                 if slope_note:
                     notes.append(slope_note)
+        if shown is not None and self.resolution_value() == THIRD_OCTAVE:
+            notes.append(_third_octave_note(bands_of(shown, THIRD_OCTAVE)))
         self.chart.set_default_range((0.0, longest or 1.0), (-70.0, 5.0))
         self.bands_chart.set_default_range((50.0, 16_000.0), None)
         notes.append(
@@ -310,6 +375,7 @@ class DecayView(AnalysisView):
         decay = entry.result.decay
         longest = 0.0
         broadband = decay.broadband
+        resolution = self.resolution_value()
         if broadband.edc_db.size:
             longest = float(broadband.edc_time_s[-1])
             self.chart.add_curve(
@@ -324,7 +390,7 @@ class DecayView(AnalysisView):
                 z=10,
             )
         missing: list[str] = []
-        for index, band in enumerate(decay.bands):
+        for index, band in enumerate(bands_of(entry, resolution)):
             if band.edc_db.size == 0:
                 missing.append(f"{band_text(band.band_label)} ({validity_word(band.t30.validity)})")
                 continue
@@ -360,7 +426,8 @@ class DecayView(AnalysisView):
         centres: list[float] = []
         values: list[float] = []
         valid: list[bool] = []
-        for band in entry.result.decay.bands:
+        resolution = self.resolution_value()
+        for band in bands_of(entry, resolution):
             metric = metric_of(band, metric_name)
             if band.center_hz is None or metric.seconds is None:
                 continue
@@ -379,7 +446,11 @@ class DecayView(AnalysisView):
             width=1.6 if is_current else 1.0,
             style=DASHES[entry.color_index % len(DASHES)],
             key=entry.key,
-            processing=metric_name.upper(),
+            processing=(
+                _("{metric}, one-third-octave bands").format(metric=metric_name.upper())
+                if resolution == THIRD_OCTAVE
+                else metric_name.upper()
+            ),
             readout=is_current,
         )
         mask = np.array(valid)
