@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReverbScope common-slope.json",
+  "description": "Common-slope analysis of several responses of one room (reverbscope common-slope). Decay times in s; amplitudes as fractions of each response's onset energy, noise terms per second.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "method",
+    "estimator",
+    "amplitude_method",
+    "max_slopes",
+    "positions",
+    "bands"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "kind": { "const": "common-slope" },
+    "method": { "type": "string" },
+    "estimator": { "enum": ["edc", "is-sage"] },
+    "amplitude_method": { "enum": ["linex", "edc"] },
+    "max_slopes": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "positions": { "type": "array", "items": { "type": "string" } },
+    "bands": { "type": "array", "items": { "$ref": "#/$defs/band" } },
+    "notes": { "type": "array", "items": { "type": "string" } },
+    "runtime_s": { "type": "number", "minimum": 0 },
+    "reverbscope_version": { "type": "string" }
+  },
+  "$defs": {
+    "seconds": { "type": "number", "exclusiveMinimum": 0 },
+    "number_or_null": { "type": ["number", "null"] },
+    "model": {
+      "type": "object",
+      "required": ["slope_count", "decay_times_s", "bic", "rms_residual_db", "converged"],
+      "properties": {
+        "slope_count": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "decay_times_s": { "type": "array", "items": { "$ref": "#/$defs/seconds" } },
+        "bic": { "type": "number" },
+        "rms_residual_db": { "type": "number", "minimum": 0 },
+        "converged": { "type": "boolean" }
+      }
+    },
+    "position": {
+      "type": "object",
+      "required": ["position", "amplitudes", "amplitudes_db", "noise_term", "rms_residual_db"],
+      "properties": {
+        "position": { "type": "string" },
+        "amplitudes": { "type": "array", "items": { "type": "number", "minimum": 0 } },
+        "amplitudes_db": { "type": "array", "items": { "$ref": "#/$defs/number_or_null" } },
+        "noise_term": { "type": "number", "minimum": 0 },
+        "noise_db": { "$ref": "#/$defs/number_or_null" },
+        "rms_residual_db": { "type": "number", "minimum": 0 },
+        "integration_end_s": { "type": "number" },
+        "single_slopes": { "type": ["integer", "null"] },
+        "single_decay_times_s": { "type": "array", "items": { "type": "number" } },
+        "single_rms_residual_db": { "$ref": "#/$defs/number_or_null" }
+      }
+    },
+    "band": {
+      "type": "object",
+      "required": ["band_label", "center_hz", "fraction", "validity", "selected_slopes", "decay_times_s"],
+      "properties": {
+        "band_label": { "type": "string" },
+        "center_hz": { "type": "number", "exclusiveMinimum": 0 },
+        "fraction": { "enum": ["octave", "third"] },
+        "validity": { "enum": ["valid", "unreliable", "insufficient_decay_range"] },
+        "selected_slopes": { "type": ["integer", "null"], "minimum": 1, "maximum": 3 },
+        "decay_times_s": { "type": "array", "items": { "$ref": "#/$defs/seconds" } },
+        "edc_decay_times_s": { "type": "array", "items": { "$ref": "#/$defs/seconds" } },
+        "models": { "type": "array", "items": { "$ref": "#/$defs/model" } },
+        "delta_bic": { "type": "array", "items": { "type": "number" } },
+        "supporting_positions": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "positions": { "type": "array", "items": { "$ref": "#/$defs/position" } },
+        "excluded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["position", "reason"],
+            "properties": {
+              "position": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "runtime_s": { "type": "number", "minimum": 0 },
+        "reason": { "type": ["string", "null"] },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

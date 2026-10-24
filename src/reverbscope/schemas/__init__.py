@@ -19,6 +19,7 @@ SCHEMA_FILES: dict[str, str] = {
     "comparison": "comparison.schema.json",
     "project": "project.schema.json",
     "sidecar": "sweep-sidecar.schema.json",
+    "common-slope": "common-slope.schema.json",
 }
 
 
