@@ -1,5 +1,7 @@
 # ReverbScope 功能清单（以代码为准）· FEATURES
 
+> 以 [GUIDELINES.zh-CN.md](../../GUIDELINES.zh-CN.md) 为准：本文和准则冲突时以准则为准（§2.2）。
+
 > 盘点基于 **main `ab3da19`**（2026-10-19 fetch，未变），对照 PR #71 `e39185c` 与 PR #89 `1ea78b3` 的 GUI。只列代码里真实存在的能力；代码里没有的写 **未实现**，设计稿里不画成可用。
 > 列说明 —— **GUI(main)**：main 上的桌面界面是否已经提供（✓ 有 / CLI 仅命令行 / ✗ 无）；**#91**：本 PR 的设计稿是否覆盖（文件编号见 SPEC §18）。
 > 所有设计稿里的数字、曲线、文字都由 `source/prep.py` 调这些函数在 `reverbscope demo` 合成数据上算出（见 README「数据来源」）。

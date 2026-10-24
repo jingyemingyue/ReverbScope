@@ -1,5 +1,7 @@
 # 浅色侧栏 GUI 实现对照 · IMPLEMENTATION
 
+> 以 [GUIDELINES.zh-CN.md](../../GUIDELINES.zh-CN.md) 为准：本文和准则冲突时以准则为准（§2.2）。
+
 > 分支 `gui/light-sidebar-impl`（基于 `gui/remove-3d-room`，即 #95）。本文把
 > [FEATURES.md](FEATURES.md) 里的每一项能力对到实现后的界面位置，再列出每个
 > Lucide 图标对应的动作。FEATURES.md 是设计基线分支

@@ -155,7 +155,7 @@ and every screenshot is synthetic demo data.
   current stub types that function as any floating dtype. The values do not
   change.
 - **The desktop app is one workstation window** (GUI 2.0,
-  `docs/design/GUI_2_ARCHITECTURE.md`). A navigator lists the project's
+  `docs/design/GUI_ARCHITECTURE.md`). A navigator lists the project's
   positions and every open measurement, each with its colour. The check box
   (what is drawn), the selection and the baseline are independent. The view
   bar groups the analysis: Overview, Frequency, Time, Decay, Spectral
