@@ -10,6 +10,7 @@ here changes a stored value.
 
 from __future__ import annotations
 
+import statistics
 from collections.abc import Collection, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import datetime
@@ -2840,3 +2841,66 @@ def render_terminal_edition_gui(console: Console) -> str:
     lines.append("  " + _("Download:"))
     lines.append("    " + c.command(RELEASES_URL))
     return c.fit("\n".join(lines))
+
+
+def common_slope_table(c: Console, result: Any) -> list[str]:
+    """``reverbscope common-slope``: per band the common decay times, the
+    number of positions and the median RMS error of the common model next to
+    that of the per-response fits."""
+    dash = c.dash()
+    rows = []
+    for band in result.bands:
+        label = printable(band_text(band.band_label), single_line=True)
+        if band.selected_slopes is None:
+            times = dash
+            slopes = dash
+        else:
+            times = " / ".join(f"{t:.2f} s" for t in band.decay_times_s)
+            slopes = str(band.selected_slopes)
+        common = [p.rms_residual_db for p in band.positions]
+        single = [
+            p.single_rms_residual_db for p in band.positions if p.single_rms_residual_db is not None
+        ]
+        rows.append(
+            [
+                label,
+                slopes,
+                times,
+                str(len(band.positions)),
+                f"{statistics.median(common):.2f} dB" if common else dash,
+                f"{statistics.median(single):.2f} dB" if single else dash,
+                validity_word(band.validity),
+            ]
+        )
+    headings = [
+        _("Band"),
+        pgettext("common-slope column", "Slopes"),
+        pgettext("common-slope column", "Common decay times"),
+        pgettext("common-slope column", "Positions"),
+        pgettext("common-slope column", "Error (common)"),
+        pgettext("common-slope column", "Error (per response)"),
+        pgettext("common-slope column", "Status"),
+    ]
+    lines = [""]
+    lines += c.table(headings, rows, align="lrrrrrl")
+    lines += c.paragraph(
+        _(
+            "Decay times shared by all {n} positions, band by band (common-slope model). "
+            "Error: median RMS difference between each position's energy decay curve and the "
+            "common model, and the same for each response's own single/double-slope fit."
+        ).format(n=len(result.positions))
+    )
+    for band in result.bands:
+        label = printable(band_text(band.band_label), single_line=True)
+        for text in (band.reason, *band.notes):
+            if text:
+                lines += c.paragraph(f"{label}: {printable(localize(text), single_line=True)}")
+        for item in band.excluded:
+            lines += c.paragraph(
+                _("{band}: {position} left out ({reason})").format(
+                    band=label,
+                    position=printable(item.position, single_line=True),
+                    reason=printable(localize(item.reason), single_line=True),
+                )
+            )
+    return lines

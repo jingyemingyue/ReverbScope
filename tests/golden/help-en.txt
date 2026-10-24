@@ -7,29 +7,31 @@ ReverbScope: an open-source, DAW-independent recording environment analyzer.
 
 commands:
   Get started
-    demo        try ReverbScope with synthetic data: no audio hardware needed
-    gui         start the desktop GUI (needs PySide6; the desktop download
-                includes it)
-    profiles    the recording profiles, and what each one watches for
+    demo          try ReverbScope with synthetic data: no audio hardware needed
+    gui           start the desktop GUI (needs PySide6; the desktop download
+                  includes it)
+    profiles      the recording profiles, and what each one watches for
   Measurement
-    sweep       write the ESS test signal WAV (+ JSON sidecar)
-    analyze     analyse a recording made with the sweep
-    devices     list audio devices (Standalone Mode)
-    measure     Standalone Mode: play the sweep and record the microphone
-    analyze-ir  analyse an impulse-response WAV from another tool
+    sweep         write the ESS test signal WAV (+ JSON sidecar)
+    analyze       analyse a recording made with the sweep
+    devices       list audio devices (Standalone Mode)
+    measure       Standalone Mode: play the sweep and record the microphone
+    analyze-ir    analyse an impulse-response WAV from another tool
   Results
-    show        print a saved session or comparison.json report, or list
-                sessions
-    compare     compare two saved sessions
-    project     project folders (one room, several positions)
-    export      export curves through an exporter
-    session     session folder tools
+    show          print a saved session or comparison.json report, or list
+                  sessions
+    compare       compare two saved sessions
+    project       project folders (one room, several positions)
+    common-slope  decay times shared by several positions of one room
+                  (common-slope model)
+    export        export curves through an exporter
+    session       session folder tools
   Settings
-    config      show or change the settings (the same settings.json as the
-                desktop app)
+    config        show or change the settings (the same settings.json as the
+                  desktop app)
   Diagnostics
-    doctor      print an environment report for bug reports and debugging
-    schema      print a shipped JSON Schema
+    doctor        print an environment report for bug reports and debugging
+    schema        print a shipped JSON Schema
 
 options:
   -h, --help            show this help message and exit
@@ -455,6 +457,35 @@ options:
 examples:
   reverbscope project overview studio-a
 
+=== reverbscope common-slope --help
+usage: reverbscope common-slope INPUT [options]
+
+decay times shared by several positions of one room (common-slope model)
+
+positional arguments:
+  INPUT                 impulse-response WAVs, session folders or a project
+                        folder (each of its positions); one position each
+
+options:
+  -h, --help            show this help message and exit
+  --band LO HI          declared excitation band in Hz of the WAV inputs
+                        (required for WAVs)
+  --third-octave        one-third-octave bands instead of octave bands
+  --max-slopes {1,2,3}  largest number of common slopes considered (default 3)
+  --estimator {edc,is-sage}
+                        decay-time estimator: joint EDC fit (default) or the
+                        experimental IS-NMF/SAGE estimator on the band
+                        envelopes
+  --amplitudes {linex,edc}
+                        amplitude estimator for the common decay times:
+                        maximum-likelihood LINEX (default) or the EDC fit
+  --out DIR             folder for common-slope.json and the two CSV tables
+
+examples:
+  reverbscope common-slope studio-a
+  reverbscope common-slope a.wav b.wav c.wav --band 20 20000 --out common
+  reverbscope common-slope session-1 session-2 --third-octave
+
 === reverbscope export --help
 usage: reverbscope export session [options]
 
@@ -565,12 +596,12 @@ examples:
   reverbscope doctor --probe
 
 === reverbscope schema --help
-usage: reverbscope schema {result,session,comparison,project,sidecar} [options]
+usage: reverbscope schema {result,session,comparison,project,sidecar,common-slope} [options]
 
 print a shipped JSON Schema
 
 positional arguments:
-  {result,session,comparison,project,sidecar}
+  {result,session,comparison,project,sidecar,common-slope}
                         which schema to print
 
 options:
