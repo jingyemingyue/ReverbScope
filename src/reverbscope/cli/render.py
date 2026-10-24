@@ -762,7 +762,7 @@ def _decay_slopes(c: Console, result: AnalysisResult) -> list[str]:
 def _uncertainty_note() -> str:
     return _(
         "± is one standard deviation of the fit (a 68 % interval): the random "
-        "fluctuation of the decay curve and how well the model fits it (ADR 0006). "
+        "fluctuation of the decay curve and how well the model fits it. "
         "It is for this one response; it does not include the spread between "
         "positions or repeated measurements. 95 % intervals are in decay_slopes.csv."
     )
