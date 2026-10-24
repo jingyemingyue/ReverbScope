@@ -408,7 +408,7 @@ class ProjectPage(AnalysisView):
         )
         sp_act = self._tools_actions1.spacing()
         actions_all_needed = add_needed + comp_needed + meas_needed + (2 * sp_act)
-        actions_add_comp = add_needed + comp_needed + sp_act + 16
+        actions_add_comp = add_needed + comp_needed + sp_act + 40
 
         if actions_all_needed <= available:
             actions_mode = 0
