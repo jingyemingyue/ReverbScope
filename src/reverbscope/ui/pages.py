@@ -1183,7 +1183,7 @@ class StandalonePage(QWidget):
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802 - Qt override
         if watched is getattr(self, "action_bar", None) and event.type() == QEvent.Type.Resize:
             self._place_reason()
-        return super().eventFilter(watched, event)
+        return bool(super().eventFilter(watched, event))
 
     def _reveal_step(self, index: int) -> None:
         target = (self.devices_box, self.sweep_box, self.run_button)[index]
@@ -1827,7 +1827,7 @@ class MeasurePage(QWidget):
 
     def cards_stacked(self) -> bool:
         """Whether the two ways in are shown one above the other."""
-        return self.route_cards.direction() == QBoxLayout.Direction.TopToBottom
+        return bool(self.route_cards.direction() == QBoxLayout.Direction.TopToBottom)
 
     def _place_cards(self) -> None:
         stacked = self.chooser.width() < ROUTE_CARDS_SIDE_BY_SIDE_MIN_WIDTH
@@ -1840,7 +1840,7 @@ class MeasurePage(QWidget):
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802 - Qt override
         if watched is self.chooser and event.type() == QEvent.Type.Resize:
             self._place_cards()
-        return super().eventFilter(watched, event)
+        return bool(super().eventFilter(watched, event))
 
     def _route_card(self, route: str, icon_name: str, title: str, caption: str) -> QPushButton:
         """A selectable card, drawn like the start panel's two ways in."""
