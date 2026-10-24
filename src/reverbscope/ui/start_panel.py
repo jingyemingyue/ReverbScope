@@ -12,8 +12,10 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
+from PySide6.QtGui import QResizeEvent, QShowEvent
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -54,6 +56,7 @@ class StartPanel(QWidget):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.viewport().installEventFilter(self)
         body = QWidget()
         body.setProperty("page", True)
         self.scroll_area.setWidget(body)
@@ -87,26 +90,31 @@ class StartPanel(QWidget):
         sessions_layout = QVBoxLayout(sessions)
         sessions_layout.setContentsMargins(0, 0, 0, 0)
         sessions_layout.setSpacing(6)
+        self.sessions_label = label(_("Saved sessions"), "section")
         header = QHBoxLayout()
-        header.addWidget(label(_("Saved sessions"), "section"))
+        header.addWidget(self.sessions_label)
         header.addStretch(1)
-        open_button = QPushButton(_("Open Session..."))
-        open_button.setToolTip(_("Open a session.json or a folder that contains one."))
-        open_button.clicked.connect(self.open_session.emit)
-        project_button = QPushButton(_("Open Project..."))
-        project_button.setToolTip(
+        self.open_button = QPushButton(_("Open Session..."))
+        self.open_button.setToolTip(_("Open a session.json or a folder that contains one."))
+        self.open_button.clicked.connect(self.open_session.emit)
+        self.project_button = QPushButton(_("Open Project..."))
+        self.project_button.setToolTip(
             _("One room, several microphone positions: open or make a project folder.")
         )
-        project_button.clicked.connect(self.open_project.emit)
+        self.project_button.clicked.connect(self.open_project.emit)
         compare_button = QPushButton(_("Compare two sessions..."))
         compare_button.setToolTip(_("Select two rows below, then compare them."))
         compare_button.clicked.connect(self.compare_requested.emit)
-        for button, icon_name in ((open_button, "folder"), (project_button, "layers")):
+        for button, icon_name in ((self.open_button, "folder"), (self.project_button, "layers")):
             button.setIcon(icons.icon(icon_name, 16))
             button.setProperty("icon_name", icon_name)
             header.addWidget(button)
         compare_button.setIcon(icons.icon("git-compare", 16))
         compare_button.setProperty("icon_name", "git-compare")
+        self._sessions_layout = sessions_layout
+        self._header_row = header
+        self._button_row = QHBoxLayout()
+        self._header_stacked: bool | None = None
         sessions_layout.addLayout(header)
         # Two selected rows go straight into Compare (MainWindow.show_compare).
         self.browser = SessionBrowser(multi_select=True)
@@ -118,15 +126,153 @@ class StartPanel(QWidget):
         footer.addWidget(compare_button)
         footer.addStretch(1)
         footer.addWidget(self.guide_button)
+        self.compare_button = compare_button
+        self._body_layout = layout
+        self._footer_row = footer
+        self._footer_guide_row = QHBoxLayout()
+        self._footer_stacked: bool | None = None
+        self._paths_stacked: bool | None = None
         layout.addLayout(footer)
         layout.addWidget(self.walkthrough)
+        self._place_responsive()
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802 - Qt override
+        if (
+            hasattr(self, "scroll_area")
+            and watched is self.scroll_area.viewport()
+            and event.type() == QEvent.Type.Resize
+        ):
+            self._place_responsive()
+        return bool(super().eventFilter(watched, event))
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._place_responsive()
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
+        super().showEvent(event)
+        self._place_responsive()
+
+    def _place_responsive(self) -> None:
+        if not hasattr(self, "_sessions_layout"):
+            return
+        viewport_w = self.scroll_area.viewport().width()
+        if self.width() > 0 and (viewport_w <= 0 or viewport_w > self.width()):
+            viewport_w = max(self.width() - 16, 320)
+        widget = self.scroll_area.widget()
+        layout = widget.layout() if widget is not None else None
+        margins = layout.contentsMargins() if layout is not None else None
+        left_right = (margins.left() + margins.right()) if margins is not None else 64
+        available = (viewport_w if viewport_w > 0 else (self.width() - 16)) - left_right
+        if available <= 0:
+            return
+
+        if hasattr(self, "_paths_layout") and hasattr(self, "composer"):
+            b1 = self.path_buttons.get("standalone")
+            b2 = self.path_buttons.get("universal_daw")
+            if b1 is not None and b2 is not None:
+                c_lay = self.composer.layout()
+                c_margins = c_lay.contentsMargins() if c_lay is not None else None
+                c_padding = (c_margins.left() + c_margins.right()) if c_margins is not None else 32
+                c_avail = min(available, self.composer.maximumWidth()) - c_padding
+                b1_lay = b1.layout()
+                b2_lay = b2.layout()
+                fm1 = b1.fontMetrics()
+                fm2 = b2.fontMetrics()
+                t1 = _("Standalone Mode")
+                t2 = _("Universal DAW Mode")
+                b1_w = max(
+                    b1_lay.sizeHint().width() if b1_lay is not None else 0,
+                    b1_lay.minimumSize().width() if b1_lay is not None else 0,
+                    b1.sizeHint().width(),
+                    fm1.horizontalAdvance(t1) + 62,
+                    200,
+                )
+                b2_w = max(
+                    b2_lay.sizeHint().width() if b2_lay is not None else 0,
+                    b2_lay.minimumSize().width() if b2_lay is not None else 0,
+                    b2.sizeHint().width(),
+                    fm2.horizontalAdvance(t2) + 62,
+                    200,
+                )
+                paths_needed = b1_w + b2_w + self._paths_layout.spacing()
+                paths_stacked = paths_needed > c_avail
+                if paths_stacked != self._paths_stacked:
+                    self._paths_stacked = paths_stacked
+                    new_dir = (
+                        QBoxLayout.Direction.TopToBottom
+                        if paths_stacked
+                        else QBoxLayout.Direction.LeftToRight
+                    )
+                    self._paths_layout.setDirection(new_dir)
+                    self._paths_layout.invalidate()
+                    if c_lay is not None:
+                        c_lay.invalidate()
+                    if widget is not None:
+                        widget.updateGeometry()
+                        widget.adjustSize()
+
+        needed = (
+            self.sessions_label.sizeHint().width()
+            + self.open_button.sizeHint().width()
+            + self.project_button.sizeHint().width()
+            + 24
+        )
+        stacked = needed > available
+        if stacked != self._header_stacked:
+            self._header_stacked = stacked
+            if stacked:
+                self._header_row.removeWidget(self.open_button)
+                self._header_row.removeWidget(self.project_button)
+                self._button_row.addWidget(self.open_button)
+                self._button_row.addWidget(self.project_button)
+                self._button_row.addStretch(1)
+                self._sessions_layout.insertLayout(1, self._button_row)
+            else:
+                self._button_row.removeWidget(self.open_button)
+                self._button_row.removeWidget(self.project_button)
+                while self._button_row.count():
+                    it = self._button_row.takeAt(0)
+                    del it
+                self._sessions_layout.removeItem(self._button_row)
+                self._header_row.addWidget(self.open_button)
+                self._header_row.addWidget(self.project_button)
+
+        footer_needed = (
+            self.compare_button.sizeHint().width() + self.guide_button.sizeHint().width() + 20
+        )
+        footer_stacked = footer_needed > available
+        if footer_stacked != self._footer_stacked:
+            self._footer_stacked = footer_stacked
+            if footer_stacked:
+                self._footer_row.removeWidget(self.guide_button)
+                while self._footer_guide_row.count():
+                    it = self._footer_guide_row.takeAt(0)
+                    del it
+                self._footer_guide_row.addStretch(1)
+                self._footer_guide_row.addWidget(self.guide_button)
+                # Walkthrough is the last widget, footer is before it
+                idx = self._body_layout.indexOf(self.walkthrough)
+                self._body_layout.insertLayout(idx, self._footer_guide_row)
+            else:
+                self._footer_guide_row.removeWidget(self.guide_button)
+                while self._footer_guide_row.count():
+                    it = self._footer_guide_row.takeAt(0)
+                    del it
+                self._body_layout.removeItem(self._footer_guide_row)
+                self._footer_row.addWidget(self.guide_button)
+
+        if widget is not None and viewport_w > 0:
+            widget.updateGeometry()
+            widget.adjustSize()
+            if widget.width() > viewport_w:
+                widget.resize(viewport_w, widget.height())
 
     def _hero(self) -> QVBoxLayout:
         """Icon, title, one sentence and the composer with the two real ways in
         (``measure_strip.MODES``), centred as one group (SPEC §7)."""
         hero = QVBoxLayout()
         hero.setSpacing(8)
-        hero.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         mark = QLabel()
         mark.setPixmap(app_icon().pixmap(44, 44))
         mark.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -143,6 +289,8 @@ class StartPanel(QWidget):
             wrap=True,
         )
         lead.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        lead.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        lead.setMinimumWidth(0)
         hero.addWidget(lead)
 
         self.composer = QFrame()
@@ -152,8 +300,10 @@ class StartPanel(QWidget):
         inner = QVBoxLayout(self.composer)
         inner.setContentsMargins(16, 16, 16, 12)
         inner.setSpacing(12)
-        paths = QHBoxLayout()
+        paths = QBoxLayout(QBoxLayout.Direction.LeftToRight)
         paths.setSpacing(12)
+        self._paths_layout = paths
+        self._paths_stacked = False
         self.path_buttons: dict[str, QPushButton] = {}
         for mode, icon_name, title_text, text in (
             (
@@ -230,8 +380,11 @@ class StartPanel(QWidget):
                 settings=key_marks("Ctrl+,"),
             ),
             "caption",
+            wrap=True,
         )
         keys.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        keys.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        keys.setMinimumWidth(0)
         hero.addWidget(keys)
         return hero
 

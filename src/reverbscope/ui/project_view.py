@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
+from PySide6.QtGui import QResizeEvent, QShowEvent
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -23,9 +24,11 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QInputDialog,
+    QLayout,
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
@@ -155,27 +158,23 @@ class ProjectPage(AnalysisView):
         layout = scroll_page(self, header, max_width=1180)
 
         tools = Card()
-        row = QHBoxLayout()
-        row.setSpacing(10)
-        row.addWidget(label(_("Profile")))
+        self.tools_card = tools
+        self.tools_body = tools.body
+        self.profile_label = label(_("Profile"))
         self.profile = QComboBox()
         for name in available_profiles():
             self.profile.addItem(profile_title(name), name)
         self.profile.setCurrentIndex(max(self.profile.findData(state.profile), 0))
         self.profile.currentIndexChanged.connect(lambda _index: self.choose_profile())
-        row.addWidget(self.profile)
-        row.addWidget(label(_("Source positions")))
+        self.sources_label = label(_("Source positions"))
         self.sources = QSpinBox()
         self.sources.setRange(1, 9)
         self.sources.setToolTip(
             _("Loudspeaker positions the takes were measured from (ISO 3382-2 counts them).")
         )
         self.sources.valueChanged.connect(lambda _value: self.choose_profile())
-        row.addWidget(self.sources)
-        row.addStretch(1)
         self.copy_button = QPushButton(_("Copy overview"))
         self.copy_button.clicked.connect(self._copy)
-        row.addWidget(self.copy_button)
         self.add_button = QPushButton(_("Add Session..."))
         self.add_button.setToolTip(_("List a saved session under a position of this project."))
         self.add_button.clicked.connect(self._choose_existing)
@@ -188,19 +187,28 @@ class ProjectPage(AnalysisView):
         self.compare_button.clicked.connect(self._compare_selected)
         self.measure_button = primary(QPushButton(_("Measure a new position...")))
         self.measure_button.clicked.connect(self._choose_position)
-        tools.body.addLayout(row)
-        # Adding a session and the actions on a take get their own row: in one
-        # row the tools were wider than the centre column beside the inspector
-        # and were cut.
-        actions = QHBoxLayout()
-        actions.addWidget(self.add_button)
-        actions.addStretch(1)
-        actions.addWidget(self.compare_button)
-        actions.addWidget(self.measure_button)
-        tools.body.addLayout(actions)
+
+        self._tools_row1 = QHBoxLayout()
+        self._tools_row1.setSpacing(10)
+        self._tools_row1_copy = QHBoxLayout()
+        self._tools_row1_copy.setSpacing(10)
+        self._tools_row1_copy2 = QHBoxLayout()
+        self._tools_row1_copy2.setSpacing(10)
+        self._tools_actions1 = QHBoxLayout()
+        self._tools_actions1.setSpacing(10)
+        self._tools_actions2 = QHBoxLayout()
+        self._tools_actions2.setSpacing(10)
+        self._tools_actions3 = QHBoxLayout()
+        self._tools_actions3.setSpacing(10)
+        self._tools_wrap_state: tuple[int, int] | None = None
+
         self.status = label("", "hint", wrap=True)
+        self._place_tools()
         tools.body.addWidget(self.status)
         layout.addWidget(tools)
+        scroll = self.findChild(QScrollArea)
+        if scroll is not None:
+            scroll.viewport().installEventFilter(self)
 
         self.empty = label(
             _(
@@ -299,6 +307,223 @@ class ProjectPage(AnalysisView):
 
     def redraw(self) -> None:
         self._summarize()
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802 - Qt override
+        scroll = self.findChild(QScrollArea)
+        if (
+            scroll is not None
+            and watched is scroll.viewport()
+            and event.type() == QEvent.Type.Resize
+        ):
+            self._place_tools()
+        return bool(super().eventFilter(watched, event))
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._place_tools()
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
+        super().showEvent(event)
+        self._place_tools()
+
+    @staticmethod
+    def _clear_layout(layout: QLayout) -> None:
+        while layout.count():
+            item = layout.takeAt(0)
+            del item
+
+    def _place_tools(self) -> None:
+        if not hasattr(self, "tools_card"):
+            return
+        scroll = self.findChild(QScrollArea)
+        vp = scroll.viewport() if scroll is not None else None
+        viewport_w = vp.width() if vp is not None and vp.width() > 0 else 0
+        if self.width() > 0 and (viewport_w <= 0 or viewport_w > self.width()):
+            viewport_w = max(self.width() - 56, 320)
+        elif viewport_w <= 0:
+            viewport_w = 320
+        body = scroll.widget() if scroll is not None else None
+        b_lay = body.layout() if body is not None else None
+        b_margins = b_lay.contentsMargins() if b_lay is not None else None
+        b_pad = (b_margins.left() + b_margins.right()) if b_margins is not None else 8
+        card_m = self.tools_card.contentsMargins()
+        c_pad = card_m.left() + card_m.right() + (self.tools_card.frameWidth() * 2)
+        t_margins = self.tools_body.contentsMargins()
+        t_pad = t_margins.left() + t_margins.right()
+        available = max(viewport_w - (b_pad + c_pad + t_pad), 120)
+
+        p_label_w = max(
+            self.profile_label.sizeHint().width(),
+            self.profile_label.minimumSizeHint().width(),
+            self.profile_label.fontMetrics().horizontalAdvance(self.profile_label.text()) + 8,
+        )
+        p_combo_w = max(
+            self.profile.sizeHint().width(),
+            self.profile.minimumSizeHint().width(),
+        )
+        s_label_w = max(
+            self.sources_label.sizeHint().width(),
+            self.sources_label.minimumSizeHint().width(),
+            self.sources_label.fontMetrics().horizontalAdvance(self.sources_label.text()) + 8,
+        )
+        s_spin_w = max(
+            self.sources.sizeHint().width(),
+            self.sources.minimumSizeHint().width(),
+        )
+        copy_w = max(
+            self.copy_button.sizeHint().width(),
+            self.copy_button.minimumSizeHint().width(),
+            self.copy_button.fontMetrics().horizontalAdvance(self.copy_button.text()) + 26,
+        )
+
+        sp1 = self._tools_row1.spacing()
+        p_needed = p_label_w + p_combo_w + sp1
+        s_needed = s_label_w + s_spin_w + sp1
+        r1_all_needed = p_needed + s_needed + copy_w + sp1
+        r1_both_needed = p_needed + s_needed
+
+        if r1_all_needed <= available:
+            r1_mode = 0
+        elif r1_both_needed <= available:
+            r1_mode = 1
+        elif s_needed + copy_w <= available:
+            r1_mode = 2
+        else:
+            r1_mode = 3
+
+        add_needed = max(
+            self.add_button.sizeHint().width(),
+            self.add_button.minimumSizeHint().width(),
+            self.add_button.fontMetrics().horizontalAdvance(self.add_button.text()) + 34,
+        )
+        comp_needed = max(
+            self.compare_button.sizeHint().width(),
+            self.compare_button.minimumSizeHint().width(),
+            self.compare_button.fontMetrics().horizontalAdvance(self.compare_button.text()) + 34,
+        )
+        meas_needed = max(
+            self.measure_button.sizeHint().width(),
+            self.measure_button.minimumSizeHint().width(),
+            self.measure_button.fontMetrics().horizontalAdvance(self.measure_button.text()) + 34,
+        )
+        sp_act = self._tools_actions1.spacing()
+        actions_all_needed = add_needed + comp_needed + meas_needed + (2 * sp_act)
+        actions_add_comp = add_needed + comp_needed + sp_act + 40
+
+        if actions_all_needed <= available:
+            actions_mode = 0
+        elif actions_add_comp <= available:
+            actions_mode = 1
+        else:
+            actions_mode = 2
+
+        state = (r1_mode, actions_mode)
+        if state == self._tools_wrap_state:
+            return
+        self._tools_wrap_state = state
+
+        self.tools_body.removeWidget(self.status)
+        for lay in (
+            self._tools_row1,
+            self._tools_row1_copy,
+            self._tools_row1_copy2,
+            self._tools_actions1,
+            self._tools_actions2,
+            self._tools_actions3,
+        ):
+            self._clear_layout(lay)
+            self.tools_body.removeItem(lay)
+
+        # Row 1 (Profile & Sources & Copy)
+        if r1_mode == 0:
+            self._tools_row1.addWidget(self.profile_label)
+            self._tools_row1.addWidget(self.profile)
+            self._tools_row1.addWidget(self.sources_label)
+            self._tools_row1.addWidget(self.sources)
+            self._tools_row1.addStretch(1)
+            self._tools_row1.addWidget(self.copy_button)
+            self.tools_body.addLayout(self._tools_row1)
+        elif r1_mode == 1:
+            self._tools_row1.addWidget(self.profile_label)
+            self._tools_row1.addWidget(self.profile)
+            self._tools_row1.addWidget(self.sources_label)
+            self._tools_row1.addWidget(self.sources)
+            self._tools_row1.addStretch(1)
+            self.tools_body.addLayout(self._tools_row1)
+
+            self._tools_row1_copy.addStretch(1)
+            self._tools_row1_copy.addWidget(self.copy_button)
+            self.tools_body.addLayout(self._tools_row1_copy)
+        elif r1_mode == 2:
+            self._tools_row1.addWidget(self.profile_label)
+            self._tools_row1.addWidget(self.profile)
+            self._tools_row1.addStretch(1)
+            self.tools_body.addLayout(self._tools_row1)
+
+            self._tools_row1_copy.addWidget(self.sources_label)
+            self._tools_row1_copy.addWidget(self.sources)
+            self._tools_row1_copy.addStretch(1)
+            self._tools_row1_copy.addWidget(self.copy_button)
+            self.tools_body.addLayout(self._tools_row1_copy)
+        else:
+            self._tools_row1.addWidget(self.profile_label)
+            self._tools_row1.addWidget(self.profile)
+            self._tools_row1.addStretch(1)
+            self.tools_body.addLayout(self._tools_row1)
+
+            self._tools_row1_copy.addWidget(self.sources_label)
+            self._tools_row1_copy.addWidget(self.sources)
+            self._tools_row1_copy.addStretch(1)
+            self.tools_body.addLayout(self._tools_row1_copy)
+
+            self._tools_row1_copy2.addStretch(1)
+            self._tools_row1_copy2.addWidget(self.copy_button)
+            self.tools_body.addLayout(self._tools_row1_copy2)
+
+        # Actions
+        if actions_mode == 0:
+            self._tools_actions1.addWidget(self.add_button)
+            self._tools_actions1.addStretch(1)
+            self._tools_actions1.addWidget(self.compare_button)
+            self._tools_actions1.addWidget(self.measure_button)
+            self.tools_body.addLayout(self._tools_actions1)
+        elif actions_mode == 1:
+            self._tools_actions1.addWidget(self.add_button)
+            self._tools_actions1.addStretch(1)
+            self._tools_actions1.addWidget(self.compare_button)
+            self.tools_body.addLayout(self._tools_actions1)
+
+            self._tools_actions2.addStretch(1)
+            self._tools_actions2.addWidget(self.measure_button)
+            self.tools_body.addLayout(self._tools_actions2)
+        else:
+            self._tools_actions1.addWidget(self.add_button)
+            self._tools_actions1.addStretch(1)
+            self.tools_body.addLayout(self._tools_actions1)
+
+            self._tools_actions2.addWidget(self.compare_button)
+            self._tools_actions2.addStretch(1)
+            self.tools_body.addLayout(self._tools_actions2)
+
+            self._tools_actions3.addStretch(1)
+            self._tools_actions3.addWidget(self.measure_button)
+            self.tools_body.addLayout(self._tools_actions3)
+
+        self.tools_body.addWidget(self.status)
+        if body is not None:
+            body.updateGeometry()
+            body.adjustSize()
+            if viewport_w > 0 and body.width() > viewport_w:
+                body.resize(viewport_w, body.height())
+
+        QWidget.setTabOrder(self.profile, self.sources)
+        QWidget.setTabOrder(self.sources, self.copy_button)
+        QWidget.setTabOrder(self.copy_button, self.add_button)
+        QWidget.setTabOrder(self.add_button, self.compare_button)
+        QWidget.setTabOrder(self.compare_button, self.measure_button)
+        QWidget.setTabOrder(self.copy_button, self.add_button)
+        QWidget.setTabOrder(self.add_button, self.compare_button)
+        QWidget.setTabOrder(self.compare_button, self.measure_button)
 
     # --- loading -------------------------------------------------------------------
 
