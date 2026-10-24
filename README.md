@@ -99,7 +99,7 @@ download mark on those files only and does not turn off Gatekeeper.
 | Workstation window with charts | ✅ | — |
 | Command line (`reverbscope`) | ✅ | ✅ |
 | Room analysis and comparison | ✅ | ✅ |
-| Standalone measurement (plays and records) | ✅ | ✅ |
+| Measuring through an audio interface (plays and records) | ✅ | ✅ |
 | English / 简体中文 | ✅ | ✅ |
 | Python required | No | No |
 | Best for | Most users | Automation, lightweight or headless computers |
@@ -131,26 +131,29 @@ with **Session…** to see the workstation on the same data.
 
 **Then measure for real.** Turn the monitors **down** (ReverbScope never
 changes system volume), then let ReverbScope play and record through your
-interface (**Standalone Mode**) or play its sweep in your DAW (**Universal DAW
-Mode**). The [user guide](docs/user-guide/en.md)
+interface, or play its sweep in your DAW and import the recording. Both are
+one **New Measurement** page. The [user guide](docs/user-guide/en.md)
 ([简体中文](docs/user-guide/zh-CN.md)) explains every page.
 
 ## Using the desktop app
 
 1. **Start.** Open ReverbScope (Desktop Edition, [Download](#download)). On the
-   first start the middle of the window offers three ways in: the demo, the
-   DAW route and the standalone route. **Help ▸ Getting started** brings that
+   first start the middle of the window offers the two ways to play and record
+   the sweep: through the audio interface, or in your DAW. **Help ▸ Getting started** brings that
    card back.
 2. **See a result first.** Run `reverbscope demo` once (above), then choose
    **Open Session…** in the sidebar and pick `position-a` in the demo folder.
    Everything you see is the simulated room.
-3. **Measure.** Turn the monitors down, then choose **New Measurement**.
-   * *Audio interface:* pick the input, the output, the sample rate and the
+3. **Measure.** Turn the monitors down, then choose **New Measurement**. At
+   the top of the page, choose how the sweep is played and recorded; the
+   details, the recording profile and the analysis under it are the same
+   either way.
+   * *Play and record through the audio interface:* pick the input, the output, the sample rate and the
      microphone channel in the strip at the bottom, then **Start**. The sweep
      plays only on an interface output you chose; until you do, Start stays
      off and says why. Above −12 dBFS the level is confirmed again after any
      level change.
-   * *DAW recording:* generate the test signal at your project's sample rate,
+   * *Play it in your DAW and import the recording:* generate the test signal at your project's sample rate,
      play and record it in your DAW, export the recorded track whole, then
      **Choose Recording…** and **Choose Reference Sweep…** and analyze.
 4. **Read it.** The view bar opens Overview, Frequency, Time, Decay, Spectral
@@ -230,8 +233,8 @@ real DAW and report what happened. A failed check is as useful as a pass.
 1. Install a build ([Download](#download); the Gatekeeper or SmartScreen
    warning is expected). Start with the [public beta](docs/PUBLIC_TESTING.md).
 2. In a terminal, run `reverbscope demo` once to see what a result looks like.
-3. Turn the monitors down, then run **Standalone Mode** with your interface
-   and a microphone, or **Universal DAW Mode** through your DAW
+3. Turn the monitors down, then measure through your interface with a
+   microphone, or play the sweep in your DAW and import the recording
    ([DAW notes](docs/user-guide/daw-setup.md)).
 4. Report what happened, with **Help → Environment Report for Bug Reports →
    Probe sample rates** pasted in:
@@ -249,7 +252,7 @@ contributions are listed in [docs/COMMUNITY_TASKS.md](docs/COMMUNITY_TASKS.md).
 
 ## How a measurement works
 
-**Universal DAW Mode** works with any DAW that can import, play, record and
+**In your DAW, then import the recording.** This works with any DAW that can import, play, record and
 export WAV files. ReverbScope never talks to the DAW: it reads what the DAW
 exports (Broadcast WAV, RF64, Wave64, AIFF, CAF, FLAC; 16/24/32-bit PCM or
 32-bit float; mono or multi-channel) and, when the sweep's sidecar file is
@@ -266,13 +269,14 @@ has been run with ReverbScope in a real DAW yet.**
 3. **Import Recording**: export the recorded track as WAV.
 4. **Analyze**: ReverbScope finds the sweep, deconvolves it and reports.
 
-**Standalone Mode** plays the sweep and records the microphone itself through
+**Through the audio interface.** ReverbScope plays the sweep and records the microphone itself through
 the interface you select (PortAudio via `sounddevice`). The default sweep
 level is conservative and ReverbScope does not touch system volume or audio
 settings (the one opt-in exception, a macOS option that sets the device's
-sample rate, is described in [SECURITY.md](SECURITY.md#safety-of-standalone-mode)).
+sample rate, is described in [SECURITY.md](SECURITY.md#safety-when-measuring-through-an-audio-interface)).
 
-Both modes call the same analysis pipeline (`reverbscope.core.pipeline.analyze`).
+Both ways call the same analysis pipeline (`reverbscope.core.pipeline.analyze`).
+Without an audio device or PortAudio, importing a recording still works.
 
 ## Command line
 
@@ -295,7 +299,7 @@ reverbscope analyze --recording recording.wav --sweep sweep_48k.wav --profile vo
 reverbscope show results/
 reverbscope compare results/ position-b/ --same-input-gain
 
-# Standalone: list devices, then measure
+# Through the audio interface: list devices, then measure
 reverbscope devices
 reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000

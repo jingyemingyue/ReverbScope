@@ -13,7 +13,7 @@ ReverbScope 只有一套代码。它提供两个可下载的**版本**，而且�
 | 下载文件 | `ReverbScope-Desktop-macOS-arm64.dmg`、`ReverbScope-Desktop-macOS-x86_64.dmg`、`ReverbScope-Desktop-Windows-x64-Setup.exe`、`ReverbScope-Desktop-Windows-x64.zip`、`ReverbScope-Desktop-Linux-x86_64.tar.gz` | `ReverbScope-Terminal-macOS-arm64.tar.gz`、`ReverbScope-Terminal-macOS-x86_64.tar.gz`、`ReverbScope-Terminal-Windows-x64.zip`、`ReverbScope-Terminal-Linux-x86_64.tar.gz` |
 | 图形界面（窗口、图表） | 有 | 没有：`reverbscope gui` 会提示安装桌面版 |
 | 命令行（`reverbscope`，全部命令） | 有 | 有 |
-| 分析、对比、独立模式测量、中英文 | 有 | 有 |
+| 分析、对比、通过音频接口测量、中英文 | 有 | 有 |
 | 包含的内容 | Python 运行时、NumPy、SciPy、soundfile、sounddevice、matplotlib、PySide6 Essentials（Qt） | Python 运行时、NumPy、SciPy、soundfile、sounddevice；不含 Qt、PySide6 和 matplotlib |
 | 需要 Python | 不需要 | 不需要 |
 | 适合 | 大多数用户 | 命令行、自动化、服务器和没有图形桌面的电脑 |
@@ -30,7 +30,7 @@ ReverbScope 只有一套代码。它提供两个可下载的**版本**，而且�
 | 判断依据 | 不是打包后的程序（未设置 `sys.frozen`） | PyInstaller 打包程序 |
 | 帮助 ▸ 用于问题报告的环境报告（可探测采样率） | 有 | 有 |
 | 开发者菜单（音频设备检查器、打开数据文件夹） | 有 | 无，除非手动开启 |
-| 独立模式中的高级音频选项（延迟、WASAPI 独占、Core Audio 设置采样率） | 有 | 无，除非手动开启 |
+| 通过音频接口测量时的高级音频选项（延迟、WASAPI 独占、Core Audio 设置采样率） | 有 | 无，除非手动开启 |
 | 日常设置（语言、主题、默认录音配置、音频后端、输出文件夹） | 有 | 有 |
 | 扩展 ReverbScope | Python API、`reverbscope.exporters` 入口点、测试、`scripts/build_release.py` | — |
 
@@ -45,4 +45,4 @@ ReverbScope 只有一套代码。它提供两个可下载的**版本**，而且�
 
 ### 安装后的默认配置保持简单
 
-安装好的桌面版打开后是包含三种工作流程的主页，设置对话框只保留用户会改的内容：语言、主题（跟随系统、浅色、深色）、默认录音配置、音频后端、默认输出文件夹，以及是否把原始录音复制进每个会话。独立模式仍会按主机 API 列出设备、预选本平台推荐的主机 API、用星标标出推荐的输入和输出，并在播放前检查主机 API、声道和是否使用了两个独立时钟。
+安装好的桌面版打开后是主页，从这里开始新测量（音频接口或 DAW 录音），设置对话框只保留用户会改的内容：语言、主题（跟随系统、浅色、深色）、默认录音配置、音频后端、默认输出文件夹，以及是否把原始录音复制进每个会话。通过音频接口测量时仍会按主机 API 列出设备、预选本平台推荐的主机 API、用星标标出推荐的输入和输出，并在播放前检查主机 API、声道和是否使用了两个独立时钟。

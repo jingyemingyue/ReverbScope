@@ -43,7 +43,8 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    assert window.stack.currentWidget() is window.daw
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route() == "universal_daw"
 
     page = window.daw
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(short_sweep.sample_rate))
@@ -178,7 +179,8 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
 def test_standalone_page_builds(app: QApplication) -> None:
     window = MainWindow()
     window.show_mode("standalone")
-    assert window.stack.currentWidget() is window.standalone
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route() == "standalone"
     # Either devices were listed or the backend is reported unavailable; both are acceptable.
     assert window.standalone.status.text()
     window.close()
@@ -189,7 +191,8 @@ def test_demo_mode_uses_fake_backend(app: QApplication) -> None:
     window.show()
     window.show_mode("demo")
     app.processEvents()
-    assert window.stack.currentWidget() is window.standalone
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route() == "standalone"
     assert window.standalone.demo_mode is True
     assert not window.standalone.demo_banner.isHidden()
     assert window.standalone.stop_button is not None
@@ -904,7 +907,8 @@ def test_a_late_standalone_analysis_is_not_shown_after_new_measurement(
     finally:
         held_analysis.set()
         _settle(app, page._analysis_worker)
-    assert window.stack.currentWidget() is page
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.current_route_page() is page
     assert window.state.result is None
     assert "discarded" in page.status.text()
     assert page.run_button.isEnabled()
@@ -1285,7 +1289,8 @@ def test_daw_mode_analyses_only_the_recording_it_shows(
     assert daw.recording_label.text() == "No recording selected."
     daw.start_analysis(blocking=True)
     assert refused == ["No recording"]
-    assert window.stack.currentWidget() is daw
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.current_route_page() is daw
 
     rate = short_sweep.sample_rate
     daw.sample_rate.setCurrentIndex(daw.sample_rate.findData(rate))
@@ -1511,7 +1516,7 @@ def test_standalone_without_any_audio_device_says_so_and_does_not_run(
     window.show_mode("standalone")
     page = window.standalone
     assert not page.run_button.isEnabled()
-    assert page.status.text() == "No audio device found; Universal DAW Mode still works."
+    assert page.status.text() == "No audio device found; you can still import a recording."
     assert page.status.property("banner") == "warn"
     assert page.refresh_button.isEnabled()
     window.close()
@@ -1866,11 +1871,13 @@ def test_the_measure_menu_opens_each_mode(app: QApplication) -> None:
     }
     # The Measure menu is Ctrl+Shift+1/2 (Ctrl+<n> opens the views). No demo entry.
     by_shortcut["Ctrl+Shift+2"].trigger()
-    assert window.stack.currentWidget() is window.standalone
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route() == "standalone"
     assert not window.standalone.demo_mode
     assert "Ctrl+Shift+3" not in by_shortcut
     by_shortcut["Ctrl+Shift+1"].trigger()
-    assert window.stack.currentWidget() is window.daw
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route() == "universal_daw"
     by_shortcut["Ctrl+1"].trigger()
     assert window.stack.currentWidget() is window.views["overview"]
     window.close()

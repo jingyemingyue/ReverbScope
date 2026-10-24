@@ -34,7 +34,7 @@ some DAWs). The silence after the sweep captures the decay; the silence
 before it is the quiet segment for the noise analysis.
 
 **Level safety.** The default is conservative and ReverbScope never changes
-system volume. Standalone Mode defaults to −20 dBFS and needs an explicit
+system volume. A take through the audio interface defaults to −20 dBFS and needs an explicit
 acknowledgement above −12 dBFS.
 
 ## 2. Inverse filter and deconvolution
@@ -146,8 +146,9 @@ resampled with `scipy.signal.resample_poly`.
 or one that does not leave a quiet gap, can still be taken as t = 0; the
 rival-arrival check does not claim to solve that. Clock
 mismatch between separate playback and recording devices smears high
-frequencies [2]; Standalone Mode uses one full-duplex device, Universal DAW
-Mode inherits whatever clocking the DAW/interface provides.
+frequencies [2]; a take through the audio interface uses one full-duplex
+device, a recording imported from a DAW inherits whatever clocking the
+DAW/interface provides.
 
 **Imported impulse responses** (`analyze_impulse_response`,
 `reverbscope analyze-ir`). An IR WAV from another tool skips deconvolution,

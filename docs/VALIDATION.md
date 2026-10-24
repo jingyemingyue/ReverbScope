@@ -69,7 +69,8 @@ both tools.
    `.reverbscope-sweep.json` sidecar.
 2. Set monitor level low. Acknowledge −12 dBFS on every take; never persist
    that acknowledgement.
-3. Universal DAW Mode or Standalone Mode is acceptable. Prefer a loopback
+3. Playing the sweep in a DAW and importing the recording, or playing and
+   recording through the audio interface, are both acceptable. Prefer a loopback
    channel on at least one take per room.
 4. Measure the loudspeaker-to-capsule distance and the microphone height
    with a tape. Write the numbers on paper *before* looking at ReverbScope's

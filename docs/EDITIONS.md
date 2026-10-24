@@ -17,7 +17,7 @@ session files and reports the same numbers. The Chinese translation is
 | Downloads | `ReverbScope-Desktop-macOS-arm64.dmg`, `ReverbScope-Desktop-macOS-x86_64.dmg`, `ReverbScope-Desktop-Windows-x64-Setup.exe`, `ReverbScope-Desktop-Windows-x64.zip`, `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `ReverbScope-Terminal-macOS-arm64.tar.gz`, `ReverbScope-Terminal-macOS-x86_64.tar.gz`, `ReverbScope-Terminal-Windows-x64.zip`, `ReverbScope-Terminal-Linux-x86_64.tar.gz` |
 | GUI (windows, charts) | yes | no: `reverbscope gui` says to install the Desktop Edition |
 | Command line (`reverbscope`, every command) | yes | yes |
-| Analysis, comparison, Standalone measurement, English / Chinese | yes | yes |
+| Analysis, comparison, measuring through an audio interface, English / Chinese | yes | yes |
 | Inside | Python runtime, NumPy, SciPy, soundfile, sounddevice, matplotlib, PySide6 Essentials (Qt) | Python runtime, NumPy, SciPy, soundfile, sounddevice; no Qt, PySide6 or matplotlib |
 | Python required | no | no |
 | Best for | most users | the command line, automation, servers and computers without a desktop |
@@ -44,7 +44,7 @@ same program.
 | Detected by | not a frozen bundle (`sys.frozen` unset) | a PyInstaller bundle |
 | Help ▸ Environment Report for Bug Reports (with sample-rate probe) | yes | yes |
 | Developer menu (Audio Device Inspector, Open Data Folder) | yes | no, unless switched on |
-| Advanced audio options in Standalone Mode (latency, WASAPI exclusive, Core Audio set-rate) | yes | no, unless switched on |
+| Advanced audio options for measuring through an audio interface (latency, WASAPI exclusive, Core Audio set-rate) | yes | no, unless switched on |
 | Everyday settings (language, theme, default profile, audio backend, output folder) | yes | yes |
 | Extending ReverbScope | Python API, `reverbscope.exporters` entry points, tests, `scripts/build_release.py` | — |
 
@@ -76,10 +76,10 @@ and `--coreaudio-set-rate` are always available.
 
 ### Installed defaults: what they keep simple
 
-An installed Desktop Edition opens on the Home page with the three workflows, and
+An installed Desktop Edition opens on the Home page (New Measurement, through the audio interface or a DAW recording), and
 its Settings dialog holds only what a user changes: language, theme (system,
 light, dark), default recording profile, audio backend, default output folder
-and whether the raw recording is copied into each session. Standalone Mode
-still lists devices per host API, preselects the platform's recommended one,
+and whether the raw recording is copied into each session. Measuring through an audio
+interface still lists devices per host API, preselects the platform's recommended one,
 stars the recommended input and output, and checks the host API, the channels
 and separate clocks before anything is played.

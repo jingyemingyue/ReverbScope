@@ -67,7 +67,7 @@ python scripts/prepare_test_report.py --out test-reports/mac-candidate --executa
 
 ## Fender Studio Pro / Studio One：第一份 DAW 实测
 
-使用**通用 DAW 模式**。当前源码/候选版按钮为“保存测试信号 WAV…”“选择录音…”“选择参考扫频…”和“分析”；其他 Draft GUI 可能不同，
+在 **新测量** 页面选择 **在 DAW 中播放，导入录音**。当前源码/候选版按钮为“保存测试信号 WAV…”“选择录音…”“选择参考扫频…”和“分析”；其他 Draft GUI 可能不同，
 记录真实版本与按钮，不要混用 PR 截图。[厂商文档来源指南](user-guide/daw-setup.zh-CN.md)用于核对菜单；
 以下步骤在本审计中仍为 **NOT RUN**。
 

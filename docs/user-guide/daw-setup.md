@@ -2,7 +2,7 @@
 
 **English** | [简体中文](daw-setup.zh-CN.md)
 
-Universal DAW Mode is designed for any DAW that can play one WAV file and
+Playing the sweep in your DAW and importing the recording works with any DAW that can play one WAV file and
 record another at the same time. ReverbScope never talks to the DAW: it only needs the
 recording, exported whole. This page lists what every DAW has to get right,
 then the steps in the DAWs most studios use. The Chinese translation is
@@ -71,7 +71,8 @@ Then analyse:
 reverbscope analyze --recording "Mic_01.wav" --sweep sweep_44k.wav --out session/
 ```
 
-or choose the files in the GUI's Universal DAW Mode.
+or choose the files on the GUI's New Measurement page (“Play it in your DAW and
+import the recording”).
 
 ## Avid Pro Tools
 

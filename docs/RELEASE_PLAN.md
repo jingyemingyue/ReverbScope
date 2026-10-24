@@ -93,7 +93,7 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
 | **0.5.0b2** | Stabilization beta after the rename: the stable line's fixes, the acoustic audit (no number without the measurement to support it), the offline validation gates, every download named ReverbScope | CI and the Release workflow green on the release commit; every fix has a synthetic regression test; CHANGELOG names the version and separates synthetic/CI validation from hardware validation; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI; a working website until Pages is enabled |
 | **0.5.0b3** | Development beta while the candidate waits for hardware: the post-RC line (Measurement health, verdicts, the project overview, the boxed terminal and the menu, profiles explained) and the final audit's fixes | CI and the Release workflow green on the release commit; every new behaviour has a synthetic test | Not a candidate; nothing in it is claimed to be validated on hardware |
 | **0.5.0rc1** | Release candidate for hardware and DAW validation: the 0.5.0b2 code with the tester-facing additions of §2a, feature set frozen, built so that anyone can download, install and report | CI and the Release workflow green on the release commit of the `release/0.5.0` branch; every download named for the project; the notes say it is a candidate, not 0.5.0, in English and Chinese; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; signing; PyPI; 0.5.0 itself |
-| **0.5.0** | "Trusted by a human": the first version whose Standalone Mode and DAW workflow were run on real hardware at least once | One dated PASS row per cell of the hardware matrix on at least one platform (device enumeration, sample-rate negotiation, channel mapping, loopback capture, Stop during playback, a full Standalone measurement, the same signal through one DAW); #12 and #13 (loopback time origin, real-time callback) closed; #14 (zh-CN catalog complete, safety warning translated) closed; #15 (ISO 3382-2 table source) closed | The validation campaign; API / schema freeze; signing |
+| **0.5.0** | "Trusted by a human": the first version whose audio-interface and DAW measurements were run on real hardware at least once | One dated PASS row per cell of the hardware matrix on at least one platform (device enumeration, sample-rate negotiation, channel mapping, loopback capture, Stop during playback, a full take through the audio interface, the same signal through one DAW); #12 and #13 (loopback time origin, real-time callback) closed; #14 (zh-CN catalog complete, safety warning translated) closed; #15 (ISO 3382-2 table source) closed | The validation campaign; API / schema freeze; signing |
 | **1.0.0rc1** | Freeze and prove (ARCHITECTURE_V1.md §10, row 1.0-rc) | No open MUST item of §3.1: hardware matrix executed at least once per platform (M10); validation campaign published with its data (M11); signed bundles or an explicit maintainer decision to ship unsigned (M9); public-repository checklist executed (M13, §9.1); API and schema integers frozen; SECURITY / CONTRIBUTING / STATUS updated for the freeze; PyPI pre-release if trusted publishing is configured | — |
 | **1.0.0** | Release | Fixes from the candidate only; release notes name the validation results and the known limitations | — |
 
@@ -164,10 +164,10 @@ recorded in [HARDWARE_TESTS.md](HARDWARE_TESTS.md) and
   welcome, not required for the gate).
 * At least two different models of real audio interface.
 * On each of those, at least: device enumeration, a full take at 44.1 kHz
-  and at 48 kHz, a full Standalone measurement, Stop during playback, and a
+  and at 48 kHz, a full take through the audio interface, Stop during playback, and a
   take without a buffer under/overflow; plus at least one real room
   recording with a result a person could read.
-* At least two DAWs with the complete Universal DAW Mode workflow (sweep at
+* At least two DAWs with the complete DAW workflow (sweep played in the DAW, recording imported) (sweep at
   the project rate, record, export, analyse with direct-sound confidence
   high), with the sample-rate negative check where the DAW allows it.
 * At least one comparison of ReverbScope against a reference instrument on

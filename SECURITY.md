@@ -51,13 +51,14 @@ live anywhere, so opening someone else's project opens the session folders it
 names — look at it first. Apart from that, a way to make ReverbScope read or
 write outside the files you opened is a security issue.
 
-## Safety of Standalone Mode
+## Safety when measuring through an audio interface
 
 ReverbScope plays a test sweep through a loudspeaker. Defaults stay conservative
-(−20 dBFS in Standalone Mode; −12 dBFS for generated sweep files). By default
+(−20 dBFS when ReverbScope plays through the audio interface; −12 dBFS for
+generated sweep files). By default
 nothing in this project changes system volume, audio-device configuration, or
 DAW settings. The one opt-in exception is `reverbscope measure
---coreaudio-set-rate` (the matching Standalone checkbox in the developer
+--coreaudio-set-rate` (the matching audio-interface checkbox in the developer
 edition): it lets PortAudio set the selected macOS device's nominal sample
 rate for the take, which can disturb other programs using that device.
 Whether the previous rate is restored afterwards has not been checked; Audio

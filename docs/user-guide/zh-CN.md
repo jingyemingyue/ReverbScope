@@ -51,7 +51,7 @@ reverbscope-env/bin/reverbscope gui
 
 ## 先试一试：演示
 
-桌面版首次启动时，开始面板（尚未打开任何内容时窗口的中间区域）会显示一张“你的第一次测量”卡片：演示、DAW 路线和独立路线各有一个按钮，还有本指南的链接。“不再显示”会隐藏它；“帮助 ▸ 入门”可以把它找回来。
+桌面版首次启动时，开始面板（尚未打开任何内容时窗口的中间区域）会显示一张“你的第一次测量”卡片：演示，以及播放和录制扫频的两种方式（音频接口、DAW 录音）各有一个按钮，还有本指南的链接。“不再显示”会隐藏它；“帮助 ▸ 入门”可以把它找回来。
 
 `reverbscope demo` 不需要音频接口和话筒，就能演示完整的工作流程。它会写出扫频，模拟一个虚构房间里
 两个位置（一个靠近桌面和侧墙，一个向后移开）的话筒会录到什么，用与真实测量相同的代码分析这两个位置，
@@ -62,17 +62,26 @@ reverbscope-env/bin/reverbscope gui
 用 `reverbscope demo --out <文件夹>` 可以指定文件的位置。演示给会话起的房间、位置和话筒名称，
 用运行演示时的界面语言写入；打开、列出或生成报告时，则按当前界面语言显示。
 
-## 通用 DAW 模式
+## 新测量：一个页面，两种播放和录音方式
 
-1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav`（或在界面的“通用 DAW 模式”中用“步骤 1 — 生成测试信号”生成，采样率选工程采样率）。把 `.reverbscope-sweep.json` 配套文件和 WAV 放在一起。
+**新测量**（Ctrl+N 后选一张卡片，或用 **测量** 菜单）打开同一个页面。在页面顶部选择扫频的播放和录音方式：
+
+* **通过音频接口播放并录音**（Ctrl+Shift+2）：ReverbScope 只在你选择的接口输出上播放扫频并录制话筒，见下一节。
+* **在 DAW 中播放，导入录音**（Ctrl+Shift+1）：ReverbScope 写出测试信号，你在 DAW 中播放并录音，再导入录音。这一方式完全不需要音频设备或 PortAudio；找不到设备时，页面会给出 **改为导入录音** 按钮。
+
+切换时采样率和扫频时长保持不变。测量元数据、卷尺测量、录音配置和三分之一倍频程选项位于步骤下方，两种方式共用，最后进行同样的分析。
+
+## 在 DAW 中播放扫频
+
+1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav`（或在新测量页面选择“在 DAW 中播放，导入录音”后，用“保存测试信号 WAV…”生成，采样率选工程采样率）。把 `.reverbscope-sweep.json` 配套文件和 WAV 放在一起。
 2. 把 WAV 导入 DAW 的一条新轨道，关闭时间伸缩（Warp、Flex、Follow Tempo），信号通路上不要有插件。把它路由到一只扬声器。
 3. 在第二条轨道上接入测量话筒并开启录音待命，关闭输入监听，在扫频播放的同时录音。完整导出录音轨，不要裁切，也不要标准化。
 4. 可选回送（loopback）：导出双声道文件（话筒 + 电回送），并使用 `--channel 0 --loopback-channel 1`。
-5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`，或在界面的“通用 DAW 模式”中用“选择录音…”和“选择参考扫频…”选择这些文件。
+5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`，或在新测量页面上用“选择录音…”和“选择参考扫频…”选择这些文件。
 
 **Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、Fender Studio Pro（原 PreSonus Studio One）、Ableton Live、REAPER、FL Studio、Bitwig Studio、Digital Performer 和 Audacity 的分步说明，以及报告中各条提示在 DAW 里对应的原因，见 [daw-setup.zh-CN.md](daw-setup.zh-CN.md)。**
 
-## 独立模式与回送线
+## 通过音频接口播放，以及回送线
 
 `reverbscope devices` 列出音频接口。`reverbscope measure --out session/` 播放扫频并录音。`--input-channels 1,2 --loopback-channel 2` 在输入 2 上录制电回送。
 
@@ -86,7 +95,7 @@ reverbscope-env/bin/reverbscope gui
 
 `reverbscope devices` 在“主机 API”一列显示每个设备所属的音频系统；桌面应用把设备显示为 `[序号] 名称 (主机 API)`。
 
-* **Windows。** 每个音频接口会按每种主机 API 各列一次。优先选主机 API 为 Windows WASAPI（或 Windows WDM-KS）的条目；避免 MME 和 Windows DirectSound，它们要经过 Windows 混音器。共享模式下 WASAPI 只能以设备的共享模式格式运行（[Microsoft：Device formats](https://learn.microsoft.com/en-us/windows/win32/coreaudio/device-formats)）：请在“声音”控制面板中把它设为测量采样率（控制面板 ▸ 硬件和声音 ▸ 声音 ▸ 该设备 ▸ 属性 ▸ 高级 ▸ *默认格式*），并把*音频增强*设为关闭（设置 ▸ 声音 ▸ 该设备）（[Microsoft 支持](https://support.microsoft.com/en-us/windows/fix-sound-or-audio-problems-in-windows-73025246-b61c-40fb-671a-2535c7cd56c8)）。允许桌面应用使用麦克风（设置 ▸ 隐私和安全性 ▸ 麦克风）。安装包不含 ASIO 支持（ASIO DLL 用 Steinberg 的专有 SDK 构建，已被移除，见 DEPENDENCIES.md §3）；只能通过 ASIO 工作的音频接口请用通用 DAW 模式测量。
+* **Windows。** 每个音频接口会按每种主机 API 各列一次。优先选主机 API 为 Windows WASAPI（或 Windows WDM-KS）的条目；避免 MME 和 Windows DirectSound，它们要经过 Windows 混音器。共享模式下 WASAPI 只能以设备的共享模式格式运行（[Microsoft：Device formats](https://learn.microsoft.com/en-us/windows/win32/coreaudio/device-formats)）：请在“声音”控制面板中把它设为测量采样率（控制面板 ▸ 硬件和声音 ▸ 声音 ▸ 该设备 ▸ 属性 ▸ 高级 ▸ *默认格式*），并把*音频增强*设为关闭（设置 ▸ 声音 ▸ 该设备）（[Microsoft 支持](https://support.microsoft.com/en-us/windows/fix-sound-or-audio-problems-in-windows-73025246-b61c-40fb-671a-2535c7cd56c8)）。允许桌面应用使用麦克风（设置 ▸ 隐私和安全性 ▸ 麦克风）。安装包不含 ASIO 支持（ASIO DLL 用 Steinberg 的专有 SDK 构建，已被移除，见 DEPENDENCIES.md §3）；只能通过 ASIO 工作的音频接口，请在 DAW 中播放扫频并导入录音来测量。
 * **macOS。** Core Audio。在“系统设置 ▸ 隐私与安全性 ▸ 麦克风”中允许 ReverbScope；没有该权限时录音是静音，ReverbScope 会报告 *“recording is silent”*。在“音频 MIDI 设置”中设定音频接口的采样率；输入和输出是不同设备时，可在那里把它们合成一个聚合设备。
 * **Linux。** 通过系统的 PortAudio（`libportaudio2`）使用 ALSA。`hw:` 设备使用音频接口自身支持的采样率；`pipewire`、`pulse` 或 `default` 经过声音服务器，可能被重采样：ReverbScope 在测量前会把设备采样率显示在请求的采样率旁边。你的用户可能需要加入 `audio` 组。
 
@@ -169,7 +178,7 @@ reverbscope-env/bin/reverbscope gui
 
 摆位结果在检查器和“完整报告”中。没有卷尺实测的扬声器距离时，ReverbScope 只报告每个到达声的多余路径。有了距离（垂直方向还需要话筒高度）之后，它会报告扬声器高度、两个设备上方的平面和水平间距。它从不指明墙面，也不给出房间长度或宽度；ReverbScope 不绘制房间模型，它是测量工具，不是房间建模工具。
 
-请在通用 DAW 模式或独立模式中、点击“分析”之前填入卷尺数值，或在命令行中使用 `--speaker-distance` / `--mic-height` / `--temperature`。
+请在新测量页面的“卷尺测量”中、开始测量或点击“分析”之前填入卷尺数值，或在命令行中使用 `--speaker-distance` / `--mic-height` / `--temperature`。
 
 ## 对比两个位置
 

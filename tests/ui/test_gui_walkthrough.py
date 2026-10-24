@@ -40,11 +40,13 @@ def test_the_guide_expands_on_demand_and_stays_away_once_dismissed(
     assert card.isVisible()
     # Its buttons lead into the modes.
     card.buttons[0].click()
-    assert window.stack.currentWidget() is window.standalone
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route() == "standalone"
     assert not window.standalone.demo_mode
     window.show_home()
     card.buttons[1].click()
-    assert window.stack.currentWidget() is window.daw
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route() == "universal_daw"
     window.show_home()
     card.dismiss_button.click()
     assert card.isHidden()

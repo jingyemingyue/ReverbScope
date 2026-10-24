@@ -2,11 +2,12 @@
 
 **English** | [简体中文](AUDIO_DEVICES.zh-CN.md)
 
-Last checked: 2026-09-24. This page covers **Standalone Mode**: ReverbScope
+Last checked: 2026-09-24. This page covers **measuring through an audio interface**: ReverbScope
 plays and records through PortAudio with python-sounddevice 0.5.6, whose
 Windows and macOS wheels bundle PortAudio v19.7.0; on Linux it loads the
 distribution's `libportaudio2` [14][15]. PortAudio behaviour was read in the
-v19.7.0 source [9]–[12]. In Universal DAW Mode the DAW owns the device path
+v19.7.0 source [9]–[12]. When the sweep is played in a DAW and the recording
+imported, the DAW owns the device path
 and the same rules apply ([user-guide/daw-setup.md](user-guide/daw-setup.md)).
 
 ## 1. Why the device path matters

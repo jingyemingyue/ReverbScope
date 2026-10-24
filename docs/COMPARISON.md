@@ -42,13 +42,13 @@ one.
   deliberately has no single "room score"
   ([MEASUREMENT_METHODOLOGY.md](MEASUREMENT_METHODOLOGY.md) §3, §9;
   `src/reverbscope/models/result.py`).
-- **Two modes, one analysis pipeline.** In Universal DAW Mode, ReverbScope
+- **Two ways to play and record, one analysis pipeline.** Played in your DAW: ReverbScope
   writes a sweep WAV, you play and record it in any DAW, and ReverbScope
   analyses the export. ReverbScope never talks to the DAW: there is no SDK and
   no plug-in. It finds the sweep anywhere in an untrimmed file, so you don't
   need to set a latency, and it reads Broadcast WAV, RF64, Wave64, AIFF, CAF
-  and FLAC. In Standalone Mode, ReverbScope plays and records through an audio
-  interface itself. Both modes call `reverbscope.core.pipeline.analyze`
+  and FLAC. Through an audio interface: ReverbScope plays and records
+  itself. Both call `reverbscope.core.pipeline.analyze`
   ([user-guide/daw-setup.md](user-guide/daw-setup.md)).
 - **It explains a sweep the DAW played at the wrong speed.** When
   deconvolution fails, ReverbScope measures the sweep rate in the recording
@@ -96,7 +96,7 @@ correction products, the column says where the correction runs.
 
 | Tool | License / price model | Platforms | Primary purpose | Through a DAW / other recorder | Excitation / IR method | Reports metric validity |
 | --- | --- | --- | --- | --- | --- | --- |
-| **ReverbScope** | Apache-2.0, free | Windows 10/11 x64; macOS 14+ (arm64, x86_64); Linux x86_64; Python 3.12+ wheel | Measuring and interpreting recording positions | Yes: Universal DAW Mode (WAV out, WAV in); also Standalone | Exponential sine sweep, inverse-filter deconvolution; optional loopback; IR WAV import (`analyze-ir`) | Yes: a flag on every metric and every comparison delta; refuses a figure it cannot support |
+| **ReverbScope** | Apache-2.0, free | Windows 10/11 x64; macOS 14+ (arm64, x86_64); Linux x86_64; Python 3.12+ wheel | Measuring and interpreting recording positions | Yes: play the sweep in any DAW and import the recording (WAV out, WAV in); also through the audio interface | Exponential sine sweep, inverse-filter deconvolution; optional loopback; IR WAV import (`analyze-ir`) | Yes: a flag on every metric and every comparison delta; refuses a figure it cannot support |
 | REW (Room EQ Wizard) | Proprietary freeware; paid Pro upgrade | Windows, macOS, Linux | Measurement and analysis; EQ filter design; room simulator | Yes: offline measurement. The REW sweep is played and recorded elsewhere, then loaded with *Import Sweep Recordings* (a timing reference is needed) | Log swept sine; stepped sine; RTA with noise | RT60: regression coefficient shown; figures it considers unreliable appear in orange italics; a Lundeby noise-floor estimate marks where the data stops being valid |
 | Open Sound Meter | Desktop GPL-3.0, pay what you want; iPad app from the App Store | macOS, Windows, Linux; iPadOS | Real-time sound-system tuning | Not documented | Dual-channel FFT: RTA, magnitude, phase, impulse response, coherence, group delay | Coherence; reverberation metrics not documented |
 | ARTA | Freeware since December 2024 (sales stopped March 2024) | Windows | IR, frequency-response and spectrum measurement; ISO 3382 room parameters | Drives the sound card itself; imports IR and signal WAV files; DAW playback not documented | Periodic noise, MLS, linear and log swept sine; single or dual channel | Correlation coefficient of the decay regression |

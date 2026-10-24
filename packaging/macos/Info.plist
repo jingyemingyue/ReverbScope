@@ -26,6 +26,6 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>ReverbScope records the measurement microphone during a Standalone sweep. The recording stays on this computer.</string>
+	<string>ReverbScope records the measurement microphone while it plays a sweep through the audio interface. The recording stays on this computer.</string>
 </dict>
 </plist>

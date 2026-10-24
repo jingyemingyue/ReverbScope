@@ -32,7 +32,7 @@ ReverbScope 能在哪些平台上运行、能与哪些东西配合，以及**每
 
 2026-09-24 验证：在 Python 3.12 上安装恰好为声明下限的版本，在 Python 3.13 和 3.14 上安装最新版本，并运行完整测试套件。除 matplotlib 3.8 / 3.9 外，下限版本全部通过；这两个版本的 wheel 仍包含 `_ttconv` 扩展（[DEPENDENCIES.md](DEPENDENCIES.md) §6），因此下限提高到 3.10，之后通过。在 3.13 和 3.14 上无法安装声明的下限版本（没有对应的 wheel），解析器会选择更新的版本（例如 3.13 上的 PySide6_Essentials 6.8.0.2）；只测试了 Python 3.12 上的下限组合。桌面安装包固定使用 `requirements/bundle.lock` 中的版本。
 
-## 录音文件（通用 DAW 模式）
+## 录音文件（从 DAW 导入）
 
 同一段录音以每种封装格式测试（`tests/integration/test_daw_exports.py`）：WAV（16 / 24 / 32 位 PCM、32 位浮点）、WAVE_FORMAT_EXTENSIBLE、带 `bext`、`iXML` 和 `JUNK` 块的 Broadcast WAV（Pro Tools）、RF64、Wave64、AIFF、CAF（Logic Pro 录音）和 FLAC；单声道话筒的单声道与立体声导出。采样率 44.1–192 kHz。DAW 以错误速度播放的扫频（未转换的采样率或时间伸缩）会被诊断出来（[MEASUREMENT_METHODOLOGY.md](MEASUREMENT_METHODOLOGY.md) §2b）。
 
@@ -40,7 +40,7 @@ ReverbScope 能在哪些平台上运行、能与哪些东西配合，以及**每
 
 Pro Tools、Logic Pro、GarageBand、Cubase / Nuendo、Fender Studio Pro（Studio One）、Ableton Live、REAPER、FL Studio、Bitwig Studio、Digital Performer 和 Audacity 的分步说明，以及适用于其他任何 DAW 的检查清单，见 [user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md)。它们依据各厂商的文档编写，每一步都注明来源（少数第三方来源已标出）：属于按文档编写的流程。**还没有任何 DAW 在真实硬件上配合 ReverbScope 运行过**；[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md) 中的逐个 DAW 矩阵是空的。
 
-## 音频系统（主机 API，独立模式）
+## 音频系统（主机 API，通过音频接口测量）
 
 PortAudio 提供的每一种主机 API 都会被列出和探测（`reverbscope devices --probe`）：Windows 上有 MME、DirectSound、WASAPI（共享模式，或用 `--wasapi-exclusive` 打开独占模式）、WDM-KS，以及存在时的 ASIO；macOS 上是 Core Audio（用 `--coreaudio-set-rate` 避免转换）；Linux 上是 ALSA（`hw:` 和插件设备）、JACK 和 OSS。输入与输出保持在同一种主机 API 上，播放前检查声道，使用两个独立设备时给出警告。各主机 API 的行为及出处见 [AUDIO_DEVICES.zh-CN.md](AUDIO_DEVICES.zh-CN.md)。已用模拟的设备表（`tests/unit/test_audio_inventory.py`）和合成后端验证；**尚未用真实音频接口验证**。
 

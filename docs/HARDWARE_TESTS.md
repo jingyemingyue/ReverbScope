@@ -42,8 +42,8 @@ A maintainer copies the result into a cell below with a link to the issue.
 | Full take without a logged buffer under/overflow (`reverbscope -v measure --out take/`) | | | |
 | Input/output latency reported (`audio stream:` line in `reverbscope.log`) | | | |
 | Device unplugged during a take is reported as a failure, not a recording | | | |
-| Full Standalone measurement | | | |
-| Same signal through one DAW (Universal DAW Mode) | | | |
+| Full take through the audio interface | | | |
+| Same signal through one DAW (recording imported) | | | |
 
 Record a cell as `PASS YYYY-MM-DD, ReverbScope x.y.z (commit), <OS version>,
 <interface, driver version>, <sample rate(s)> at <buffer size>, #issue` or
@@ -62,7 +62,7 @@ names the issue it came from.
 
 ## DAW matrix
 
-One Universal DAW Mode measurement per DAW, following
+One measurement per DAW (sweep played in the DAW, recording imported), following
 [user-guide/daw-setup.md](user-guide/daw-setup.md) as written: the sweep
 generated at the project rate, recorded and exported with the listed menus,
 analysed with `direct_sound_confidence` high. A cell also checks that the
@@ -139,16 +139,16 @@ run" with a reason is as useful as a "Pass".
 
 | Row | What to do | Pass when |
 | --- | --- | --- |
-| Device list | Open Standalone Mode (or run `reverbscope devices`) | The interface is listed with the right number of inputs and outputs |
-| Full take at 44.1 / 48 / 96 kHz | Standalone Mode, pick the interface for input and output, set the rate, press **Run Measurement**; repeat per rate the interface offers | A result opens, the direct-sound confidence is not "low", and no warning says the rate is unsupported or that the recording has dropouts |
+| Device list | Open **New Measurement ▸ Play and record through the audio interface** (or run `reverbscope devices`) | The interface is listed with the right number of inputs and outputs |
+| Full take at 44.1 / 48 / 96 kHz | New Measurement ▸ Play and record through the audio interface, pick the interface for input and output, set the rate, press **Run Measurement**; repeat per rate the interface offers | A result opens, the direct-sound confidence is not "low", and no warning says the rate is unsupported or that the recording has dropouts |
 | Channels beyond 1–2 | Choose an input or output above channel 2 | The sweep comes out of, and is recorded from, the channels you chose |
 | Loopback capture | Cable one output back to one input and choose it as the loopback channel | The result says the loopback was compensated |
 | Stop during playback | Press Stop while the sweep plays | The sound stops at once, no tone keeps playing, no result is saved |
 | No buffer under/overflow | A full take at your usual settings | No "buffer problem(s) … may contain dropouts" warning in the result or in `reverbscope.log` |
 | Interface unplugged | Monitors down; unplug the cable during a take | ReverbScope reports an error and saves nothing; it does not hang or crash |
 | Input/output latency reported | After a full take, open `reverbscope.log` (data folder, or **Environment Report ▸ Open Data Folder**) and find the `audio stream:` line | The line shows `latency_s=(input, output)`; both numbers are plausible for the buffer size you set, and the take had no dropouts. Paste the line into the report |
-| Full Standalone measurement | Microphone and loudspeaker in a room | You get a result you can read |
-| Same signal through one DAW | Universal DAW Mode with the same interface | See the DAW steps below |
+| Full take through the audio interface | Microphone and loudspeaker in a room | You get a result you can read |
+| Same signal through one DAW | Sweep played in the DAW and the recording imported, same interface | See the DAW steps below |
 
 Buffer and latency: ReverbScope uses the interface's driver settings. If a
 take reports dropouts, raise the buffer size in the interface's control
@@ -180,7 +180,7 @@ a report fills its row.
    exactly as written; note any menu that differs in your version.
 2. Generate the sweep at the project's sample rate, play it through the
    loudspeaker, record the microphone, export the recording, and analyse it
-   in Universal DAW Mode.
+   on the New Measurement page (“Play it in your DAW and import the recording”).
 3. Pass when the direct-sound confidence is "high" and no sample-rate or
    time-stretch finding appears. Then, if you can, the two negative checks in
    the DAW matrix above: they pass when ReverbScope names the problem.

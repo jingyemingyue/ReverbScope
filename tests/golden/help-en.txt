@@ -14,8 +14,9 @@ commands:
   Measurement
     sweep       write the ESS test signal WAV (+ JSON sidecar)
     analyze     analyse a recording made with the sweep
-    devices     list audio devices (Standalone Mode)
-    measure     Standalone Mode: play the sweep and record the microphone
+    devices     list audio devices (for measuring through an audio interface)
+    measure     play the sweep through the audio interface and record the
+                microphone
     analyze-ir  analyse an impulse-response WAV from another tool
   Results
     show        print a saved session or comparison.json report, or list
@@ -43,8 +44,8 @@ options:
   --style STYLE         frames around reports: auto (default; the style
                         setting, else boxed on a wide terminal and plain in a
                         pipe), boxed, plain
-  --backend NAME        audio backend for Standalone Mode: portaudio (default)
-                        or fake
+  --backend NAME        audio backend for playing and recording through an
+                        audio interface: portaudio (default) or fake
   --copy-recording, --no-copy-recording
                         copy the raw recording into the session folder
                         (default: user settings)
@@ -175,7 +176,7 @@ examples:
 === reverbscope devices --help
 usage: reverbscope devices [options]
 
-list audio devices (Standalone Mode)
+list audio devices (for measuring through an audio interface)
 
 options:
   -h, --help   show this help message and exit
@@ -191,7 +192,7 @@ examples:
 === reverbscope measure --help
 usage: reverbscope measure --out DIR [options]
 
-Standalone Mode: play the sweep and record the microphone
+play the sweep through the audio interface and record the microphone
 
 required:
   --out DIR             session directory (created)
