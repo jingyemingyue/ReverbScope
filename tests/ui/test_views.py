@@ -456,7 +456,22 @@ def test_decay_view_overlays_a_two_slope_fit_and_only_then(
     assert _("Fast slope T1") in names and _("Slow slope T2") in names
     assert all(s.processing for s in view.chart.series if s.legend)
     assert "Two-slope fit: T1 = " in view.notes.text()
+    # The fit's uncertainty (ADR 0006) follows the note.
+    assert "Uncertainty (1 σ, this response): T1 ±" in view.notes.text()
     view.close()
+
+    from PySide6.QtWidgets import QLabel
+
+    from reverbscope.ui.inspector import Inspector
+
+    inspector = Inspector(_model(coupled))
+    inspector.refresh()
+    labels = [label.text() for label in inspector.figures.findChildren(QLabel)]
+    assert _("Slope uncertainty") in labels
+    spread = fit.selected.uncertainty  # type: ignore[union-attr]
+    assert spread is not None
+    assert any(f"±{spread.decay_times_sd_s[1]:.2f} s" in text for text in labels)
+    inspector.close()
 
     single = _shown(DecayView(_model(result)), app)
     single.band.setCurrentIndex(single.band.findData(BROADBAND))

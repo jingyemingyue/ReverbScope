@@ -126,6 +126,9 @@ DATA_RATE_FACTOR = 2.5 * 20.0 * DECAY_60_DB_NEPER / (2.0 * np.pi)
 #: Two-sided standard-normal quantiles of the 68.27 % and 95 % intervals.
 Z68 = 1.0
 Z95 = 1.959963984540054
+#: A log-parameter standard deviation above this (a factor of e^5 = 148 at
+#: one sigma) means the parameter is not identified: no uncertainty is given.
+_MAX_LOG_SD = 5.0
 #: ``J^T J`` worse conditioned than this: no uncertainty is given.
 _MAX_CONDITION = 1e14
 #: Iteration limit of one least-squares start.
@@ -328,10 +331,12 @@ def slope_uncertainty(
     (tests/unit/test_decay_uncertainty.py); the analysis term alone covers
     far less (residuals of an EDC are strongly correlated).
 
-    Returns ``None`` when a decay time or amplitude sits at its bound or
-    ``J^T J`` is singular. A noise term at its lower bound, or one so small
-    that ``J^T J`` is singular with it (no measurable floor), is held fixed
-    and gets no uncertainty.
+    Returns ``None`` when a decay time or amplitude sits at its bound, when
+    ``J^T J`` is singular or when the standard deviation of a log decay time
+    or log amplitude exceeds 5 (not identified). A noise term at its lower
+    bound, one so small that ``J^T J`` is singular with it, or one whose own
+    deviation exceeds 5 (no measurable floor) is held fixed and gets no
+    uncertainty.
     """
     jac = fit.jacobian_db
     residuals = fit.residuals_db
@@ -342,25 +347,13 @@ def slope_uncertainty(
     free = ~np.all(jac == 0.0, axis=0)
     if not np.all(free[: 2 * slopes]):
         return None
-    inverse = _stable_inverse(jac[:, free])
-    if inverse is None and free[2 * slopes]:
-        # A noise term too small to matter (far below the curve everywhere)
-        # is not identifiable either: it is held fixed like one at its bound.
-        free[2 * slopes] = False
-        inverse = _stable_inverse(jac[:, free])
-    if inverse is None:
-        return None
-    sub = jac[:, free]
-
-    # Analysis term at the paper's data rate.
+    noise_index = 2 * slopes
     fastest = min(fit.decay_times_s)
     rate = DATA_RATE_FACTOR / fastest
     duration = float(t[-1] - t[0])
-    data_points = max(float(sub.shape[1] + 2), rate * duration + 1.0)
     variance = float(np.dot(residuals, residuals)) / points
-    analysis = variance * inverse * (points / data_points)
 
-    # Stochastic-decay term: sandwich with the covariance of a random EDC.
+    # Covariance of the dB curve of a random EDC (stochastic-decay term).
     rates = np.array([DECAY_60_DB_NEPER / d for d in fit.decay_times_s])
     amplitudes = np.array(fit.amplitudes)
     envelope = amplitudes * rates  # e(t) = sum_i a_i exp(-k_i t) + N
@@ -380,19 +373,42 @@ def slope_uncertainty(
     tail_variance = np.maximum(tail_power, 0.0) / bandwidth_hz
     later = np.maximum.outer(np.arange(points), np.arange(points))
     sigma = _LOG10_E**2 * tail_variance[later] / np.outer(edc, edc)
-    stochastic = inverse @ (sub.T @ sigma @ sub) @ inverse
 
-    covariance = np.zeros((parameters, parameters))
-    covariance[np.ix_(free, free)] = analysis + stochastic
-    analysis_full = np.zeros((parameters, parameters))
-    analysis_full[np.ix_(free, free)] = analysis
-    sd = np.sqrt(np.maximum(np.diag(covariance), 0.0))
-    sd_analysis = np.sqrt(np.maximum(np.diag(analysis_full), 0.0))
-    if not (np.all(np.isfinite(sd)) and np.all(np.isfinite(sd_analysis))):
-        return None
+    # A noise term that is too small to matter (singular J^T J with it) or
+    # not determined by the curve (huge deviation) is held fixed, like one at
+    # its bound, and the rest is computed without it.
+    while True:
+        sub = jac[:, free]
+        inverse = _stable_inverse(sub)
+        if inverse is None:
+            if free[noise_index]:
+                free[noise_index] = False
+                continue
+            return None
+        # Analysis term at the paper's data rate.
+        data_points = max(float(sub.shape[1] + 2), rate * duration + 1.0)
+        analysis = variance * inverse * (points / data_points)
+        # Stochastic-decay term: least-squares sandwich.
+        stochastic = inverse @ (sub.T @ sigma @ sub) @ inverse
+        covariance = np.zeros((parameters, parameters))
+        covariance[np.ix_(free, free)] = analysis + stochastic
+        analysis_full = np.zeros((parameters, parameters))
+        analysis_full[np.ix_(free, free)] = analysis
+        sd = np.sqrt(np.maximum(np.diagonal(covariance), 0.0))
+        sd_analysis = np.sqrt(np.maximum(np.diagonal(analysis_full), 0.0))
+        if not (np.all(np.isfinite(sd)) and np.all(np.isfinite(sd_analysis))):
+            return None
+        if free[noise_index] and sd[noise_index] > _MAX_LOG_SD:
+            free[noise_index] = False
+            continue
+        break
 
     order = fit.order
     decays = fit.decay_times_s
+    if float(np.max(sd[:noise_index])) > _MAX_LOG_SD:
+        # A decay time or amplitude not identified (a degenerate forced
+        # fit): no interval rather than one spanning orders of magnitude.
+        return None
     log_sd_t = [float(sd[i]) for i in order]
     log_sd_a = [float(sd[slopes + i]) for i in order]
 
@@ -426,7 +442,7 @@ def slope_uncertainty(
             interval(d, s, Z95) for d, s in zip(decays, log_sd_t, strict=True)
         ),
         amplitudes_sd_db=tuple(float(_LOG10_E * s) for s in log_sd_a),
-        noise_sd_db=float(_LOG10_E * sd[2 * slopes]) if free[2 * slopes] else None,
+        noise_sd_db=float(_LOG10_E * sd[noise_index]) if free[noise_index] else None,
         knee_time_sd_s=knee_sd,
         decay_times_analysis_sd_s=tuple(
             float(d * sd_analysis[i]) for d, i in zip(decays, order, strict=True)
