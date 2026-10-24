@@ -13,6 +13,7 @@ import logging
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QResizeEvent, QShowEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -87,26 +88,31 @@ class StartPanel(QWidget):
         sessions_layout = QVBoxLayout(sessions)
         sessions_layout.setContentsMargins(0, 0, 0, 0)
         sessions_layout.setSpacing(6)
+        self.sessions_label = label(_("Saved sessions"), "section")
         header = QHBoxLayout()
-        header.addWidget(label(_("Saved sessions"), "section"))
+        header.addWidget(self.sessions_label)
         header.addStretch(1)
-        open_button = QPushButton(_("Open Session..."))
-        open_button.setToolTip(_("Open a session.json or a folder that contains one."))
-        open_button.clicked.connect(self.open_session.emit)
-        project_button = QPushButton(_("Open Project..."))
-        project_button.setToolTip(
+        self.open_button = QPushButton(_("Open Session..."))
+        self.open_button.setToolTip(_("Open a session.json or a folder that contains one."))
+        self.open_button.clicked.connect(self.open_session.emit)
+        self.project_button = QPushButton(_("Open Project..."))
+        self.project_button.setToolTip(
             _("One room, several microphone positions: open or make a project folder.")
         )
-        project_button.clicked.connect(self.open_project.emit)
+        self.project_button.clicked.connect(self.open_project.emit)
         compare_button = QPushButton(_("Compare two sessions..."))
         compare_button.setToolTip(_("Select two rows below, then compare them."))
         compare_button.clicked.connect(self.compare_requested.emit)
-        for button, icon_name in ((open_button, "folder"), (project_button, "layers")):
+        for button, icon_name in ((self.open_button, "folder"), (self.project_button, "layers")):
             button.setIcon(icons.icon(icon_name, 16))
             button.setProperty("icon_name", icon_name)
             header.addWidget(button)
         compare_button.setIcon(icons.icon("git-compare", 16))
         compare_button.setProperty("icon_name", "git-compare")
+        self._sessions_layout = sessions_layout
+        self._header_row = header
+        self._button_row = QHBoxLayout()
+        self._header_stacked: bool | None = None
         sessions_layout.addLayout(header)
         # Two selected rows go straight into Compare (MainWindow.show_compare).
         self.browser = SessionBrowser(multi_select=True)
@@ -118,8 +124,84 @@ class StartPanel(QWidget):
         footer.addWidget(compare_button)
         footer.addStretch(1)
         footer.addWidget(self.guide_button)
+        self.compare_button = compare_button
+        self._body_layout = layout
+        self._footer_row = footer
+        self._footer_guide_row = QHBoxLayout()
+        self._footer_stacked: bool | None = None
         layout.addLayout(footer)
         layout.addWidget(self.walkthrough)
+        self._place_responsive()
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._place_responsive()
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
+        super().showEvent(event)
+        self._place_responsive()
+
+    def _place_responsive(self) -> None:
+        if not hasattr(self, "_sessions_layout"):
+            return
+        viewport_w = self.scroll_area.viewport().width()
+        widget = self.scroll_area.widget()
+        layout = widget.layout() if widget is not None else None
+        margins = layout.contentsMargins() if layout is not None else None
+        left_right = (margins.left() + margins.right()) if margins is not None else 64
+        available = (viewport_w if viewport_w > 0 else (self.width() - 16)) - left_right
+        if available <= 0:
+            return
+
+        needed = (
+            self.sessions_label.sizeHint().width()
+            + self.open_button.sizeHint().width()
+            + self.project_button.sizeHint().width()
+            + 24
+        )
+        stacked = needed > available
+        if stacked != self._header_stacked:
+            self._header_stacked = stacked
+            if stacked:
+                self._header_row.removeWidget(self.open_button)
+                self._header_row.removeWidget(self.project_button)
+                self._button_row.addWidget(self.open_button)
+                self._button_row.addWidget(self.project_button)
+                self._button_row.addStretch(1)
+                self._sessions_layout.insertLayout(1, self._button_row)
+            else:
+                self._button_row.removeWidget(self.open_button)
+                self._button_row.removeWidget(self.project_button)
+                while self._button_row.count():
+                    it = self._button_row.takeAt(0)
+                    del it
+                self._sessions_layout.removeItem(self._button_row)
+                self._header_row.addWidget(self.open_button)
+                self._header_row.addWidget(self.project_button)
+
+        footer_needed = (
+            self.compare_button.sizeHint().width() + self.guide_button.sizeHint().width() + 20
+        )
+        footer_stacked = footer_needed > available
+        if footer_stacked != self._footer_stacked:
+            self._footer_stacked = footer_stacked
+            if footer_stacked:
+                self._footer_row.removeWidget(self.guide_button)
+                while self._footer_guide_row.count():
+                    it = self._footer_guide_row.takeAt(0)
+                    del it
+                self._footer_guide_row.addStretch(1)
+                self._footer_guide_row.addWidget(self.guide_button)
+                # Walkthrough is the last widget, footer is before it
+                idx = self._body_layout.indexOf(self.walkthrough)
+                self._body_layout.insertLayout(idx, self._footer_guide_row)
+            else:
+                self._footer_guide_row.removeWidget(self.guide_button)
+                while self._footer_guide_row.count():
+                    it = self._footer_guide_row.takeAt(0)
+                    del it
+                self._body_layout.removeItem(self._footer_guide_row)
+                self._footer_row.addWidget(self.guide_button)
 
     def _hero(self) -> QVBoxLayout:
         """Icon, title, one sentence and the composer with the two real ways in
@@ -230,6 +312,7 @@ class StartPanel(QWidget):
                 settings=key_marks("Ctrl+,"),
             ),
             "caption",
+            wrap=True,
         )
         keys.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         hero.addWidget(keys)
