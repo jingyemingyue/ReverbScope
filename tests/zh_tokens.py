@@ -42,6 +42,9 @@ ALLOWED = frozenset(
         "W64",
         "JSON",
         "CSV",
+        # chart export formats (the export button's tooltip)
+        "PNG",
+        "SVG",
         "ZIP",
         "UTF",
         # audio systems and platforms
