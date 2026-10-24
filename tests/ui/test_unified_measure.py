@@ -32,6 +32,7 @@ from reverbscope.io.wav import write_wav
 from reverbscope.models.configuration import SweepSettings
 from reverbscope.ui.main_window import MainWindow
 from tests.conftest import make_rir
+from tests.ui._metrics import wide_offscreen_latin
 
 #: The two retired mode names, in both languages, as a user could read them.
 MODE_NAMES = ("Universal DAW", "Standalone", "通用 DAW", "独立模式", "DAW 模式")
@@ -259,6 +260,21 @@ def test_the_narrow_page_stacks_the_cards_and_moves_the_reason(
         _pump(app, 0.1)
         page = window.measure
         standalone = window.standalone
+        assert standalone.readiness_reason()
+        # Only the bar is resized (as the footer does): the reason follows.
+        standalone.action_bar.resize(900, standalone.action_bar.height())
+        assert not standalone.reason_above_buttons()
+        standalone.action_bar.resize(360, standalone.action_bar.height())
+        assert standalone.reason_above_buttons()
+        # Only the chooser is resized: the cards follow its width.
+        page.chooser.resize(400, page.chooser.height())
+        assert page.cards_stacked()
+        page.chooser.resize(900, page.chooser.height())
+        assert not page.cards_stacked()
+        if wide_offscreen_latin() and language == "en":
+            window.close()
+            return  # the window cannot be 960 px wide there (tests/ui/_metrics.py)
+        # The real window: inspector open at 960 px stacks the cards.
         window.set_inspector_open(True)
         _pump(app, 0.2)
         assert page.chooser.width() < 560
@@ -266,12 +282,6 @@ def test_the_narrow_page_stacks_the_cards_and_moves_the_reason(
         first, second = (page.route_buttons[r] for r in ("standalone", "universal_daw"))
         assert second.geometry().top() >= first.geometry().bottom()
         assert first.width() == second.width() == page.chooser.width()
-        assert standalone.readiness_reason()
-        assert standalone.reason_above_buttons()
-        # Only the bar is resized (as the footer does): the reason follows.
-        standalone.action_bar.resize(900, standalone.action_bar.height())
-        assert not standalone.reason_above_buttons()
-        standalone.action_bar.resize(360, standalone.action_bar.height())
         assert standalone.reason_above_buttons()
         # Room again: the cards go back side by side.
         window.set_inspector_open(False)
