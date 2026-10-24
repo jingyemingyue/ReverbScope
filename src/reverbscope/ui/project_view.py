@@ -54,6 +54,7 @@ from reverbscope.io.project_store import (
 from reverbscope.io.session_store import load_session
 from reverbscope.labels import accuracy_class_text
 from reverbscope.models.project import Project
+from reverbscope.ui.datatable import begin_fill, data_item, end_fill, setup_data_table
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.views.base import AnalysisView
 from reverbscope.ui.widgets import Card, FindingCard, PageHeader, label, primary, scroll_page
@@ -246,6 +247,8 @@ class ProjectPage(AnalysisView):
         self.table.setShowGrid(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setMinimumHeight(160)
+        # Numbers right-aligned in tabular figures; sort by a column; copy as TSV.
+        setup_data_table(self.table, range(4, 8))
         self.table.itemDoubleClicked.connect(self._open_row)
         self.table.itemSelectionChanged.connect(self._update_buttons)
         takes.body.addWidget(self.table)
@@ -271,6 +274,7 @@ class ProjectPage(AnalysisView):
         self.average_table.setShowGrid(False)
         self.average_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.average_table.setMinimumHeight(120)
+        setup_data_table(self.average_table, range(1, 6), sortable=False)
         average.body.addWidget(self.average_table)
         self.spread = label("", "hint", wrap=True)
         average.body.addWidget(self.spread)
@@ -607,6 +611,7 @@ class ProjectPage(AnalysisView):
             (p.label, take) for p in overview.positions for take in p.sessions
         ]
         rows += [(_("(unlisted)"), take) for take in overview.unlisted]
+        begin_fill(self.table)
         self.table.setRowCount(len(rows))
         dash = "-"
         for r, (position, take) in enumerate(rows):
@@ -631,14 +636,14 @@ class ProjectPage(AnalysisView):
                 fit_word(take.fit),
             ]
             for c, text in enumerate(cells):
-                item = QTableWidgetItem(text)
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                item = data_item(text, numeric=4 <= c <= 7, row=r)
                 if c == 1:
                     item.setData(Qt.ItemDataRole.UserRole, take.directory)
                     item.setToolTip(take.directory)
                 if c == 8:
                     item.setToolTip(take.fit_reason)
                 self.table.setItem(r, c, item)
+        end_fill(self.table)
         self.table.resizeRowsToContents()
         if overview.skipped:
             self.skipped.setText(
@@ -685,9 +690,7 @@ class ProjectPage(AnalysisView):
                     cells.append(f"{metric.seconds:.2f} s")
             cells.append(str(n))
             for c, text in enumerate(cells):
-                item = QTableWidgetItem(text)
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                self.average_table.setItem(r, c, item)
+                self.average_table.setItem(r, c, data_item(text, numeric=c > 0, row=r))
         self.average_table.resizeRowsToContents()
         if overview.spatial_spread_percent is None:
             self.spread.setText("")

@@ -438,6 +438,8 @@ class DecayView(AnalysisView):
             return
         x = np.array(centres)
         y = np.array(values)
+        # Ticks on the band centres with their IEC names (63, 125 … 8k).
+        self.bands_chart.set_band_ticks(centres)
         self.bands_chart.add_curve(
             entry_label(entry),
             x,

@@ -7054,3 +7054,27 @@ msgstr "1/3 倍频程"
 
 msgid "{metric}, one-third-octave bands"
 msgstr "{metric}，1/3 倍频程频带"
+
+msgid "Shaded: outside the sweep's range ({low} to {high}); the curve there is not a measurement."
+msgstr "阴影：扫频范围（{low} 至 {high}）之外；那里的曲线不是测量值。"
+
+msgid "Click a column title to sort; a third click restores the order."
+msgstr "点击列标题排序；点第三次恢复原来的顺序。"
+
+msgid "Copy selected rows"
+msgstr "复制所选行"
+
+msgid "Copy table (tab-separated)"
+msgstr "复制整张表（制表符分隔）"
+
+msgid "peak {level} dBFS"
+msgstr "峰值 {level} dBFS"
+
+msgid "noise {level} dBFS"
+msgstr "噪声 {level} dBFS"
+
+msgid "synthetic demo"
+msgstr "合成演示"
+
+msgid "Current measurement: sample rate, bit depth, interface, recorded peak and noise floor (dBFS, uncalibrated)."
+msgstr "当前测量：采样率、位深、音频接口、录音峰值和本底噪声（dBFS，未校准）。"

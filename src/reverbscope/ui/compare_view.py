@@ -25,7 +25,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QTableWidget,
-    QTableWidgetItem,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -46,6 +45,7 @@ from reverbscope.interpretation.verdicts import ComparisonVerdict, verdict_chip
 from reverbscope.io.session_store import save_comparison
 from reverbscope.labels import metric_label, signed_number, status_text, validity_word
 from reverbscope.models.comparison import ComparisonResult, ResonanceMatch
+from reverbscope.ui.datatable import data_item, setup_data_table
 from reverbscope.ui.browser import SessionBrowser
 from reverbscope.ui.comparison import EntryComparison, current_comparison
 from reverbscope.ui.plotkit import X_FREQUENCY, ChartPanel
@@ -208,6 +208,9 @@ class ComparePage(AnalysisView):
             widget.setAlternatingRowColors(True)
             widget.setShowGrid(False)
             widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+            # Numbers right-aligned in tabular figures, copy as TSV (no
+            # sorting: the rows follow the comparison's own order).
+            setup_data_table(widget, range(1, len(columns) - 1), sortable=False)
             return widget
 
         self.tabs = QTabWidget()
@@ -393,8 +396,7 @@ class ComparePage(AnalysisView):
                 validity_word(item.validity),
             ]
             for c, value in enumerate(values):
-                cell = QTableWidgetItem(value)
-                cell.setFlags(cell.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                cell = data_item(value, numeric=0 < c < len(values) - 1, row=r)
                 if c == 0:
                     cell.setToolTip(item.name)
                 if c == len(values) - 1 and item.reason:
@@ -417,9 +419,7 @@ class ComparePage(AnalysisView):
             candidate = _pair(match.candidate_delay_ms, match.candidate_relative_db)
             delta = "" if match.level_delta_db is None else signed_number(match.level_delta_db, 1)
             for c, value in enumerate((status_text(match.status), baseline, candidate, delta)):
-                cell = QTableWidgetItem(value)
-                cell.setFlags(cell.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                self.reflections.setItem(r, c, cell)
+                self.reflections.setItem(r, c, data_item(value, numeric=c > 0, row=r))
         self.reflections.resizeColumnsToContents()
         self.resonances.setRowCount(len(comparison.resonances))
         self.resonances_note.setText(
@@ -435,9 +435,7 @@ class ComparePage(AnalysisView):
                 _decay_flags(resonance),
             )
             for c, value in enumerate(resonance_row):
-                cell = QTableWidgetItem(value)
-                cell.setFlags(cell.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                self.resonances.setItem(r, c, cell)
+                self.resonances.setItem(r, c, data_item(value, numeric=c in (1, 2), row=r))
         self.resonances.resizeColumnsToContents()
         self.text.setPlainText(
             render_comparison(REPORT_CONSOLE, comparison, findings, profile, verdict)

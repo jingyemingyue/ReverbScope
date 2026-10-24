@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QTableWidget,
-    QTableWidgetItem,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -28,6 +27,7 @@ from reverbscope.interpretation import Finding
 from reverbscope.interpretation.profiles import confidence_text, noise_segment_text, profile_title
 from reverbscope.labels import severity_text, topic_text, validity_word
 from reverbscope.models.result import AnalysisResult, Validity
+from reverbscope.ui.datatable import data_item, setup_data_table
 from reverbscope.ui.health_nav import view_for_check, view_title
 from reverbscope.ui.tables import decay_table_rows, energy_table_rows
 from reverbscope.ui.theme import tokens
@@ -148,6 +148,8 @@ class _Overview(QWidget):
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        # Bands stay low to high (no sorting); numbers right-aligned, copy as TSV.
+        setup_data_table(self.table, range(1, 5), sortable=False)
         decay_layout.addWidget(self.table)
         layout.addWidget(decay)
 
@@ -176,6 +178,7 @@ class _Overview(QWidget):
         self.energy_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.energy_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.energy_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        setup_data_table(self.energy_table, range(1, 5), sortable=False)
         energy_layout.addWidget(self.energy_table)
         layout.addWidget(energy)
         layout.addWidget(self.findings_title, 0, Qt.AlignmentFlag.AlignLeft)
@@ -195,6 +198,10 @@ class _Overview(QWidget):
                     if broadband.rt60_basis == "T20"
                     else broadband.edt.validity
                 )
+            if word == validity_word(Validity.VALID):
+                # A valid figure carries no badge (GUIDELINES §13.3); only a
+                # figure that is not trusted is marked.
+                word, tone = "", "neutral"
             self.rt60.show_value(
                 f"{broadband.rt60_estimate_s:.2f} s",
                 _("broadband, estimated from {basis}").format(basis=broadband.rt60_basis),
@@ -370,8 +377,7 @@ class _Overview(QWidget):
         table.setRowCount(len(rows))
         for r, row in enumerate(rows):
             for c, value in enumerate(row):
-                item = QTableWidgetItem(value)
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                item = data_item(value, numeric=c > 0, row=r)
                 if c > 0 and (value.startswith("(") or value == _("insufficient range")):
                     item.setForeground(QColor(colours["warn"]))
                 elif c > 0 and value in {_("n/a"), "-"}:
@@ -456,5 +462,7 @@ def subtitle_text(entry: object) -> str:
             if part
         ]
     parts.append(_("{profile} profile").format(profile=profile_title(entry.profile)))
-    parts.append(f"{entry.result.sample_rate} Hz")
+    from reverbscope.ui.plotkit import format_sample_rate
+
+    parts.append(format_sample_rate(entry.result.sample_rate))
     return "  ·  ".join(parts)

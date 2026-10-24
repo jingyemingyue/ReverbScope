@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QSplitter,
     QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -22,6 +21,7 @@ from reverbscope.display import DisplayDataError
 from reverbscope.display.etc import EtcCurve, etc_curve, marker_points
 from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import confidence_text
+from reverbscope.ui.datatable import data_item, setup_data_table
 from reverbscope.ui.plotkit import DASHES, X_TIME_MS, ChartPanel, follow_chart_visibility
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
@@ -85,6 +85,8 @@ class ImpulseView(AnalysisView):
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.itemSelectionChanged.connect(self._table_selected)
+        # Rows follow the reflection numbers (selection maps to them): no sorting.
+        setup_data_table(self.table, range(3), sortable=False)
         splitter.addWidget(self.table)
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 1)
@@ -260,7 +262,7 @@ class ImpulseView(AnalysisView):
                     _("candidate reflection"),
                 ]
                 for column, text in enumerate(values):
-                    self.table.setItem(row, column, QTableWidgetItem(text))
+                    self.table.setItem(row, column, data_item(text, numeric=column < 3, row=row))
             key, index = self.model.selected_reflection()
             if entry is not None and key == entry.key and 0 <= index < len(reflections):
                 self.table.selectRow(index)

@@ -41,6 +41,7 @@ from reverbscope.models.result import (
 )
 from reverbscope.ui.comparison import current_comparison
 from reverbscope.ui.health_nav import view_for_check, view_title
+from reverbscope.ui.plotkit import format_sample_rate
 from reverbscope.ui.theme import apply_mono_font, tone_color
 from reverbscope.ui.views.overview import CONFIDENCE_TONE, HEALTH_TONE, VALIDITY_DISPLAY
 from reverbscope.ui.widgets import PathLabel, label, separator
@@ -57,6 +58,17 @@ VERDICT_TONE = {
 
 def _tone(validity: Validity) -> str:
     return VALIDITY_DISPLAY.get(validity, ("", "neutral"))[1]
+
+
+def _validity_chip(validity: Validity) -> tuple[str, str]:
+    """The chip word and tone after a figure: none for a valid one.
+
+    GUIDELINES §13.3: "valid" is the normal case and gets no badge, so only
+    a figure that is not trusted carries a word, and it stands out.
+    """
+    if validity is Validity.VALID:
+        return "", "neutral"
+    return validity_word(validity), _tone(validity)
 
 
 def decay_text(metric: DecayMetric) -> str:
@@ -76,6 +88,10 @@ def energy_text(metric: EnergyMetric) -> str:
     else:
         text = f"{metric.value * 1000:.0f} ms"
     return text if metric.validity is Validity.VALID else f"({text})"
+
+
+#: Characters after which a row's value is a sentence and gets a line of its own.
+LONG_VALUE = 34
 
 
 class _Section(QWidget):
@@ -100,7 +116,9 @@ class _Section(QWidget):
         self.grid = QGridLayout()
         self.grid.setHorizontalSpacing(8)
         self.grid.setVerticalSpacing(3)
-        self.grid.setColumnStretch(0, 2)
+        # Captions are short words; the figures get the width (a value such
+        # as "two: 0.45 s and 0.83 s" must not wrap in a 300 px inspector).
+        self.grid.setColumnStretch(0, 1)
         self.grid.setColumnStretch(1, 3)
         layout.addLayout(self.grid)
         self.extra = QVBoxLayout()
@@ -173,7 +191,25 @@ class _Section(QWidget):
         if tip:
             name.setToolTip(tip)
         self.grid.addWidget(name, self.rows, 0, Qt.AlignmentFlag.AlignTop)
-        self.grid.addWidget(shown, self.rows, 1, Qt.AlignmentFlag.AlignTop)
+        if len(value) > LONG_VALUE and not self.mono:
+            # A sentence (a health check's reason) reads left to right under
+            # its caption, not as a ragged right-aligned column; the chip
+            # stays on the caption's line where the eye looks for it.
+            word = QLabel()
+            word.setTextFormat(Qt.TextFormat.RichText)
+            word.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
+            if chip:
+                color, _soft = tone_color(tone)
+                word.setText(
+                    f'<span style="color:{color}; font-weight:600">{html.escape(chip)}</span>'
+                )
+            self.grid.addWidget(word, self.rows, 1, Qt.AlignmentFlag.AlignTop)
+            shown.setText(html.escape(value))
+            shown.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            self.rows += 1
+            self.grid.addWidget(shown, self.rows, 0, 1, 2, Qt.AlignmentFlag.AlignTop)
+        else:
+            self.grid.addWidget(shown, self.rows, 1, Qt.AlignmentFlag.AlignTop)
         self.rows += 1
 
     def add_text(self, text: str, role: str | None = "hint") -> QLabel:
@@ -323,7 +359,7 @@ class Inspector(QWidget):
             )
         if entry.result is not None:
             bits.append(_("{profile} profile").format(profile=profile_title(entry.profile)))
-            bits.append(f"{entry.result.sample_rate} Hz")
+            bits.append(format_sample_rate(entry.result.sample_rate))
         if entry.unsaved:
             bits.append(_("not saved yet"))
         if entry.synthetic:
@@ -386,9 +422,7 @@ class Inspector(QWidget):
             ("T20", broadband.t20),
             ("T30", broadband.t30),
         ):
-            section.add_row(
-                name, decay_text(metric), validity_word(metric.validity), _tone(metric.validity)
-            )
+            section.add_row(name, decay_text(metric), *_validity_chip(metric.validity))
         slopes = broadband.multi_slope
         if slopes is not None and slopes.selected is not None:
             model = slopes.selected
@@ -401,8 +435,7 @@ class Inspector(QWidget):
             section.add_row(
                 _("Decay slopes"),
                 text,
-                validity_word(slopes.validity),
-                _tone(slopes.validity),
+                *_validity_chip(slopes.validity),
             )
         thirds = result.decay.third_octave_bands
         if thirds:
@@ -424,9 +457,7 @@ class Inspector(QWidget):
             ("C80", broadband.c80),
             ("D50", broadband.d50),
         ):
-            section.add_row(
-                name, energy_text(energy), validity_word(energy.validity), _tone(energy.validity)
-            )
+            section.add_row(name, energy_text(energy), *_validity_chip(energy.validity))
         noise = result.noise
         section.add_row(
             _("Noise floor"),
@@ -487,7 +518,7 @@ class Inspector(QWidget):
             )
             if session.created_at:
                 section.add_row(_("Recorded"), session.created_at.replace("T", " ")[:19])
-        section.add_row(_("Sample rate"), f"{result.sample_rate} Hz")
+        section.add_row(_("Sample rate"), format_sample_rate(result.sample_rate))
         section.add_row(_("Profile"), profile_title(entry.profile))
         section.add_widget(self.profile_button)
         loopback = result.impulse_response.loopback
@@ -616,8 +647,7 @@ class Inspector(QWidget):
             section.add_row(
                 caption,
                 value,
-                validity_word(length.validity),
-                _tone(length.validity),
+                *_validity_chip(length.validity),
                 tip=localize(length.reason) if length.reason else "",
             )
         assumed = _(" (assumed)") if placement.temperature_assumed else ""
