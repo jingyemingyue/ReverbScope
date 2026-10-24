@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QInputDialog,
+    QLabel,
     QMainWindow,
     QMessageBox,
     QSplitter,
@@ -46,7 +47,7 @@ from reverbscope.ui.plotkit import dispose_charts
 from reverbscope.ui.project_view import ProjectPage
 from reverbscope.ui.start_panel import StartPanel
 from reverbscope.ui.state import MeasurementState
-from reverbscope.ui.theme import apply_application_chrome, color_scheme
+from reverbscope.ui.theme import apply_application_chrome, apply_mono_font, color_scheme
 from reverbscope.ui.widgets import app_icon
 from reverbscope.ui.workspace import WorkspaceModel, entry_label, folder_key, usable_profile
 
@@ -211,6 +212,20 @@ class MainWindow(QMainWindow):
         self._build_menus()
         self._status = QStatusBar()
         self.setStatusBar(self._status)
+        # The current measurement's format and levels, always at the right of
+        # the status bar as measurement tools keep them (rate, depth, device,
+        # peak, noise floor), in tabular figures.
+        self.measurement_info = QLabel("")
+        self.measurement_info.setObjectName("measurementInfo")
+        apply_mono_font(self.measurement_info, 11)
+        self.measurement_info.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        # It gives way on a narrow window instead of widening it (the full
+        # line stays on the tooltip).
+        self.measurement_info.setMinimumWidth(1)
+        self._status.addPermanentWidget(self.measurement_info)
+        self.model.current_changed.connect(self._update_measurement_info)
+        self.model.entries_changed.connect(self._update_measurement_info)
+        self.model.entry_updated.connect(self._update_measurement_info)
         self._place = ""
         #: The view shown when the first measurement opens (ui.ini).
         self._preferred_view = ui_state.read_text("workspace/view", "overview")
@@ -658,6 +673,17 @@ class MainWindow(QMainWindow):
 
     def current_view_id(self) -> str:
         return self.workspace.current_view_id()
+
+    def _update_measurement_info(self, *_args: object) -> None:
+        """Rate · depth · device · peak · noise of the current measurement, or nothing."""
+        self.measurement_info.setText(measurement_info_text(self.model.current()))
+        self.measurement_info.setToolTip(
+            _(
+                "Current measurement: sample rate, bit depth, interface, recorded peak and noise floor (dBFS, uncalibrated)."
+            )
+            if self.measurement_info.text()
+            else ""
+        )
 
     def _current_changed(self, key: str) -> None:
         """A measurement became current: leave the start panel for the views."""
@@ -1124,3 +1150,36 @@ def license_notice_path() -> Path | None:
     if source_root is not None:
         return source_root / "docs" / "DEPENDENCIES.md"
     return None
+
+
+def measurement_info_text(entry: object) -> str:
+    """The status bar's right-hand readout for ``entry`` (``""`` with no result).
+
+    Only what the session and the analysis stored: a field that is not known
+    is left out rather than guessed. Levels are dBFS, uncalibrated (C4).
+    """
+    from reverbscope.ui.plotkit import MINUS, format_sample_rate
+    from reverbscope.ui.workspace import Entry
+
+    if not isinstance(entry, Entry) or entry.result is None:
+        return ""
+    result = entry.result
+    session = entry.session
+    parts = [format_sample_rate(result.sample_rate)]
+    if session is not None and session.bit_depth:
+        parts.append(str(session.bit_depth))
+    if session is not None and session.audio_interface:
+        parts.append(session.audio_interface)
+    if result.clipping is not None:
+        parts.append(
+            _("peak {level} dBFS").format(
+                level=f"{result.clipping.peak_dbfs:+.1f}".replace("-", MINUS)
+            )
+        )
+    if result.noise.rms_dbfs is not None:
+        parts.append(
+            _("noise {level} dBFS").format(level=f"{result.noise.rms_dbfs:.1f}".replace("-", MINUS))
+        )
+    if entry.synthetic:
+        parts.append(_("synthetic demo"))
+    return "  ·  ".join(parts)

@@ -23,7 +23,13 @@ from reverbscope.display.curves import (
     smooth_fractional_octave,
 )
 from reverbscope.i18n import _
-from reverbscope.ui.plotkit import DASHES, X_FREQUENCY, ChartPanel, follow_chart_visibility
+from reverbscope.ui.plotkit import (
+    DASHES,
+    X_FREQUENCY,
+    ChartPanel,
+    follow_chart_visibility,
+    format_frequency,
+)
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
 from reverbscope.ui.widgets import PlotBody
@@ -252,9 +258,9 @@ class FrequencyView(AnalysisView):
                     self.chart.add_region(band.high_hz, nyquist, color=t["muted"], alpha=45)
                 notes.append(
                     _(
-                        "Shaded: outside the sweep's range ({low:.0f} Hz to {high:.0f} Hz); "
+                        "Shaded: outside the sweep's range ({low} to {high}); "
                         "the curve there is not a measurement."
-                    ).format(low=band.low_hz, high=band.high_hz)
+                    ).format(low=format_frequency(band.low_hz), high=format_frequency(band.high_hz))
                 )
                 low = max(low, min(band.low_hz, 20.0))
             notes.append(

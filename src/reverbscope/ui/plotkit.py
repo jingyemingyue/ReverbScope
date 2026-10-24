@@ -74,32 +74,148 @@ X_TIME_S = "time_s"
 X_LINEAR = "linear"
 
 
+#: The typographic minus (U+2212) that numbers on screen use (GUIDELINES §13.4).
+MINUS = "\u2212"
+
+
+def signed(text: str) -> str:
+    """``text`` with an ASCII hyphen-minus in front of a number made a real minus."""
+    return MINUS + text[1:] if text.startswith("-") else text
+
+
 def format_frequency(hz: float) -> str:
+    """A frequency as the GUI writes it (GUIDELINES §16.5).
+
+    Below 1 kHz whole hertz (``112 Hz``); from 1 kHz up kilohertz with at most
+    one decimal (``1.2 kHz``, ``20 kHz``). Display only: no stored value
+    is rounded.
+    """
     if not math.isfinite(hz):
         return "-"
-    if hz >= 1000.0:
-        return f"{hz / 1000.0:.3g} kHz"
-    return f"{hz:.3g} Hz"
+    if hz >= 999.5:
+        khz = f"{hz / 1000.0:.1f}".removesuffix(".0")
+        return f"{khz} kHz"
+    if hz < 10.0:
+        return f"{hz:.1f} Hz"
+    return f"{hz:.0f} Hz"
+
+
+def format_sample_rate(hz: float) -> str:
+    """A sample rate in its shortest kilohertz form: ``48 kHz``, ``44.1 kHz``."""
+    khz = f"{hz / 1000.0:.3f}".rstrip("0").rstrip(".")
+    return f"{khz} kHz"
 
 
 def format_x(kind: str, value: float, unit: str = "") -> str:
     if kind == X_FREQUENCY:
         return format_frequency(value)
     if kind == X_TIME_MS:
-        return f"{value:.2f} ms"
+        return signed(f"{value:.2f} ms")
     if kind == X_TIME_S:
-        return f"{value:.3f} s"
-    return f"{value:.3g} {unit}".strip()
+        return signed(f"{value:.3f} s")
+    return signed(f"{value:.3g} {unit}".strip())
+
+
+def format_y(value: float, unit: str) -> str:
+    """A cursor value: one decimal and its unit, with a real minus sign."""
+    if unit == "s":
+        return signed(f"{value:.2f} s")
+    if unit == "Hz":
+        return format_frequency(value)
+    return signed(f"{value:.1f} {unit}".strip())
+
+
+#: Nominal labels of the IEC 61260 octave and one-third-octave band centres
+#: (exact base-ten centres rounded as the standard names them). Band charts
+#: put their ticks on these, not on 100 / 200 / 500.
+NOMINAL_BANDS: tuple[tuple[float, str], ...] = tuple(
+    (10.0 ** (index / 10.0), name)
+    for index, name in zip(
+        range(12, 44),
+        (
+            "16", "20", "25", "31.5", "40", "50", "63", "80", "100", "125", "160",
+            "200", "250", "315", "400", "500", "630", "800", "1k", "1.25k", "1.6k",
+            "2k", "2.5k", "3.15k", "4k", "5k", "6.3k", "8k", "10k", "12.5k", "16k",
+            "20k",
+        ),
+        strict=True,
+    )
+)  # fmt: skip
+
+
+def nominal_band_label(hz: float) -> str:
+    """The IEC nominal name of the band centre nearest ``hz`` (``1k``, ``31.5``)."""
+    best = min(NOMINAL_BANDS, key=lambda band: abs(math.log10(band[0]) - math.log10(hz)))
+    return best[1]
+
+
+class NumericAxis(pg.AxisItem):
+    """A linear axis that writes numbers as the rest of the GUI does.
+
+    No SI-prefix rescaling: pyqtgraph would otherwise turn 0.4–0.8 s into
+    ``400–800 (×0.001)``, which reads as milliseconds labelled seconds. Negative
+    ticks use the typographic minus.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.enableAutoSIPrefix(False)
+
+    def tickStrings(self, values: list[float], scale: float, spacing: float) -> list[str]:  # noqa: N802
+        return [
+            text.replace("-", MINUS) if text.startswith("-") else text
+            for text in super().tickStrings(values, scale, spacing)
+        ]
 
 
 class LogFrequencyAxis(pg.AxisItem):
-    """An axis in ``log10(Hz)`` that reads in Hz: 20, 50, 100, 200, 500, 1k, 2k ..."""
+    """An axis in ``log10(Hz)`` that reads in Hz: 20, 50, 100, 200, 500, 1k, 2k ...
+
+    :meth:`set_bands` puts the ticks on band centres instead (63, 125, 250 …),
+    labelled with their IEC nominal names, for charts that plot one value per
+    band.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.enableAutoSIPrefix(False)
+        #: (log10 centre, nominal label) of the bands, or ``None`` for decades.
+        self._bands: list[tuple[float, str]] | None = None
+
+    def set_bands(self, centres_hz: Sequence[float] | None) -> None:
+        """Ticks on these band centres (``None`` goes back to 1-2-5 decades)."""
+        if not centres_hz:
+            self._bands = None
+        else:
+            self._bands = [
+                (math.log10(hz), nominal_band_label(hz))
+                for hz in sorted(set(centres_hz))
+                if hz > 0 and math.isfinite(hz)
+            ]
+        self.picture = None
+        self.update()
+
+    def _band_ticks(self, lo: float, hi: float, size: float) -> list[Any]:
+        assert self._bands is not None
+        shown = [(v, name) for v, name in self._bands if lo <= v <= hi]
+        if not shown:
+            return []
+        values = [v for v, _name in shown]
+        # Room for about one label per 34 px; with one-third-octave bands the
+        # octave centres keep their labels and the others become minor ticks.
+        if len(values) > max(2, size / 34.0):
+            octave = [v for v, name in shown if name in _OCTAVE_NAMES]
+            minor = [v for v in values if v not in octave]
+            return [(1.0, octave or values[::3]), (0.5, minor)]
+        return [(1.0, values)]
 
     def tickValues(self, minVal: float, maxVal: float, size: float) -> list[Any]:  # noqa: N802, N803
         lo = max(minVal, -1.0)
         hi = min(maxVal, 6.0)
         if hi <= lo:
             return []
+        if self._bands is not None:
+            return self._band_ticks(lo, hi, size)
         major: list[float] = []
         minor: list[float] = []
         for decade in range(math.floor(lo), math.ceil(hi) + 1):
@@ -113,11 +229,18 @@ class LogFrequencyAxis(pg.AxisItem):
         return [(1.0, major), (0.5, minor)]
 
     def tickStrings(self, values: list[float], scale: float, spacing: float) -> list[str]:  # noqa: N802, ARG002
+        if self._bands is not None:
+            names = dict(self._bands)
+            return [names.get(v, nominal_band_label(10.0**v)) for v in values]
         out = []
         for value in values:
             hz = 10.0**value
             out.append(f"{hz / 1000.0:g}k" if hz >= 1000.0 else f"{hz:g}")
         return out
+
+
+#: The octave-band nominal names, kept as labelled ticks when thirds crowd an axis.
+_OCTAVE_NAMES = frozenset(("16", "31.5", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"))
 
 
 class ChartViewBox(pg.ViewBox):
@@ -228,6 +351,9 @@ def dispose_charts(widget: QWidget) -> None:
         chart.dispose()
 
 
+#: Curves listed in the cursor readout at most (current first).
+READOUT_CURVES = 4
+
 #: Smallest plot height in pixels (axes included).
 PLOT_MIN_HEIGHT = 196
 
@@ -302,6 +428,11 @@ class ChartPanel(QWidget):
         self.export_button = QToolButton()
         self.export_button.setText(_("Export"))
         self.export_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.export_button.setToolTip(
+            _(
+                "Export this chart as a PNG at twice the screen resolution, as SVG, or its curves as CSV."
+            )
+        )
         menu = QMenu(self.export_button)
         menu.addAction(_("Chart as PNG..."), lambda: self._ask_export("png"))
         menu.addAction(_("Chart as SVG..."), lambda: self._ask_export("svg"))
@@ -329,11 +460,18 @@ class ChartPanel(QWidget):
         self.legend_area.setFixedHeight(26)
         layout.addWidget(self.legend_area)
 
-        axis_items: dict[str, Any] = {}
-        if x_kind == X_FREQUENCY:
-            axis_items["bottom"] = LogFrequencyAxis(orientation="bottom")
-        if y_frequency:
-            axis_items["left"] = LogFrequencyAxis(orientation="left")
+        axis_items: dict[str, Any] = {
+            "bottom": (
+                LogFrequencyAxis(orientation="bottom")
+                if x_kind == X_FREQUENCY
+                else NumericAxis(orientation="bottom")
+            ),
+            "left": (
+                LogFrequencyAxis(orientation="left")
+                if y_frequency
+                else NumericAxis(orientation="left")
+            ),
+        }
         self.view_box = ChartViewBox()
         self.view_box.reset_requested.connect(self.reset_view)
         self.view_box.sigRangeChangedManually.connect(self._range_changed_manually)
@@ -403,6 +541,12 @@ class ChartPanel(QWidget):
         self.y_label = y_label
         self.plot_item.setLabel("bottom", x_label)
         self.plot_item.setLabel("left", y_label)
+
+    def set_band_ticks(self, centres_hz: Sequence[float] | None) -> None:
+        """Put the frequency axis ticks on these band centres (IEC nominal names)."""
+        axis = self.plot_item.getAxis("bottom")
+        if isinstance(axis, LogFrequencyAxis):
+            axis.set_bands(centres_hz)
 
     def set_message(self, text: str) -> None:
         """Say in the middle of the plot why it is empty; ``""`` hides it."""
@@ -785,18 +929,36 @@ class ChartPanel(QWidget):
         return float(y0 + (y1 - y0) * (plot_x - x0) / (x1 - x0))
 
     def readout_text(self, plot_x: float, plot_y: float) -> str:
+        """``x · value name · value name …`` at the cursor (GUIDELINES §15.2).
+
+        The current measurement's curve comes first, then every other visible
+        curve that has a value at this x (up to :data:`READOUT_CURVES`), each
+        read off the drawn curve by linear interpolation.
+        """
         if self.readout_hook is not None:
             hooked = self.readout_hook(plot_x, plot_y)
             if hooked is not None:
                 return hooked
         x_text = format_x(self.x_kind, self.from_plot_x(plot_x))
-        text = f"{x_text}   {plot_y:.1f} {self.y_unit}"
-        series = self.readout_series()
-        if series is not None:
+        parts: list[str] = []
+        first = self.readout_series()
+        others = [
+            s
+            for s in self.series
+            if s.visible and s.legend and s is not first and s.shift == (1.0, 0.0)
+        ]
+        for series in ([first] if first is not None else []) + others[::-1]:
             value = self.value_at(series, plot_x)
-            if value is not None:
-                text = f"{x_text}   {series.name}: {value:.1f} {self.y_unit}"
-        return text
+            if value is None:
+                continue
+            parts.append(f"{series.name} {format_y(value, self.y_unit)}")
+            if len(parts) >= READOUT_CURVES:
+                break
+        if not parts:
+            return f"{x_text}  ·  {format_y(plot_y, self.y_unit)}"
+        # The current curve's value ends the line so it survives eliding.
+        parts.append(parts.pop(0))
+        return "  ·  ".join([x_text, *parts])
 
     def _on_mouse_moved(self, args: Any) -> None:
         if self._disposed:
