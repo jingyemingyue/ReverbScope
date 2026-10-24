@@ -4,7 +4,7 @@ One code base, two defaults:
 
 * **developer** — a source checkout or a ``pip`` install: debugging tools are
   on (the GUI's Developer menu with the audio-device inspector and the
-  environment report, advanced stream options in Standalone Mode). Developers
+  environment report, advanced stream options for takes through the audio interface). Developers
   extend ReverbScope through its entry points (``reverbscope.exporters``) and the
   Python API.
 * **user** — the desktop bundles and installers: the same measurement, with

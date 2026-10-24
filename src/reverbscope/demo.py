@@ -1,6 +1,6 @@
 """Synthetic demo: try the whole workflow without an interface or a microphone.
 
-:func:`run_demo` writes the same files a real Universal DAW Mode measurement
+:func:`run_demo` writes the same files a real measurement played in a DAW
 produces -- a sweep WAV with its sidecar and one "recorded" WAV per microphone
 position -- but the recordings are *simulated*: the sweep is convolved with a
 made-up room impulse response and noise is added. Both positions are then

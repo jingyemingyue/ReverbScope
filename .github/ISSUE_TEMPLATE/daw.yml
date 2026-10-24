@@ -1,5 +1,5 @@
 name: DAW compatibility report (English)
-description: You measured through a DAW with Universal DAW Mode. Works or fails, both help.
+description: You played the sweep in a DAW and imported the recording. Works or fails, both help.
 title: "[daw] <DAW and version> on <OS>"
 labels: ["daw-report"]
 body:
@@ -38,9 +38,9 @@ body:
       label: Workflow
       description: Which steps you followed. The guide is docs/user-guide/daw-setup.md.
       options:
-        - Universal DAW Mode as written in the guide for this DAW
-        - Universal DAW Mode with my own steps (say which in Result)
-        - Standalone Mode through the same interface, for comparison
+        - Played in the DAW as written in the guide for this DAW
+        - Played in the DAW with my own steps (say which in Result)
+        - Played and recorded through the same interface by ReverbScope, for comparison
     validations:
       required: true
   - type: input

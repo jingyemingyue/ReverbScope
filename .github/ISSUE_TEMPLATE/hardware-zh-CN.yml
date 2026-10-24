@@ -47,7 +47,7 @@ body:
     id: setup
     attributes:
       label: 音频系统（主机 API）、采样率和声道
-      description: 按独立模式中的选择（或 reverbscope measure 的选项）填写。列出你运行过的每个采样率。
+      description: 按 新测量 ▸ 通过音频接口播放并录音 中的选择（或 reverbscope measure 的选项）填写。列出你运行过的每个采样率。
       placeholder: "Windows WASAPI；44100、48000 和 96000 Hz；输入 1 -> 输出 1，回送输入 2；延迟为默认值"
     validations:
       required: true
@@ -67,7 +67,7 @@ body:
     id: enumeration
     attributes:
       label: "设备列表"
-      description: '音频接口出现在独立模式 / `reverbscope devices` 中，且输入和输出声道数正确。'
+      description: '音频接口出现在新测量（音频接口）/ `reverbscope devices` 中，且输入和输出声道数正确。'
       options:
         - NOT RUN
         - Hardware PASS
@@ -79,7 +79,7 @@ body:
     id: rate_44k1
     attributes:
       label: "44.1 kHz 下的完整测量"
-      description: '采样率设为 44100 Hz 的一次独立模式测量（仅做探测不算）。'
+      description: '采样率设为 44100 Hz 的一次音频接口测量（仅做探测不算）。'
       options:
         - NOT RUN
         - Hardware PASS
@@ -91,7 +91,7 @@ body:
     id: rate_48k
     attributes:
       label: "48 kHz 下的完整测量"
-      description: '采样率设为 48000 Hz 的一次独立模式测量。'
+      description: '采样率设为 48000 Hz 的一次音频接口测量。'
       options:
         - NOT RUN
         - Hardware PASS
@@ -103,7 +103,7 @@ body:
     id: rate_96k
     attributes:
       label: "96 kHz 下的完整测量"
-      description: '采样率设为 96000 Hz 的一次独立模式测量（如果音频接口支持该采样率）。'
+      description: '采样率设为 96000 Hz 的一次音频接口测量（如果音频接口支持该采样率）。'
       options:
         - NOT RUN
         - Hardware PASS
@@ -186,7 +186,7 @@ body:
   - type: dropdown
     id: standalone
     attributes:
-      label: "完整的独立模式测量"
+      label: "通过音频接口的完整测量"
       description: '在房间中使用话筒和扬声器，完成一次测量，并得到可以读取的结果。'
       options:
         - NOT RUN
@@ -199,7 +199,7 @@ body:
     id: daw
     attributes:
       label: "同一信号经过一个 DAW"
-      description: '通过 DAW 以通用 DAW 模式使用同一音频接口（也欢迎另外提交一份附带细节的 DAW 兼容性报告）。'
+      description: '通过 DAW 使用同一音频接口并导入录音（也欢迎另外提交一份附带细节的 DAW 兼容性报告）。'
       options:
         - NOT RUN
         - Hardware PASS

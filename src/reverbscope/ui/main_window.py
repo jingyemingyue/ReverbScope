@@ -132,8 +132,8 @@ class MainWindow(QMainWindow):
         self.workspace = AnalysisWorkspace(views)
         #: The workspace's stack: start panel, set-up pages, every view.
         self.stack = self.workspace.stack
-        for page in (self.home, self.measure):
-            self.workspace.add_page(page)
+        for setup in (self.home, self.measure):
+            self.workspace.add_page(setup)
         self.views = self.workspace.views
         compare = self.views["compare"]
         project = self.views["project"]

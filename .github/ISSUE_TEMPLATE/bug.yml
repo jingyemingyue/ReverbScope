@@ -44,7 +44,7 @@ body:
       label: Steps to reproduce
       description: GUI steps or commands. Synthetic inputs (Demo mode, the fake backend) are ideal.
       placeholder: |
-        1. Open Standalone Mode
+        1. Open New Measurement ▸ Play and record through the audio interface
         2. Choose ... as the input
         3. Press Run Measurement
     validations:

@@ -5,7 +5,7 @@ The package is organised core-first:
 * :mod:`reverbscope.core` -- pure DSP functions (sweep, deconvolution, decay, ...).
 * :mod:`reverbscope.models` -- data models (settings, results, measurement session).
 * :mod:`reverbscope.io` -- WAV and session storage.
-* :mod:`reverbscope.audio` -- optional audio device access for Standalone Mode.
+* :mod:`reverbscope.audio` -- optional audio device access for takes through the audio interface.
 * :mod:`reverbscope.interpretation` -- recording-engineer oriented explanations.
 * :mod:`reverbscope.cli` / :mod:`reverbscope.ui` -- thin front ends over the core.
 

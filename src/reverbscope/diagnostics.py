@@ -179,7 +179,7 @@ def audio_callback_check() -> str:
     and executable for it, which the macOS hardened runtime refuses unless
     the app has ``com.apple.security.cs.allow-unsigned-executable-memory``
     (cffi documentation, "Callbacks (old style)"); SELinux can refuse it too.
-    A failure here means Standalone Mode cannot record.
+    A failure here means a take through the audio interface cannot record.
     """
     try:
         import _cffi_backend

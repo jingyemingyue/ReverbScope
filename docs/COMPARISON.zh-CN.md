@@ -17,7 +17,7 @@ ReverbScope 目前是**预发布版（0.5.0 候选测试版）**。它的 DSP �
 下面有些做法在其他工具中已经存在：REW 会标出它认为不可靠的 RT60 数值；衰减没有高出噪声足够多时，Smaart 会从 T30 退回到 T20；双通道分析仪（Smaart、ARTA、Open Sound Meter）使用参考通道。ReverbScope 的特点在于把这些做法组合起来，专门用于录音位置，并且宁可不给数字，也不猜一个。
 
 - **每个数字都有单位、算法来源和有效性标记。** 单位写在字段名里，每个指标的算法和文献出处都有文档说明。每个指标标记为 `valid`、`insufficient_decay_range`、`unreliable`、`outside_excitation_range` 或 `not_computed`。EDT、T20、T30 分别需要至少 20、35、45 dB 的衰减范围（ISO 3382 的噪声余量）。范围不够时，报告会写 *“Insufficient decay range”*（衰减范围不足），并给出实测范围。电平一律用 dBFS；dB SPL 需要校准，而 1.0 不提供校准。ReverbScope 有意不给单一的“房间评分”（[MEASUREMENT_METHODOLOGY.md](MEASUREMENT_METHODOLOGY.md) §3、§9；`src/reverbscope/models/result.py`）。
-- **两种模式，一条分析流程。** 在通用 DAW 模式下，ReverbScope 生成扫频 WAV，你在任何 DAW 中播放并录音，再由 ReverbScope 分析导出的文件。ReverbScope 从不与 DAW 通信：没有 SDK，也没有插件。它能在未裁切的文件中任意位置找到扫频，所以不需要设置延迟；它能读取 Broadcast WAV、RF64、Wave64、AIFF、CAF 和 FLAC。在独立模式下，ReverbScope 自己通过音频接口播放和录音。两种模式都调用 `reverbscope.core.pipeline.analyze`（[user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md)）。
+- **两种播放和录音方式，一条分析流程。** 在 DAW 中播放时，ReverbScope 生成扫频 WAV，你在任何 DAW 中播放并录音，再由 ReverbScope 分析导出的文件。ReverbScope 从不与 DAW 通信：没有 SDK，也没有插件。它能在未裁切的文件中任意位置找到扫频，所以不需要设置延迟；它能读取 Broadcast WAV、RF64、Wave64、AIFF、CAF 和 FLAC。通过音频接口时，ReverbScope 自己播放和录音。两种方式都调用 `reverbscope.core.pipeline.analyze`（[user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md)）。
 - **能解释 DAW 以错误速度播放的扫频。** 反卷积失败时，ReverbScope 会在录音中测出扫频速率（对扫频时间与对数频率的关系做 Theil–Sen 拟合），然后报告是采样率不匹配（“a file generated at 48000 Hz was played at 44100 Hz”），还是时间伸缩（Warp、Flex、Follow Tempo）。这只是诊断：ReverbScope 从不按测得的速度重新分析录音（MEASUREMENT_METHODOLOGY.md §2b）。
 - **录音配置（profile）的建议明确标注为“解读”。** 建议来自录音配置，而不是 DSP。配置包括 generic（通用）、vocal（人声）、voiceover（配音/旁白）、acoustic_guitar（木吉他）、drums（鼓）、room_mic（房间话筒）和 choir（合唱），各有自己的阈值和措辞。报告会在 “Interpretation” 旁边印出配置名，所以没有人会把建议误当成与录音类型无关的结论（§8）。
 - **摆位几何只给一支话筒测得出的内容。** 根据反射延迟，加上可选的卷尺测得的扬声器距离和话筒高度，ReverbScope 报告扬声器高度和上方表面的高度。它不给坐标，不给房间长度或宽度，也从不指明是哪面墙：一支全指向话筒在一个位置只能测到路径长度，测不到方向。如果两个到达声都能解释同一个数值，两者都会列出，不会挑选其一（§7a）。
@@ -31,7 +31,7 @@ ReverbScope 目前是**预发布版（0.5.0 候选测试版）**。它的 DSP �
 
 | 工具 | 许可 / 收费方式 | 平台 | 主要用途 | 经由 DAW / 其他录音设备 | 激励信号 / IR 方法 | 是否报告指标有效性 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **ReverbScope** | Apache-2.0，免费 | Windows 10/11 x64；macOS 14+（arm64、x86_64）；Linux x86_64；Python 3.12+ wheel | 测量并解读录音位置 | 是：通用 DAW 模式（输出 WAV、读入 WAV）；另有独立模式 | 指数正弦扫频，逆滤波反卷积；可选回送；可导入 IR WAV（`analyze-ir`） | 是：每个指标和每个比较差值都有标记；无法支撑的数值不给出 |
+| **ReverbScope** | Apache-2.0，免费 | Windows 10/11 x64；macOS 14+（arm64、x86_64）；Linux x86_64；Python 3.12+ wheel | 测量并解读录音位置 | 是：在任何 DAW 中播放扫频并导入录音（输出 WAV、读入 WAV）；也可通过音频接口 | 指数正弦扫频，逆滤波反卷积；可选回送；可导入 IR WAV（`analyze-ir`） | 是：每个指标和每个比较差值都有标记；无法支撑的数值不给出 |
 | REW（Room EQ Wizard） | 专有免费软件；Pro 升级收费 | Windows、macOS、Linux | 测量与分析；EQ 滤波器设计；房间模拟器 | 是：离线测量。REW 扫频在别处播放并录音，再用 *Import Sweep Recordings* 载入（需要时间基准信号） | 对数扫频；步进正弦；噪声 RTA | RT60：显示回归系数；它认为不可靠的数值以橙色斜体显示；用 Lundeby 本底噪声估计标出数据不再有效的位置 |
 | Open Sound Meter | 桌面版 GPL-3.0，随意付费；iPad 版在 App Store | macOS、Windows、Linux；iPadOS | 实时调试扩声系统 | 未见说明 | 双通道 FFT：RTA、幅度、相位、脉冲响应、相干、群延迟 | 相干；混响指标未见说明 |
 | ARTA | 自 2024 年 12 月起为免费软件（2024 年 3 月停止销售） | Windows | IR、频率响应和频谱测量；ISO 3382 房间参数 | 自己驱动声卡；可导入 IR 和信号 WAV 文件；经由 DAW 播放未见说明 | 周期噪声、MLS、线性和对数扫频；单通道或双通道 | 衰减回归的相关系数 |

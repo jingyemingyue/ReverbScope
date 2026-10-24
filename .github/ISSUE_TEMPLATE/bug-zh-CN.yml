@@ -44,7 +44,7 @@ body:
       label: 复现步骤
       description: 界面操作步骤或命令。最好使用合成输入（演示模式、`fake` 后端）复现。
       placeholder: |
-        1. 打开独立模式
+        1. 打开 新测量 ▸ 通过音频接口播放并录音
         2. 选择 ... 作为输入
         3. 点击“开始测量”
     validations:

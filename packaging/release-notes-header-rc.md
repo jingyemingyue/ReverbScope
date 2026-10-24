@@ -71,7 +71,7 @@ no demo mode).
 * **This is a release candidate**, not a finished product, and **not
   0.5.0**. In the release plan, 0.5.0 means people have run the hardware
   matrix on real machines and interfaces, two DAWs have completed the
-  Universal DAW Mode workflow, and one room has been compared with a
+  DAW workflow (sweep played in the DAW, recording imported), and one room has been compared with a
   reference instrument. None of that has happened yet.
 * **What has been verified:** automated unit and integration tests,
   synthetic acoustic tests against closed-form decays, cross-platform CI
@@ -125,12 +125,13 @@ file you downloaded: `shasum -a 256 <file>` (macOS, Linux) or
 **What works** — implemented, and tested on synthetic rooms on Linux, macOS
 and Windows CI machines:
 
-* **Universal DAW Mode** (DAW-independent): ReverbScope writes an exponential
-  sine sweep (ESS) WAV; you play and record it in any DAW and load the
-  recording back. Reads WAV / BWF / RF64 / W64 / AIFF / CAF / FLAC exports and
+* **One New Measurement page, two ways to play and record.** *In your DAW*
+  (DAW-independent): ReverbScope writes an exponential sine sweep (ESS) WAV;
+  you play and record it in any DAW and import the recording. Reads WAV / BWF / RF64 / W64 / AIFF / CAF / FLAC exports and
   names a DAW that played the sweep at the wrong speed.
-* **Standalone Mode**: ReverbScope plays the sweep and records the microphone
-  through the audio interface you choose, with an optional loopback channel.
+  *Through the audio interface*: ReverbScope plays the sweep and records the
+  microphone through the interface you choose, with an optional loopback
+  channel. Both end in the same analysis.
 * **Room impulse response analysis**: deconvolution of the sweep, or
   `reverbscope analyze-ir` for an impulse response from another tool.
 * **Reverberation**: EDT, T20, T30 and an estimated RT60, broadband and per

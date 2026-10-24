@@ -48,7 +48,7 @@ body:
     id: setup
     attributes:
       label: Host API, sample rates and channels
-      description: As chosen in Standalone Mode (or the reverbscope measure options). List every rate you ran.
+      description: As chosen on New Measurement ▸ Play and record through the audio interface (or the reverbscope measure options). List every rate you ran.
       placeholder: "Windows WASAPI; 44100, 48000 and 96000 Hz; input 1 -> output 1, loopback input 2; latency default"
     validations:
       required: true
@@ -67,7 +67,7 @@ body:
     id: enumeration
     attributes:
       label: "Device list"
-      description: 'The interface appears in Standalone Mode / `reverbscope devices` with the right number of input and output channels.'
+      description: 'The interface appears on New Measurement (audio interface) / `reverbscope devices` with the right number of input and output channels.'
       options:
         - NOT RUN
         - Hardware PASS
@@ -79,7 +79,7 @@ body:
     id: rate_44k1
     attributes:
       label: "Full take at 44.1 kHz"
-      description: 'A Standalone measurement with the sample rate set to 44100 Hz (not only the probe).'
+      description: 'A take through the audio interface with the sample rate set to 44100 Hz (not only the probe).'
       options:
         - NOT RUN
         - Hardware PASS
@@ -91,7 +91,7 @@ body:
     id: rate_48k
     attributes:
       label: "Full take at 48 kHz"
-      description: 'A Standalone measurement with the sample rate set to 48000 Hz.'
+      description: 'A take through the audio interface with the sample rate set to 48000 Hz.'
       options:
         - NOT RUN
         - Hardware PASS
@@ -103,7 +103,7 @@ body:
     id: rate_96k
     attributes:
       label: "Full take at 96 kHz"
-      description: 'A Standalone measurement with the sample rate set to 96000 Hz, if the interface offers it.'
+      description: 'A take through the audio interface with the sample rate set to 96000 Hz, if the interface offers it.'
       options:
         - NOT RUN
         - Hardware PASS
@@ -186,7 +186,7 @@ body:
   - type: dropdown
     id: standalone
     attributes:
-      label: "Full Standalone measurement"
+      label: "Full take through the audio interface"
       description: 'Microphone and loudspeaker in a room, a complete take with a result you could read.'
       options:
         - NOT RUN
@@ -199,7 +199,7 @@ body:
     id: daw
     attributes:
       label: "Same signal through one DAW"
-      description: 'The same interface used through a DAW with Universal DAW Mode (a DAW report with details is welcome too).'
+      description: 'The same interface used through a DAW, the recording imported (a DAW report with details is welcome too).'
       options:
         - NOT RUN
         - Hardware PASS
