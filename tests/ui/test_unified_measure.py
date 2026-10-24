@@ -262,7 +262,8 @@ def test_the_narrow_page_stacks_the_cards_and_moves_the_reason(
         standalone = window.standalone
         assert standalone.readiness_reason()
         # Only the bar is resized (as the footer does): the reason follows.
-        standalone.action_bar.resize(900, standalone.action_bar.height())
+        # 4000 px leaves room beside the buttons in any face, 360 px in none.
+        standalone.action_bar.resize(4000, standalone.action_bar.height())
         assert not standalone.reason_above_buttons()
         standalone.action_bar.resize(360, standalone.action_bar.height())
         assert standalone.reason_above_buttons()
