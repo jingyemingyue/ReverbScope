@@ -21,14 +21,18 @@ response:
   :func:`reverbscope.core.pipeline.analyze_impulse_response`, giving the
   single/double-slope fit that is compared with DecayFitNet's T1, T2, A1, A2
   (63-500 Hz);
-* one-third-octave bands (50 Hz-10 kHz) through the same per-band analysis
-  (:func:`reverbscope.core.decay.analyze_band`), giving EDT, T20 and T30 to
-  compare with the authors' ISO 3382-1 parameters in the xlsx files.
+* one-third-octave bands (50 Hz-10 kHz) through the product's opt-in
+  one-third-octave path (:func:`reverbscope.core.decay.analyze_third_octave_decay`,
+  what ``--third-octave`` adds), giving EDT, T20 and T30 to compare with the
+  authors' ISO 3382-1 parameters in the xlsx files, and the single/double-slope
+  fit of each third, compared with DecayFitNet's octave values for the thirds
+  inside its octave bands (63-500 Hz; not like for like, see the summary).
 
 The xlsx files are read with the standard library (they are zip archives of
 XML), so the script needs nothing beyond ReverbScope's own dependencies.
 Writes one CSV row per position, band and quantity and prints the summary
-tables used in ``docs/validation/aachen-nikolauskapelle.md``.
+tables used in ``docs/validation/aachen-nikolauskapelle.md``;
+``--thirds-summary`` writes ``aachen-nikolauskapelle-thirds.csv``.
 """
 
 from __future__ import annotations
@@ -45,19 +49,13 @@ import zipfile
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import soundfile as sf
 
-from reverbscope.core.decay import (
-    DIRECT_SOUND_MARGIN_S,
-    analyze_band,
-    analyze_decay,
-    decay_lead_in_s,
-    onset_search_window_s,
-    pulse_spread_s,
-)
-from reverbscope.core.filters import apply_bandpass, band_fits, bandpass_sos, iec_band
+from reverbscope.core.decay import analyze_decay, analyze_third_octave_decay
+from reverbscope.core.filters import iec_band
 from reverbscope.core.pipeline import analyze_impulse_response
 from reverbscope.errors import AnalysisError
 from reverbscope.models.audio import AudioSignal
@@ -175,34 +173,29 @@ def _w_channel(path: Path) -> tuple[np.ndarray, int]:
     return np.ascontiguousarray(samples[:, 0]), int(rate)
 
 
-def third_octave_bands(w: np.ndarray, rate: int, direct: int) -> dict[float, BandDecay]:
-    """ReverbScope's per-band analysis on IEC 61260-1 one-third-octave bands,
-    with the same lead-in, onset window and direct-sound spread as
-    :func:`reverbscope.core.decay.analyze_decay` uses for octave bands."""
-    settings = AnalysisSettings(octave_bands_hz=(50.0,))
-    lead = round(decay_lead_in_s(settings) * rate)
-    pad = max(0, lead - direct)
-    signal = np.concatenate([np.zeros(pad), w]) if pad else w
-    origin = direct + pad
-    spread = DIRECT_SOUND_MARGIN_S + pulse_spread_s(EXCITATION_HZ[1] - EXCITATION_HZ[0])
-    out: dict[float, BandDecay] = {}
-    for nominal in THIRDS_HZ:
-        band = iec_band(nominal, 3)
-        if not band_fits(band, rate):
-            continue
-        filtered = apply_bandpass(signal, bandpass_sos(band, rate), time_reversed=True)
-        start = max(0, origin - round(onset_search_window_s(band.bandwidth_hz) * rate))
-        out[nominal] = analyze_band(
-            filtered,
-            rate,
-            band,
-            noise_margin_db=settings.decay_noise_margin_db,
-            direct_index=origin,
-            time_origin_index=origin,
-            onset_search_start=start,
-            direct_spread_s=spread,
-        )
+def third_octave_bands(
+    w: np.ndarray, rate: int, direct: int, excitation: ExcitationBand
+) -> dict[float, BandDecay]:
+    """The product's one-third-octave decay analysis (``--third-octave``):
+    :func:`reverbscope.core.decay.analyze_third_octave_decay` with the
+    octave bands 63 Hz-8 kHz, which gives the thirds 50 Hz-10 kHz."""
+    settings = AnalysisSettings(octave_bands_hz=OCTAVES_HZ, third_octave_decay=True)
+    bands = analyze_third_octave_decay(
+        w, rate, settings, direct_index=direct, excitation_band=excitation
+    )
+    out = {band.center_hz: band for band in bands if band.center_hz is not None}
+    assert sorted(out) == sorted(THIRDS_HZ), sorted(out)
     return out
+
+
+def dfn_octave_of(third_hz: float) -> float | None:
+    """The DecayFitNet octave band (63-500 Hz) a one-third-octave band lies in."""
+    for octave_hz in DFN_BANDS_HZ:
+        octave = iec_band(octave_hz, 1)
+        third = iec_band(third_hz, 3)
+        if octave.low_hz * 0.999 <= third.low_hz and third.high_hz <= octave.high_hz * 1.001:
+            return octave_hz
+    return None
 
 
 def _share(amplitudes: tuple[float, ...]) -> float:
@@ -259,7 +252,7 @@ def analyse_position(
                 "dfn_a2_share_pct": _share((ref.a1, ref.a2)) if ref else "",
             }
         )
-    for nominal, band in third_octave_bands(w, rate, direct).items():
+    for nominal, band in third_octave_bands(w, rate, direct, excitation).items():
         for name, metric in (("EDT", band.edt), ("T20", band.t20), ("T30", band.t30)):
             rows.append(
                 {
@@ -271,10 +264,42 @@ def analyse_position(
                     "rs_validity": metric.validity.value,
                 }
             )
+        fit = band.multi_slope
+        octave_hz = dfn_octave_of(nominal)
+        ref = dfn.get((position, octave_hz)) if octave_hz is not None else None
+        two = fit.model(2) if fit is not None else None
+        one = fit.model(1) if fit is not None else None
+        rows.append(
+            {
+                "position": position,
+                "fraction": "third",
+                "band_hz": nominal,
+                "metric": "slopes",
+                "rs_validity": fit.validity.value if fit is not None else "",
+                "rs_selected_slopes": fit.selected_slopes if fit is not None else "",
+                "rs_delta_bic": fit.delta_bic if fit is not None else "",
+                "rs_t30_s": band.t30.seconds if band.t30.validity is Validity.VALID else "",
+                "rs1_t_s": one.decay_times_s[0] if one else "",
+                "rs2_t1_s": two.decay_times_s[0] if two else "",
+                "rs2_t2_s": two.decay_times_s[1] if two else "",
+                "rs2_a2_share_pct": _share(two.amplitudes) if two else "",
+                "rs_note": "; ".join(fit.notes) if fit is not None else "",
+                "dfn_octave_hz": octave_hz if ref else "",
+                "dfn_t1_s": ref.t1_s if ref else "",
+                "dfn_t2_s": ref.t2_s if ref else "",
+                "dfn_a2_share_pct": _share((ref.a1, ref.a2)) if ref else "",
+            }
+        )
     return rows
 
 
-def run(data: Path, out: Path | None, cache: Path | None = None, limit: int | None = None) -> int:
+def run(
+    data: Path,
+    out: Path | None,
+    cache: Path | None = None,
+    limit: int | None = None,
+    thirds_summary: Path | None = None,
+) -> int:
     dfn = read_decayfitnet(data / "decayfitnet_all_positions.csv")
     iso: dict[tuple[str, str, float], float] = {}
     for workbook in sorted(data.glob("Nikolauskapelle*_Results_*.xlsx")):
@@ -302,7 +327,7 @@ def run(data: Path, out: Path | None, cache: Path | None = None, limit: int | No
         rows.extend(position_rows)
         print(f"{wav.stem}: done", file=sys.stderr)
     for row in rows:
-        if row["fraction"] == "third":
+        if row["fraction"] == "third" and row["metric"] != "slopes":
             key = (str(row["position"]), str(row["metric"]), float(str(row["band_hz"])))
             row["iso_seconds"] = iso.get(key, "")
     if out is not None:
@@ -319,6 +344,8 @@ def run(data: Path, out: Path | None, cache: Path | None = None, limit: int | No
             for row in rows:
                 writer.writerow({k: _fmt(v) for k, v in row.items()})
     summarize(rows)
+    if thirds_summary is not None:
+        write_thirds_summary(rows, thirds_summary)
     return 0
 
 
@@ -337,6 +364,7 @@ _ORDER = [
     "rs2_t1_s",
     "rs2_t2_s",
     "rs2_a2_share_pct",
+    "dfn_octave_hz",
     "dfn_t1_s",
     "dfn_t2_s",
     "dfn_a2_share_pct",
@@ -377,7 +405,9 @@ def summarize(rows: list[dict[str, object]]) -> None:
     print("| --- | --- | --- | --- | --- |")
     by: dict[tuple[float, str], list[float]] = defaultdict(list)
     for row in rows:
-        if row["fraction"] != "third" or row["rs_validity"] != "valid":
+        if row["fraction"] != "third" or row["metric"] == "slopes":
+            continue
+        if row["rs_validity"] != "valid":
             continue
         diff = _pct(row["rs_seconds"], row["iso_seconds"])
         if diff is not None:
@@ -443,8 +473,178 @@ def summarize(rows: list[dict[str, object]]) -> None:
             f"| {statistics.median(rs_share):.1f} % / {statistics.median(dfn_share):.1f} % "
             f"| {degenerate} |"
         )
+    summarize_third_slopes(rows)
     refused = sorted({str(r["position"]) for r in octave if r.get("analyze_ir") == "refused"})
     print(f"\nanalyze-ir import check refused: {len(refused)} ({', '.join(refused) or 'none'})")
+
+
+def _cell(values: list[float]) -> str:
+    if not values:
+        return "–"
+    m, lo, hi = _quartiles(values)
+    return f"{m:+.1f} % [{lo:+.1f}, {hi:+.1f}]"
+
+
+def third_slope_rows(rows: list[dict[str, object]], nominal: float) -> list[dict[str, object]]:
+    return [
+        r
+        for r in rows
+        if r["fraction"] == "third" and r["metric"] == "slopes" and r["band_hz"] == nominal
+    ]
+
+
+def third_slope_stats(rows: list[dict[str, object]], nominal: float) -> dict[str, Any]:
+    """Slope counts and the DecayFitNet comparison of one one-third-octave band."""
+    sel = third_slope_rows(rows, nominal)
+    valid = [r for r in sel if r["rs_validity"] == "valid"]
+    one = [r for r in valid if r["rs_selected_slopes"] == 1]
+    two = [r for r in valid if r["rs_selected_slopes"] == 2]
+    paired = [r for r in sel if r.get("dfn_t1_s", "") != "" and r["rs2_t1_s"] != ""]
+    single = [r for r in paired if r["rs_selected_slopes"] == 1 and r["rs1_t_s"] != ""]
+    return {
+        "n": len(sel),
+        "one": len(one),
+        "two": len(two),
+        "other": len(sel) - len(one) - len(two),
+        "paired": len(paired),
+        "s1": [d for r in single if (d := _pct(r["rs1_t_s"], r["dfn_t1_s"])) is not None],
+        "s2": [d for r in single if (d := _pct(r["rs1_t_s"], r["dfn_t2_s"])) is not None],
+        "t1": [d for r in paired if (d := _pct(r["rs2_t1_s"], r["dfn_t1_s"])) is not None],
+        "t2": [d for r in paired if (d := _pct(r["rs2_t2_s"], r["dfn_t2_s"])) is not None],
+        "degenerate": sum(1 for r in paired if _degenerate(r)),
+        "paired_two": sum(1 for r in paired if r["rs_selected_slopes"] == 2),
+    }
+
+
+def summarize_third_slopes(rows: list[dict[str, object]]) -> None:
+    print("\n## Slope count, one-third-octave bands (the product's --third-octave path)")
+    print("| Band | n | 1 slope | 2 slopes | not VALID or no fit |")
+    print("| --- | --- | --- | --- | --- |")
+    totals = [0, 0, 0, 0]
+    for nominal in THIRDS_HZ:
+        st = third_slope_stats(rows, nominal)
+        print(f"| {nominal:g} Hz | {st['n']} | {st['one']} | {st['two']} | {st['other']} |")
+        for i, key in enumerate(("n", "one", "two", "other")):
+            totals[i] += int(str(st[key]))
+    print(f"| all | {totals[0]} | {totals[1]} | {totals[2]} | {totals[3]} |")
+
+    print("\n## One-third-octave fit vs DecayFitNet's octave values (thirds inside 63-500 Hz)")
+    print(
+        "| Third | DFN octave | n | RS slopes = 2 | RS T (1 slope) vs DFN T1 "
+        "| RS T (1 slope) vs DFN T2 | forced T1 vs DFN T1 | forced T2 vs DFN T2 | degenerate |"
+    )
+    print("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+    for nominal in THIRDS_HZ:
+        octave_hz = dfn_octave_of(nominal)
+        if octave_hz is None:
+            continue
+        st = third_slope_stats(rows, nominal)
+        if not st["paired"]:
+            continue
+        print(
+            f"| {nominal:g} Hz | {octave_hz:g} Hz | {st['paired']} | {st['paired_two']} "
+            f"| {_cell(st['s1'])} | {_cell(st['s2'])} | {_cell(st['t1'])} | {_cell(st['t2'])} "
+            f"| {st['degenerate']} |"
+        )
+
+    # Per position and DecayFitNet octave: does any of its thirds choose two
+    # slopes, and does the octave band?
+    octave = {
+        (str(r["position"]), float(str(r["band_hz"]))): r for r in rows if r["fraction"] == "octave"
+    }
+    agree: dict[float, list[int]] = defaultdict(lambda: [0, 0, 0, 0])
+    for (position, octave_hz), row in octave.items():
+        if octave_hz not in DFN_BANDS_HZ or row["rs_validity"] != "valid":
+            continue
+        thirds = [
+            r
+            for r in rows
+            if r["fraction"] == "third"
+            and r["metric"] == "slopes"
+            and r["position"] == position
+            and dfn_octave_of(float(str(r["band_hz"]))) == octave_hz
+            and r["rs_validity"] == "valid"
+        ]
+        any_two = any(r["rs_selected_slopes"] == 2 for r in thirds)
+        octave_two = row["rs_selected_slopes"] == 2
+        agree[octave_hz][2 * int(octave_two) + int(any_two)] += 1
+    print("\n## Octave band vs its thirds (positions with a VALID octave fit)")
+    print("| Octave | both 1 slope | octave 1, a third 2 | octave 2, thirds 1 | both 2 |")
+    print("| --- | --- | --- | --- | --- |")
+    for octave_hz in DFN_BANDS_HZ:
+        a = agree[octave_hz]
+        print(f"| {octave_hz:g} Hz | {a[0]} | {a[1]} | {a[2]} | {a[3]} |")
+
+
+_SUMMARY_HEADER = (
+    "# Derived from M. Zerwas and S. Kayku, room acoustic measurement and decay analysis "
+    "data of the St. Nicholas Chapel, Aachen Cathedral, doi:10.5281/zenodo.20428705, "
+    "CC-BY 4.0. Changes: ReverbScope's one-third-octave analysis (--third-octave path, "
+    "W channel) summarised per band over the 46 positions: EDT, T20 and T30 as the relative "
+    "difference from the authors' ISO 3382-1 values in the Results xlsx files (VALID only); "
+    "the number of positions whose single/double-slope fit chose one or two slopes; and "
+    "ReverbScope's decay times relative to DecayFitNet's octave-band T1 and T2 for the "
+    "thirds inside 63-500 Hz (not like for like: DecayFitNet's values are octave bands). "
+    "Produced by scripts/validate_aachen_nikolauskapelle.py --thirds-summary; see "
+    "aachen-nikolauskapelle.md.\n"
+)
+
+
+def write_thirds_summary(rows: list[dict[str, object]], path: Path) -> None:
+    """Median, quartiles and range per band and quantity; counts for slopes."""
+    header = [
+        "band_hz", "quantity", "reference", "n", "count",
+        "median_pct", "q1_pct", "q3_pct", "min_pct", "max_pct",
+    ]  # fmt: skip
+    out: list[list[object]] = []
+
+    def stats_row(nominal: float, quantity: str, reference: str, values: list[float]) -> None:
+        if not values:
+            return
+        m, lo, hi = _quartiles(values)
+        out.append(
+            [
+                f"{nominal:g}", quantity, reference, len(values), "",
+                f"{m:.2f}", f"{lo:.2f}", f"{hi:.2f}", f"{min(values):.2f}", f"{max(values):.2f}",
+            ]
+        )  # fmt: skip
+
+    by: dict[tuple[float, str], list[float]] = defaultdict(list)
+    for row in rows:
+        if row["fraction"] != "third" or row["metric"] == "slopes":
+            continue
+        if row["rs_validity"] != "valid":
+            continue
+        diff = _pct(row["rs_seconds"], row["iso_seconds"])
+        if diff is not None:
+            by[(float(str(row["band_hz"])), str(row["metric"]))].append(diff)
+    for nominal in THIRDS_HZ:
+        for metric in ("EDT", "T20", "T30"):
+            stats_row(nominal, metric, "ISO 3382-1 (xlsx)", by.get((nominal, metric), []))
+    for nominal in THIRDS_HZ:
+        st = third_slope_stats(rows, nominal)
+        for quantity, key in (
+            ("selected 1 slope", "one"),
+            ("selected 2 slopes", "two"),
+            ("not VALID or no fit", "other"),
+        ):
+            out.append([f"{nominal:g}", quantity, "", st["n"], st[key], "", "", "", "", ""])
+    for nominal in THIRDS_HZ:
+        octave_hz = dfn_octave_of(nominal)
+        if octave_hz is None:
+            continue
+        st = third_slope_stats(rows, nominal)
+        reference = f"DecayFitNet {octave_hz:g} Hz octave"
+        stats_row(nominal, "T (1 slope selected) vs DFN T1", reference, st["s1"])
+        stats_row(nominal, "T (1 slope selected) vs DFN T2", reference, st["s2"])
+        stats_row(nominal, "forced two-slope T1 vs DFN T1", reference, st["t1"])
+        stats_row(nominal, "forced two-slope T2 vs DFN T2", reference, st["t2"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        handle.write(_SUMMARY_HEADER)
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(header)
+        writer.writerows(out)
 
 
 def _degenerate(row: dict[str, object]) -> bool:
@@ -467,8 +667,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--limit", type=int, default=None, help="analyse at most this many new positions"
     )
+    parser.add_argument(
+        "--thirds-summary",
+        type=Path,
+        default=None,
+        help="write the per-band one-third-octave summary CSV (docs/validation/...-thirds.csv)",
+    )
     args = parser.parse_args(argv)
-    return run(args.data, args.out, args.cache, args.limit)
+    return run(args.data, args.out, args.cache, args.limit, args.thirds_summary)
 
 
 if __name__ == "__main__":

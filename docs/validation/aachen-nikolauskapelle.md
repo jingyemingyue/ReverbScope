@@ -3,8 +3,8 @@
 ReverbScope's decay analysis compared with published results for 46 measured
 room impulse responses of an acoustically coupled chapel: EDT, T20 and T30
 against the authors' ISO 3382-1 parameters, and the single/double-slope fit
-(methodology §3c, [ADR 0004](../adr/0004-multi-slope-decay-fit.md)) against
-their DecayFitNet analysis.
+(methodology §3c, [ADR 0004](../adr/0004-multi-slope-decay-fit.md)), in
+octave and one-third-octave bands, against their DecayFitNet analysis.
 
 This is third-party measured data analysed offline. It is not a ReverbScope
 hardware, interface or DAW test, and it does not test sweep playback,
@@ -38,8 +38,12 @@ are, under the same licence and with the attribution in their first line:
   check accepted the file, and DecayFitNet's T1, T2 and late share (shares
   recomputed as `100·A2/(A1+A2)` from the published `A1`, `A2`).
 * [`aachen-nikolauskapelle-thirds.csv`](aachen-nikolauskapelle-thirds.csv):
-  per one-third-octave band and parameter, the median, quartiles and range
-  of the relative difference from the authors' values.
+  per one-third-octave band, written by the script's `--thirds-summary`:
+  for EDT, T20 and T30 the median, quartiles and range of the relative
+  difference from the authors' values; the number of positions whose slope
+  fit chose one or two slopes (or had no VALID fit); and, for the thirds
+  inside 63–500 Hz, the same statistics for ReverbScope's decay times
+  relative to DecayFitNet's octave-band T1 and T2.
 
 Changes made to the data: only the W (omnidirectional) channel is used; the
 DecayFitNet and ISO values are copied for comparison, not altered.
@@ -47,9 +51,10 @@ DecayFitNet and ISO values are copied for comparison, not altered.
 ## Method
 
 Run with `scripts/validate_aachen_nikolauskapelle.py --data <folder> --cache
-<folder> --out <csv>` (the cache makes the run resumable; each position takes
-about 20 s on one core). Version: this branch, ReverbScope 0.5.0b6 plus the
-multi-slope fit.
+<folder> --out <csv> --thirds-summary <csv>` (the cache makes the run
+resumable; each position takes about 2 s on the Linux aarch64 test
+machine). Version: this branch, ReverbScope 0.5.0b6 plus the
+multi-slope fit and its one-third-octave path.
 
 * **Input.** Channel 1 (W) of each `S*-Do_R*.wav`, all 46 files. The
   excitation range is declared as 20 Hz–20 kHz (the sweep is not in the
@@ -58,12 +63,14 @@ multi-slope fit.
 * **Octave bands, 63 Hz–8 kHz.** `core.decay.analyze_decay`, the analysis
   `reverbscope analyze-ir` runs, with its default settings. This gives T30
   and the multi-slope fit compared with DecayFitNet.
-* **One-third-octave bands, 50 Hz–10 kHz.** The same per-band analysis
-  (`core.decay.analyze_band`) on IEC 61260-1 one-third-octave filters, with
-  the lead-in, onset window and direct-sound spread that `analyze_decay`
-  uses for octave bands. ReverbScope's shipped analysis has octave bands
-  only; the third-octave path exists only in the script, so that the
-  comparison uses the authors' bands.
+* **One-third-octave bands, 50 Hz–10 kHz.** The product's opt-in
+  one-third-octave path, `core.decay.analyze_third_octave_decay` (what
+  `--third-octave` adds to `analyze-ir`), on IEC 61260-1 one-third-octave
+  filters: EDT, T20 and T30 compared with the authors' values, and the
+  slope fit of every third. (Before this path existed the script ran the
+  same per-band analysis itself; the EDT/T20/T30 statistics are unchanged
+  by the switch, within 0.05 percentage points from the rounding of the
+  earlier summary.)
 * **Comparison.** Relative difference `100·(ReverbScope / reference − 1)`.
   Only values ReverbScope marks VALID are compared; medians and
   interquartile ranges (IQR, 25th–75th percentile) over positions.
@@ -145,6 +152,88 @@ DecayFitNet's own two slopes are often close: the median T2/T1 is 1.50,
 distinctness rule) holds for 39, 24, 27 and 15 of 45 positions. The median
 late-energy share in DecayFitNet's fits is 8–13 %.
 
+### Slope count in one-third-octave bands
+
+The product's one-third-octave path, 46 positions, 24 bands. DecayFitNet
+has no one-third-octave results, so this table has no reference column.
+
+| Band | 1 slope | 2 slopes | not VALID or no fit |
+| --- | --- | --- | --- |
+| 50 Hz | 34 | 12 | 0 |
+| 63 Hz | 40 | 6 | 0 |
+| 80 Hz | 44 | 2 | 0 |
+| 100 Hz | 45 | 1 | 0 |
+| 125 Hz | 43 | 3 | 0 |
+| 160 Hz | 45 | 0 | 1 |
+| 200 Hz | 45 | 1 | 0 |
+| 250 Hz | 44 | 2 | 0 |
+| 315 Hz | 43 | 3 | 0 |
+| 400 Hz | 44 | 2 | 0 |
+| 500 Hz | 43 | 3 | 0 |
+| 630 Hz | 42 | 4 | 0 |
+| 800 Hz–1.6 kHz (each) | 43 | 3 | 0 |
+| 2 kHz | 42 | 4 | 0 |
+| 2.5 kHz | 42 | 4 | 0 |
+| 3.15 kHz | 43 | 3 | 0 |
+| 4 kHz | 41 | 5 | 0 |
+| 5 kHz | 45 | 1 | 0 |
+| 6.3 kHz | 45 | 1 | 0 |
+| 8 kHz | 43 | 3 | 0 |
+| 10 kHz | 41 | 5 | 0 |
+
+Two slopes in 77 of 1 103 band values with a VALID fit (7.0 %; 1 of the
+1 104 had none). From 80 Hz up the rate is 0–11 % per band (0–5 of 46),
+close to the octave bands from 63 Hz to 1 kHz (1–4 of 46); it rises at 63 Hz (6 of 46) and 50 Hz (12 of 46),
+inside the 63 Hz octave, where DecayFitNet's two slopes are the most
+distinct (median T2/T1 1.50, see below). At 8 kHz the one-third-octave
+band chose two slopes 3 times where the 8 kHz octave chose 22. The octave
+spans 5.6–11.2 kHz, and one possible reason is that its curve sums thirds
+with different decay times (air absorption grows quickly with frequency
+there), which a single third does not; this was not checked.
+
+Per position, the octave band and the thirds inside it (VALID octave fits;
+"a third 2" means at least one of its three thirds chose two slopes):
+
+| Octave | both 1 slope | octave 1, a third 2 | octave 2, thirds 1 | both 2 |
+| --- | --- | --- | --- | --- |
+| 63 Hz | 29 | 13 | 1 | 3 |
+| 125 Hz | 41 | 3 | 1 | 1 |
+| 250 Hz | 39 | 6 | 1 | 0 |
+| 500 Hz | 41 | 1 | 0 | 4 |
+
+### One-third-octave slope fit against DecayFitNet's octave values
+
+DecayFitNet's results are octave bands, so each one-third-octave band is
+compared with the octave it lies in (50, 63 and 80 Hz with the 63 Hz
+octave, and so on). This is **not like for like**: an octave curve is the
+sum of its three thirds, each with its own decay times. Median [IQR] of the
+relative difference, 45 paired positions (the "1 slope" columns use only
+the positions where the third chose one slope):
+
+| Third | DFN octave | RS 2 slopes | RS T (1 slope) vs DFN T1 | RS T (1 slope) vs DFN T2 | forced T1 vs DFN T1 | forced T2 vs DFN T2 | degenerate |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 50 Hz | 63 Hz | 11 | +3.8 % [−5.7, +18.6] | −26.3 % [−38.2, −18.4] | −25.4 % [−54.1, −9.5] | −2.9 % [−13.7, +247.9] | 22 |
+| 63 Hz | 63 Hz | 6 | +7.3 % [+1.4, +15.8] | −26.4 % [−33.7, −21.5] | −7.3 % [−61.3, +5.9] | −6.0 % [−19.4, +134.0] | 23 |
+| 80 Hz | 63 Hz | 2 | +30.5 % [+19.6, +40.8] | −11.9 % [−21.3, −4.3] | +3.7 % [−38.0, +20.0] | +10.1 % [−1.3, +133.9] | 20 |
+| 100 Hz | 125 Hz | 1 | +6.4 % [+3.1, +13.3] | −14.3 % [−26.2, −8.4] | −6.4 % [−63.5, +4.0] | +12.9 % [−5.7, +251.1] | 24 |
+| 125 Hz | 125 Hz | 3 | +7.5 % [+2.7, +14.5] | −14.5 % [−18.9, −6.9] | −4.8 % [−69.6, +6.5] | −0.4 % [−9.2, +339.5] | 23 |
+| 160 Hz | 125 Hz | 1 | +11.7 % [+6.9, +17.3] | −10.8 % [−21.2, −4.5] | +0.5 % [−45.8, +9.5] | +6.9 % [−2.9, +307.1] | 26 |
+| 200 Hz | 250 Hz | 1 | +10.3 % [+5.9, +16.4] | −15.4 % [−20.4, −7.1] | +5.0 % [−43.0, +8.7] | +100.7 % [−6.7, +389.9] | 32 |
+| 250 Hz | 250 Hz | 1 | +7.6 % [+5.6, +11.7] | −16.5 % [−20.2, −8.7] | +3.6 % [−54.0, +7.3] | +38.4 % [−7.2, +387.0] | 30 |
+| 315 Hz | 250 Hz | 3 | +9.5 % [+6.5, +15.6] | −14.2 % [−20.0, −9.7] | +2.3 % [−45.8, +9.2] | +38.1 % [−10.2, +372.7] | 29 |
+| 400 Hz | 500 Hz | 2 | +7.0 % [+3.7, +12.3] | −8.9 % [−16.5, −1.4] | −7.1 % [−59.9, +3.3] | +8.7 % [−5.7, +209.9] | 25 |
+| 500 Hz | 500 Hz | 3 | +7.3 % [+4.4, +10.5] | −8.0 % [−16.0, −3.2] | +3.1 % [−27.8, +7.0] | −1.1 % [−5.6, +304.8] | 33 |
+| 630 Hz | 500 Hz | 4 | +6.0 % [+3.7, +9.9] | −9.2 % [−12.0, −3.9] | +2.0 % [−69.8, +6.6] | +4.4 % [−6.9, +313.1] | 33 |
+
+As in octave bands, where a third chose one slope its decay time lies
+between DecayFitNet's octave T1 and T2 in the median of every band (from
++3.8 % above T1 at 50 Hz to +30.5 % at 80 Hz, the upper edge of the 63 Hz
+octave). The centre thirds (63, 125, 250 and 500 Hz) sit +7.3 to +7.6 %
+above DFN T1, against +6.6 to +21.3 % for ReverbScope's octave bands. The
+forced two-slope fits are degenerate in 20 to 33 of 45 positions per third
+(18 to 32 in octaves), so their T1 and T2 spreads are wide, as in octave
+bands.
+
 ### ReverbScope's single slope against DecayFitNet's T1 and T2
 
 Where ReverbScope selected one slope, its decay time against DecayFitNet's
@@ -198,9 +287,10 @@ do not support two by its criteria.
   1.9 %); their EDT median is −3.2 % against +0.4 %, consistent with a
   less certain time zero. A user importing these files would get the
   refusal, not these numbers.
-* **Octave bands only for the slope fit.** DecayFitNet's results are octave
-  bands, and ReverbScope's shipped analysis (and so the multi-slope fit) has
-  octave bands only. There is no one-third-octave multi-slope path.
+* **One-third-octave slope fit has no like-for-like reference.**
+  DecayFitNet's results are octave bands; the one-third-octave slope fit
+  (the opt-in `--third-octave` path) is compared with the octave each third
+  lies in, which shows how the two differ, not an error of either.
 * **Thresholds calibrated on synthetic decays.** ΔBIC ≥ 10, the 10 dB knee
   and noise margins and the 1.25 T2/T1 ratio were chosen on the synthetic
   Monte Carlo of methodology §3c, before this run, and were not tuned to

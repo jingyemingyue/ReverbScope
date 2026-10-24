@@ -29,11 +29,34 @@ never says which. Users with coupled rooms get no number at all.
   single-slope rooms are unchanged, so the CLI goldens are unchanged), the
   Decay view overlay and one inspector row.
 
+- Offer the fit in one-third-octave bands as an **opt-in analysis
+  setting**, `AnalysisSettings.third_octave_decay` (`--third-octave`, a
+  check box on the desktop measurement pages), off by default. ReverbScope
+  had no user-facing band resolution setting and its decay analysis was
+  octave-only, so a new default would have changed every report and tripled
+  the decay work (0.44 s → 1.33 s for a 10 s, 48 kHz response) for a view
+  most rooms do not need. The thirds (IEC 61260-1, base 10, the three inside
+  each analysed octave) are analysed by the same `analyze_band` with their
+  own bandwidth, on a separate segment with the lead-in of the narrowest
+  third, so the octave results are bit-identical with the option on or off.
+  They are stored as `decay.third_octave_bands` (additive, written only when
+  asked for, schema 1), with a `resolution` column in `decay_slopes.csv`,
+  a report table and a Resolution list in the Decay view.
+- Keep the octave thresholds for one-third-octave bands. A synthetic
+  re-check down to 50 Hz (methodology §3c) found the false-split rate of the
+  50–100 Hz thirds equal to that of the 63 Hz octave the thresholds were
+  accepted with, and fewer double slopes found only through `ΔBIC`; the
+  bandwidth-dependent rules (`B·T1 ≥ 4`, onset window, lead-in) already use
+  each band's own bandwidth. No per-band adjustment is made.
+
 ## Evidence and limits
 
 Synthetic tests (`tests/unit/test_multislope.py`) and a run on the open
 Aachen St. Nicholas Chapel data set
 ([validation/aachen-nikolauskapelle.md](../validation/aachen-nikolauskapelle.md)).
 The thresholds are ReverbScope's choice; they are not from a standard.
+DecayFitNet's published results are octave bands, so the one-third-octave
+fit has no like-for-like reference in that data set; it is compared with the
+octave each third lies in.
 The data set run is third-party measured data analysed offline; it is not a
 ReverbScope hardware or DAW test (C16).

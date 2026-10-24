@@ -21,11 +21,27 @@ All notable changes to ReverbScope are documented here. The format follows
   in the report when a band has two slopes; an overlay of the fit in the
   desktop Decay view and a "Decay slopes" row in the inspector). EDT, T20,
   T30, RT60 and every other number are unchanged. Methodology §3c, ADR 0004.
+- **One-third-octave decay bands (opt-in).** `--third-octave` on `analyze`,
+  `measure` and `analyze-ir`, and a check box on both desktop measurement
+  pages, add the IEC 61260-1 one-third-octave bands inside the octave bands
+  (50 Hz–10 kHz by default), each with EDT, T20, T30 and the double-slope
+  fit, analysed exactly as an octave band with its own bandwidth. Off by
+  default: a default analysis runs no extra work, and its octave results and
+  `result.json` are unchanged (with the option on, the octave numbers are
+  identical too); the option takes about three times the decay work
+  (0.44 s → 1.33 s for a 10 s, 48 kHz response, Linux aarch64).
+  `third_octave_bands` in `result.json` (additive, only when asked for,
+  schema 1), a `resolution` column in `decay_slopes.csv`, a *Decay slopes,
+  one-third octave* table in the report, a Resolution list in the desktop
+  Decay view and a row in the inspector. The slope-fit thresholds are those
+  of the octave bands, re-checked on synthetic one-third-octave decays down
+  to 50 Hz (methodology §3c).
 - **Validation on open measured data.** `scripts/validate_aachen_nikolauskapelle.py`
   compares ReverbScope with the published St. Nicholas Chapel (Aachen) data
   set (Zerwas & Kayku, doi:10.5281/zenodo.20428705, CC-BY 4.0): T20 and T30
   in one-third-octave bands against the authors' ISO 3382-1 values, and the
-  slope fit against their DecayFitNet results. Results in
+  slope fit (octave and one-third-octave) against their DecayFitNet
+  results. Results in
   `docs/validation/aachen-nikolauskapelle.md`; the data set is not in the
   repository.
 

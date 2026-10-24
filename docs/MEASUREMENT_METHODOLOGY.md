@@ -686,7 +686,8 @@ second. One slope (`i = 1`) and two slopes (`i = 1, 2`) are fitted.
 the chosen number of slopes; both models (`T_i`, `A_i` linear and in dB,
 `A_i/ΣA` as a percentage, `N`, BIC, rms residual); `ΔBIC`; the fitted range
 and `L`; the turning point time and model level (two slopes only); the
-validity, reason and notes. `reverbscope export` writes `decay_slopes.csv`;
+validity, reason and notes. `reverbscope export` writes `decay_slopes.csv`
+(its `resolution` column says broadband, octave or one-third octave);
 the report adds a *Double-slope decay* table only when a band has two
 slopes; the desktop Decay view overlays the fitted model and its two slopes
 on the band's curve.
@@ -713,6 +714,59 @@ positions per 63–500 Hz octave band (11 of 184 band values; 22 of 46 at
 8 kHz), where DecayFitNet reports two slopes for every band; of the 49
 two-slope fits there that passed the ΔBIC criterion, 38 failed a
 plausibility rule.
+
+**One-third-octave bands (opt-in).** `AnalysisSettings.third_octave_decay`
+(`--third-octave`, a check box on the desktop measurement pages; off by
+default) adds the IEC 61260-1 one-third-octave bands inside the octave bands
+of §3 (bands `3x − 1`, `3x`, `3x + 1` of octave `x`; 50 Hz–10 kHz for the
+default 63 Hz–8 kHz), `third_octave_bands` in `result.json`. Each is analysed
+exactly as an octave band (time-reversed Butterworth filter of the same
+order, onset, Lundeby truncation, EDT/T20/T30 and this fit), with the band's
+own bandwidth in every bandwidth-dependent rule; the lead-in before the
+direct sound is that of §3 for the narrowest third (`5/B`, 0.43 s at 50 Hz),
+taken as a separate segment so that the octave analysis is computed exactly
+as without the option. It is opt-in because it triples the decay work
+(0.44 s → 1.33 s for a 10 s, 48 kHz response on the Linux aarch64 test
+machine; the default analysis does none of it, and its results are
+bit-identical to before).
+
+*Thresholds re-checked for narrow bands.* A one-third-octave band has a
+third of the bandwidth, so its EDC fluctuates more (the fluctuation of a
+decay estimate grows as `1/√(B·T)`, the scaling of the §3 straightness
+limits) and the band filter decays three times as long. The rules that
+depend on the bandwidth already use the band's own: `B·T1 < 4` marks a fit
+unreliable (`T1` < 0.35 s at 50 Hz), and the onset window and lead-in scale
+with `1/B`. The dB margins (turning point 10 dB below the start and above
+the noise, 10 dB of visible slow decay, 1 dB single-slope miss) and
+`ΔBIC ≥ 10` do not depend on the bandwidth. They were re-checked with the
+synthetic decays of the octave calibration, filtered by the one-third-octave
+filters (24 seeds × 4 decay times 0.3–3 s for one slope, 16 seeds × 3 pairs
+for two, half of the seeds with a strong direct sound):
+
+| | 50–100 Hz thirds | 125 Hz–1 kHz thirds | 63 Hz octave | 125 Hz–1 kHz octaves |
+| --- | --- | --- | --- | --- |
+| one slope split (VALID) | 13 of 384 (3.4 %) | 5 of 288 (1.7 %) | 3 of 96 (3.1 %) | 4 of 288 (1.4 %) |
+| two slopes found (VALID) | 137 of 192 (71 %) | 131 of 144 (91 %) | 47 of 48 | 142 of 144 |
+| T1 / T2 error, median [IQR] | −1.7 % [−14.7, +16.5] / +3.6 % [−2.6, +16.5] | −1.8 % [−7.5, +4.8] / +0.7 % [−2.8, +5.6] | | |
+
+The false-split rate of the 50–100 Hz thirds (bandwidths 12–23 Hz) is that
+of the 63 Hz octave (44 Hz) the octave thresholds were accepted with; a
+sparse modal decay (two, four or eight beating modes in a 50–100 Hz third,
+decay times within ±10 % of each other) was split in 2 of 264 decays, both
+with two modes. The thirds find fewer double slopes:
+every miss failed `ΔBIC ≥ 10`, not a plausibility rule (the narrow band's
+own fluctuation is evidence against the curvature), mostly the weak pair
+0.5/1.0 s with the slow part 15 dB down (31 of 64 found at 50–100 Hz; the
+1.0/3.0 s pair 64 of 64). Lowering `ΔBIC` or a margin for the thirds would buy
+recall with false splits, which ReverbScope avoids (a missed second slope
+leaves the ISO numbers to describe the band; an invented one is a wrong
+statement about the room). **The thresholds are therefore the same for
+one-third-octave bands; no per-band adjustment is made.** The unit tests
+(`tests/unit/test_multislope_thirds.py`) hold recovery at 50–100 Hz and the
+false-split rate there (at most 10 of 96 short decays with `B·T` ≈ 7–9; 7
+when written). On the Aachen data (validation/aachen-nikolauskapelle.md)
+the thirds chose two slopes in 77 of 1 103 band values with a valid fit
+(7 %), most often at 50 Hz (12 of 46) and 63 Hz (6 of 46).
 
 **What is not claimed.** The fit is not ISO 3382 and has no standard
 tolerance. Two slopes are a property of the curve at this position, not a
