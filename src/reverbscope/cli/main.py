@@ -1294,7 +1294,7 @@ def build_parser() -> argparse.ArgumentParser:
         _("decay times shared by several positions of one room (common-slope model)"),
         examples=(
             "reverbscope common-slope studio-a",
-            "reverbscope common-slope a.wav b.wav c.wav --band 20 20000 --out common",
+            "reverbscope common-slope a.wav b.wav c.wav --band 20 20000 --out studio-a-slopes",
             "reverbscope common-slope session-1 session-2 --third-octave",
         ),
     )

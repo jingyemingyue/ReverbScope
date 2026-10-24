@@ -194,13 +194,13 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         (["session"], "缺少必需的参数：{bundle}", "the following arguments are required: {bundle}"),
         (
             ["schema"],
-            "缺少必需的参数：{result,session,comparison,project,sidecar}",
-            "the following arguments are required: {result,session,comparison,project,sidecar}",
+            "缺少必需的参数：{result,session,comparison,project,sidecar,common-slope}",
+            "the following arguments are required: {result,session,comparison,project,sidecar,common-slope}",
         ),
         (
             ["schema", "bad"],
-            "参数 {result,session,comparison,project,sidecar}：无效的选择：“bad”",
-            "argument {result,session,comparison,project,sidecar}: invalid choice: 'bad'",
+            "参数 {result,session,comparison,project,sidecar,common-slope}：无效的选择：“bad”",
+            "argument {result,session,comparison,project,sidecar,common-slope}: invalid choice: 'bad'",
         ),
         (["show"], "缺少必需的参数：路径", "the following arguments are required: path"),
         (

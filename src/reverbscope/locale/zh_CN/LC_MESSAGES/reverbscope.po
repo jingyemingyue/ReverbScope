@@ -7075,10 +7075,10 @@ msgid "largest number of common slopes considered (default 3)"
 msgstr "考虑的共同斜率最大数量（默认 3）"
 
 msgid "decay-time estimator: joint EDC fit (default) or the experimental IS-NMF/SAGE estimator on the band envelopes"
-msgstr "衰减时间估计方法：联合 EDC 拟合（默认），或基于频段包络的实验性 IS-NMF/SAGE 估计"
+msgstr "衰减时间估计方法：对各位置能量衰减曲线做联合拟合（默认），或基于频段包络的实验性 IS-NMF/SAGE 估计"
 
 msgid "amplitude estimator for the common decay times: maximum-likelihood LINEX (default) or the EDC fit"
-msgstr "共同衰减时间下的幅度估计方法：最大似然 LINEX（默认）或 EDC 拟合"
+msgstr "共同衰减时间下的幅度估计方法：最大似然估计（线性指数损失，默认）或能量衰减曲线拟合"
 
 msgid "folder for common-slope.json and the two CSV tables"
 msgstr "存放 common-slope.json 和两个 CSV 表格的文件夹"
