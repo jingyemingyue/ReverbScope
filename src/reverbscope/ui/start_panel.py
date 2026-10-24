@@ -12,9 +12,10 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
 from PySide6.QtGui import QResizeEvent, QShowEvent
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -55,6 +56,7 @@ class StartPanel(QWidget):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.viewport().installEventFilter(self)
         body = QWidget()
         body.setProperty("page", True)
         self.scroll_area.setWidget(body)
@@ -129,9 +131,19 @@ class StartPanel(QWidget):
         self._footer_row = footer
         self._footer_guide_row = QHBoxLayout()
         self._footer_stacked: bool | None = None
+        self._paths_stacked: bool | None = None
         layout.addLayout(footer)
         layout.addWidget(self.walkthrough)
         self._place_responsive()
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802 - Qt override
+        if (
+            hasattr(self, "scroll_area")
+            and watched is self.scroll_area.viewport()
+            and event.type() == QEvent.Type.Resize
+        ):
+            self._place_responsive()
+        return super().eventFilter(watched, event)
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
@@ -152,6 +164,40 @@ class StartPanel(QWidget):
         available = (viewport_w if viewport_w > 0 else (self.width() - 16)) - left_right
         if available <= 0:
             return
+
+        if hasattr(self, "_paths_layout") and hasattr(self, "composer"):
+            b1 = self.path_buttons.get("standalone")
+            b2 = self.path_buttons.get("universal_daw")
+            if b1 is not None and b2 is not None:
+                c_lay = self.composer.layout()
+                c_margins = c_lay.contentsMargins() if c_lay is not None else None
+                c_padding = (c_margins.left() + c_margins.right()) if c_margins is not None else 32
+                c_avail = min(available, self.composer.maximumWidth()) - c_padding
+                b1_lay = b1.layout()
+                b2_lay = b2.layout()
+                b1_w = (
+                    max(b1_lay.minimumSize().width(), b1.minimumSizeHint().width())
+                    if b1_lay is not None
+                    else b1.minimumSizeHint().width()
+                )
+                b2_w = (
+                    max(b2_lay.minimumSize().width(), b2.minimumSizeHint().width())
+                    if b2_lay is not None
+                    else b2.minimumSizeHint().width()
+                )
+                paths_needed = b1_w + b2_w + self._paths_layout.spacing()
+                paths_stacked = paths_needed > c_avail
+                if paths_stacked != self._paths_stacked:
+                    self._paths_stacked = paths_stacked
+                    new_dir = (
+                        QBoxLayout.Direction.TopToBottom
+                        if paths_stacked
+                        else QBoxLayout.Direction.LeftToRight
+                    )
+                    self._paths_layout.setDirection(new_dir)
+                    self._paths_layout.invalidate()
+                    if c_lay is not None:
+                        c_lay.invalidate()
 
         needed = (
             self.sessions_label.sizeHint().width()
@@ -234,8 +280,10 @@ class StartPanel(QWidget):
         inner = QVBoxLayout(self.composer)
         inner.setContentsMargins(16, 16, 16, 12)
         inner.setSpacing(12)
-        paths = QHBoxLayout()
+        paths = QBoxLayout(QBoxLayout.Direction.LeftToRight)
         paths.setSpacing(12)
+        self._paths_layout = paths
+        self._paths_stacked = False
         self.path_buttons: dict[str, QPushButton] = {}
         for mode, icon_name, title_text, text in (
             (
