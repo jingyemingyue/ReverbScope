@@ -4,7 +4,7 @@
 
 ## Supported versions
 
-ReverbScope is a pre-release (0.5.0 release candidates; see
+ReverbScope is a pre-release (0.5.0 betas and release candidates; see
 [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md) §2a). Two lines are maintained:
 `main` (development) and `release/0.5.0` (the candidate); only the newest
 pre-release on GitHub Releases is supported. The repository is

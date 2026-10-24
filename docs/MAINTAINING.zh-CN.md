@@ -1,6 +1,6 @@
 # 维护 ReverbScope
 
-> 当前 OSS 审计与 PR 整理顺序见 [OSS_READINESS.md](OSS_READINESS.md)。真实验收按[社区测试指南](COMMUNITY_TESTING.zh-CN.md)执行。About/Topics 管理员命令见 [REPOSITORY_SETTINGS.md](REPOSITORY_SETTINGS.md)；当前连接器没有相应写入操作，部分设置可由有权限的 gh/API 管理。
+> PR 整理顺序以[执行准则](GUIDELINES.zh-CN.md) §5 和附录 G 为准；[OSS_READINESS.md](OSS_READINESS.md) 是 2026-10-15 的证据快照。真实验收按[社区测试指南](COMMUNITY_TESTING.zh-CN.md)执行。About/Topics 管理员命令见 [REPOSITORY_SETTINGS.md](REPOSITORY_SETTINGS.md)；当前连接器没有相应写入操作，部分设置可由有权限的 gh/API 管理。
 
 写给接手维护的人：哪个分支是哪条线、自动化自己会做什么、哪些事只有维护者能做、以及某项检查变红时该怎么办。本文不假设有任何助手，每一步都写明对应的文件或页面。请与 [RELEASE_PLAN.zh-CN.md](RELEASE_PLAN.zh-CN.md)（两条线为何存在、发布如何产生、0.5.0 的门槛；英文全文 [RELEASE_PLAN.md](RELEASE_PLAN.md)）、[CONTRIBUTING.md](../CONTRIBUTING.md)（改动必须遵守的规则、从社区报告到回归测试的流程，英文）、[OFFLINE_CHECKS.md](OFFLINE_CHECKS.md)（没有硬件时能检查什么，英文）和 [API_STABILITY.md](API_STABILITY.md)（哪些东西不能悄悄改变，英文）一起阅读。英文版：[MAINTAINING.md](MAINTAINING.md)。
 
@@ -8,7 +8,7 @@
 
 | 线 | 分支 | `pyproject.toml` 中的版本 | 允许进入的改动 |
 | --- | --- | --- | --- |
-| 测试版（开发线） | `main` | `0.5.0b3`，之后 `0.5.0b4`…… | 一切：修复、新功能、交互、文档 |
+| 测试版（开发线） | `main` | `0.5.0b6`（2026-10-21 发布），之后 `0.5.0b7`…… | 一切：修复、新功能、交互、文档 |
 | 候选版 | `release/0.5.0` | `0.5.0rc1`，之后 `rc2`……直到 `0.5.0` | 只允许正确性、崩溃、打包、跨平台、硬件/DAW 兼容性、文档、本地化和发布工程方面的修复，能写测试的都带回归测试（见 RELEASE_PLAN §2a） |
 
 保持两条线一致的规则：
@@ -41,8 +41,8 @@
 
 * **发布一个版本。** 在 Releases 页打开草稿 `v<版本>`，读一遍说明，至少下载一个安装包并在真实机器上启动，然后 **Publish release**（测试版和候选版都勾选 *pre-release*）。发布会创建 tag；tag 的运行会重复所有门槛，并且只在仓库变量 `REVERBSCOPE_PUBLISH_PYPI` 为 `true` 且 `pypi` 环境存在时上传 PyPI（RELEASE_PLAN §3）。不要发布目标提交不是该线最新提交的草稿：草稿由下一次 Release 运行重建，而只改文档的推送不会触发它——草稿落后时手动运行工作流。
 * **切下一个候选版**（`rc2`……）：在 `release/0.5.0` 上一个提交，设置 `project.version`、重命名 CHANGELOG 小节、添加 STATUS 快照；推送后 Release 运行打开新草稿。只有当这个提交带有修复时才把它合并进 `main`；版本号本身留在候选线。
-* **切下一个测试版**：在 `main` 上同样形状的提交，版本 `0.5.0b3`，把 `[Unreleased]` 条目移到新标题下。
-* **仓库设置**（命令行和工作流都改不了）：`main` 的 ruleset（要求九个 CI 作业、禁止强推和删除、要求 pull request，单人维护时 0 个审批）、`release/**` 同样、Pages、描述、topics、主页；macOS Developer ID 密钥（RELEASE_PLAN §3b）。
+* **切下一个测试版**：在 `main` 上同样形状的提交，版本用下一个测试版号（`0.5.0b6` 之后是 `0.5.0b7`），把 `[Unreleased]` 条目移到新标题下。
+* **仓库设置**（命令行和工作流都改不了）：`main` 的 ruleset（要求九个 CI 作业、禁止强推和删除、要求 pull request，单人维护时 0 个审批）、`release/**` 同样、描述、topics、主页；macOS Developer ID 密钥（RELEASE_PLAN §3b）。
 * **关闭或合并 pull request**，对报告做决定（§5），只根据 issue 填写 [HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md) 的结果日志。
 
 ## 4. 每次推送之前
