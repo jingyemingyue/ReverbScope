@@ -21,6 +21,21 @@ All notable changes to ReverbScope are documented here. The format follows
   in the report when a band has two slopes; an overlay of the fit in the
   desktop Decay view and a "Decay slopes" row in the inspector). EDT, T20,
   T30, RT60 and every other number are unchanged. Methodology §3c, ADR 0004.
+- **Uncertainty of the slope fit.** Every single- and double-slope model now
+  carries a standard deviation and 68 %/95 % intervals for T1/T2, standard
+  deviations for the amplitudes, the noise term and the turning point: the
+  Laplace (Gaussian) approximation of the Bayesian posterior with the decay
+  data counted at the adequate data rate of Xiang & Sü Gül (J. Acoust. Soc.
+  Am. 158, 2892–2901, 2025), plus the covariance of the random fluctuation
+  of a reverberant decay curve. On synthetic decays its intervals contain
+  the generating decay times 74 % (68 % interval) and 97 % (95 % interval)
+  of the time. Shown as `± σ` in the report's slope tables, 13 new columns
+  at the end of `decay_slopes.csv`, a sentence in the desktop Decay view and
+  a "Slope uncertainty" inspector row; `uncertainty` per model in
+  `result.json` (additive, schema 1 unchanged; older files load without).
+  It covers one response at one position, not position-to-position spread.
+  The fit and every existing number are unchanged; about 0.5 ms per model.
+  Methodology §3d, ADR 0006, docs/validation/decay-uncertainty.md.
 - **One-third-octave decay bands (opt-in).** `--third-octave` on `analyze`,
   `measure` and `analyze-ir`, and a check box on both desktop measurement
   pages, add the IEC 61260-1 one-third-octave bands inside the octave bands

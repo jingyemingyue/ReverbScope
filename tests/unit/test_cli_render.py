@@ -349,8 +349,8 @@ def test_a_double_slope_decay_gets_its_own_table() -> None:
     for band in two:
         model = band.multi_slope.selected  # type: ignore[union-attr]
         assert model is not None
-        assert f"{model.decay_times_s[0]:.2f} s" in text
-        assert f"{model.decay_times_s[1]:.2f} s" in text
+        assert f"{model.decay_times_s[0]:.2f} ±" in text
+        assert f"{model.decay_times_s[1]:.2f} ±" in text
     # The whole report carries the section after the reverberation table.
     report = render_analysis(WIDE, result)
     assert report.index("Double-slope decay") > report.index("T30")
@@ -385,7 +385,7 @@ def test_an_unreliable_double_slope_is_marked_and_invalid_ones_are_left_out() ->
     lines = _decay_slopes(WIDE, unsure)
     model = fit.selected
     assert model is not None
-    row = next(line for line in lines if f"{model.decay_times_s[1]:.2f} s" in line)
+    row = next(line for line in lines if f"{model.decay_times_s[1]:.2f} ±" in line)
     assert WIDE.symbol("unsure") in row, lines
     gone = replace(
         unsure,
@@ -445,7 +445,7 @@ def test_third_octave_slopes_get_a_table_only_when_analysed() -> None:
     model = one_k.multi_slope.selected  # type: ignore[union-attr]
     assert model is not None and model.slope_count == 2
     row = next(line for line in lines if line.lstrip().startswith("1 kHz"))
-    assert f"{model.decay_times_s[0]:.2f} s" in row and f"{model.decay_times_s[1]:.2f} s" in row
+    assert f"{model.decay_times_s[0]:.2f} ±" in row and f"{model.decay_times_s[1]:.2f} ±" in row
     # 50 Hz lies below the declared 90 Hz: no fit, the skip mark, and the legend.
     row = next(line for line in lines if line.lstrip().startswith("50 Hz"))
     assert WIDE.symbol("skip") in row

@@ -148,6 +148,68 @@ DECAY_60_DB_NEPER = 13.815510557964274
 MULTI_SLOPE_CRITERION_BIC = "BIC"
 
 
+#: ``SlopeUncertainty.method``: Laplace approximation of the posterior at the
+#: decay data rate of Xiang & Sü Gül (2025) plus the covariance of a random
+#: (diffuse-field) energy decay curve; see ADR 0006.
+SLOPE_UNCERTAINTY_METHOD = "laplace-data-rate+stochastic-edc"
+
+
+@dataclass(frozen=True)
+class SlopeUncertainty:
+    """Uncertainty of one slope model's parameters (see ADR 0006).
+
+    Standard deviations and central intervals of the fitted parameters, the
+    sum of two Gaussian (Laplace) terms in the log parameters: the analysis
+    term of Xiang & Sü Gül (2025, J. Acoust. Soc. Am. 158, 2892), i.e. the
+    posterior width with the decay data counted at the data rate
+    ``f_d = 110 / T1``, and the covariance of a random (diffuse-field) decay
+    curve of this band's bandwidth. Decay times are log-normal (the fit is in
+    ``log T``), so their intervals are asymmetric; amplitudes and the noise
+    term are in dB. It describes one response at one position: it does not
+    include the spread between source/receiver positions, equipment or
+    repeated set-ups, and assumes the model (1 or 2 slopes) is right.
+    """
+
+    #: Standard deviation of each ``T_i`` (s), same order as ``decay_times_s``.
+    decay_times_sd_s: tuple[float, ...]
+    #: 68 % and 95 % central intervals of each ``T_i`` (s): ``(low, high)``.
+    decay_times_ci68_s: tuple[tuple[float, float], ...]
+    decay_times_ci95_s: tuple[tuple[float, float], ...]
+    #: Standard deviation of each ``10 log10(A_i)`` (dB).
+    amplitudes_sd_db: tuple[float, ...]
+    #: Standard deviation of ``10 log10(N)`` (dB); ``None`` when N sits at its bound.
+    noise_sd_db: float | None
+    #: Standard deviation of the turning-point time (s); two slopes only.
+    knee_time_sd_s: float | None
+    #: The analysis term alone (Xiang & Sü Gül's Laplace posterior at the
+    #: decay data rate) of each ``T_i`` (s): how precisely this curve
+    #: determines ``T_i``, without the random fluctuation of the decay.
+    decay_times_analysis_sd_s: tuple[float, ...]
+    #: Number of decay data points the posterior was evaluated on
+    #: (``f_d`` times the fitted duration) and the data rate ``f_d`` (Hz).
+    data_points: float
+    data_rate_hz: float
+    #: Whether the fit grid is at least as dense as ``f_d`` (it is the
+    #: paper's adequacy condition; the fit itself is unchanged either way).
+    grid_adequate: bool
+    method: str = SLOPE_UNCERTAINTY_METHOD
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "method": self.method,
+            "decay_times_sd_s": list(self.decay_times_sd_s),
+            "decay_times_ci68_s": [list(c) for c in self.decay_times_ci68_s],
+            "decay_times_ci95_s": [list(c) for c in self.decay_times_ci95_s],
+            "amplitudes_sd_db": list(self.amplitudes_sd_db),
+            "noise_sd_db": self.noise_sd_db,
+            "knee_time_sd_s": self.knee_time_sd_s,
+            "decay_times_analysis_sd_s": list(self.decay_times_analysis_sd_s),
+            "data_points": self.data_points,
+            "data_rate_hz": self.data_rate_hz,
+            "grid_adequate": self.grid_adequate,
+        }
+
+
 @dataclass(frozen=True)
 class DecaySlopeModel:
     """One multi-exponential model of an energy decay curve.
@@ -169,6 +231,10 @@ class DecaySlopeModel:
     bic: float
     #: Root-mean-square difference between model and EDC, in dB.
     rms_residual_db: float
+    #: Analysis uncertainty of the parameters; ``None`` when it could not be
+    #: computed (a parameter at its bound, a singular fit) or for a file
+    #: written before it existed.
+    uncertainty: SlopeUncertainty | None = None
 
     @property
     def amplitudes_db(self) -> tuple[float, ...]:
@@ -217,6 +283,7 @@ class DecaySlopeModel:
             "noise_term": self.noise_term,
             "bic": self.bic,
             "rms_residual_db": self.rms_residual_db,
+            "uncertainty": None if self.uncertainty is None else self.uncertainty.to_dict(),
         }
 
 

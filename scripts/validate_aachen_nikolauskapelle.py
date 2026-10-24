@@ -63,6 +63,7 @@ from reverbscope.models.configuration import AnalysisSettings
 from reverbscope.models.result import (
     EXCITATION_SOURCE_DECLARED,
     BandDecay,
+    DecaySlopeModel,
     ExcitationBand,
     Validity,
 )
@@ -202,6 +203,28 @@ def _share(amplitudes: tuple[float, ...]) -> float:
     return 100.0 * amplitudes[1] / sum(amplitudes)
 
 
+def _spread_columns(prefix: str, model: DecaySlopeModel | None) -> dict[str, object]:
+    """Uncertainty columns (ADR 0005) of one model: sd and 95 % interval of
+    each decay time, the analysis term alone, the knee sd."""
+    names = ("t",) if prefix == "rs1" else ("t1", "t2")
+    out: dict[str, object] = {}
+    u = model.uncertainty if model is not None else None
+    for index, name in enumerate(names):
+        key = f"{prefix}_{name}"
+        if u is None:
+            out.update({f"{key}_sd_s": "", f"{key}_ci95_lo_s": "", f"{key}_ci95_hi_s": ""})
+            out[f"{key}_analysis_sd_s"] = ""
+            continue
+        out[f"{key}_sd_s"] = u.decay_times_sd_s[index]
+        out[f"{key}_ci95_lo_s"] = u.decay_times_ci95_s[index][0]
+        out[f"{key}_ci95_hi_s"] = u.decay_times_ci95_s[index][1]
+        out[f"{key}_analysis_sd_s"] = u.decay_times_analysis_sd_s[index]
+    if prefix == "rs2":
+        out["rs2_knee_sd_s"] = "" if u is None or u.knee_time_sd_s is None else u.knee_time_sd_s
+        out["rs2_grid_adequate"] = "" if u is None else int(u.grid_adequate)
+    return out
+
+
 def analyse_position(
     wav: Path,
     settings: AnalysisSettings,
@@ -245,6 +268,8 @@ def analyse_position(
                 "rs2_t1_s": two.decay_times_s[0] if two else "",
                 "rs2_t2_s": two.decay_times_s[1] if two else "",
                 "rs2_a2_share_pct": _share(two.amplitudes) if two else "",
+                **_spread_columns("rs1", one),
+                **_spread_columns("rs2", two),
                 "rs_note": "; ".join(fit.notes) if fit is not None else "",
                 "analyze_ir": "refused" if refused else "ok",
                 "dfn_t1_s": ref.t1_s if ref else "",
@@ -283,6 +308,8 @@ def analyse_position(
                 "rs2_t1_s": two.decay_times_s[0] if two else "",
                 "rs2_t2_s": two.decay_times_s[1] if two else "",
                 "rs2_a2_share_pct": _share(two.amplitudes) if two else "",
+                **_spread_columns("rs1", one),
+                **_spread_columns("rs2", two),
                 "rs_note": "; ".join(fit.notes) if fit is not None else "",
                 "dfn_octave_hz": octave_hz if ref else "",
                 "dfn_t1_s": ref.t1_s if ref else "",
@@ -299,6 +326,7 @@ def run(
     cache: Path | None = None,
     limit: int | None = None,
     thirds_summary: Path | None = None,
+    uncertainty_summary: Path | None = None,
 ) -> int:
     dfn = read_decayfitnet(data / "decayfitnet_all_positions.csv")
     iso: dict[tuple[str, str, float], float] = {}
@@ -346,6 +374,9 @@ def run(
     summarize(rows)
     if thirds_summary is not None:
         write_thirds_summary(rows, thirds_summary)
+    table = summarize_uncertainty(rows)
+    if uncertainty_summary is not None:
+        write_uncertainty_summary(table, uncertainty_summary)
     return 0
 
 
@@ -370,6 +401,20 @@ _ORDER = [
     "dfn_a2_share_pct",
     "rs_note",
     "analyze_ir",
+    "rs1_t_sd_s",
+    "rs1_t_ci95_lo_s",
+    "rs1_t_ci95_hi_s",
+    "rs1_t_analysis_sd_s",
+    "rs2_t1_sd_s",
+    "rs2_t1_ci95_lo_s",
+    "rs2_t1_ci95_hi_s",
+    "rs2_t1_analysis_sd_s",
+    "rs2_t2_sd_s",
+    "rs2_t2_ci95_lo_s",
+    "rs2_t2_ci95_hi_s",
+    "rs2_t2_analysis_sd_s",
+    "rs2_knee_sd_s",
+    "rs2_grid_adequate",
 ]
 
 
@@ -476,6 +521,145 @@ def summarize(rows: list[dict[str, object]]) -> None:
     summarize_third_slopes(rows)
     refused = sorted({str(r["position"]) for r in octave if r.get("analyze_ir") == "refused"})
     print(f"\nanalyze-ir import check refused: {len(refused)} ({', '.join(refused) or 'none'})")
+
+
+def _inside(row: dict[str, object], key: str, reference: str) -> bool | None:
+    """Whether DecayFitNet's value lies in ReverbScope's 95 % interval."""
+    lo, hi, ref = row.get(f"{key}_ci95_lo_s", ""), row.get(f"{key}_ci95_hi_s", ""), row[reference]
+    if lo in ("", None) or hi in ("", None) or ref in ("", None):
+        return None
+    return float(str(lo)) <= float(str(ref)) <= float(str(hi))
+
+
+def _half_width_pct(row: dict[str, object], key: str, value: str) -> float | None:
+    lo, hi, v = row.get(f"{key}_ci95_lo_s", ""), row.get(f"{key}_ci95_hi_s", ""), row[value]
+    if lo in ("", None) or hi in ("", None) or v in ("", None):
+        return None
+    return 100.0 * (float(str(hi)) - float(str(lo))) / 2.0 / float(str(v))
+
+
+def summarize_uncertainty(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Interval widths per band and whether DecayFitNet's T1/T2 fall inside
+    ReverbScope's two-slope 95 % intervals (VALID fits only). Printed as
+    Markdown; returns the table rows (``--uncertainty-summary``)."""
+    table: list[dict[str, object]] = []
+    print("\n## Slope-fit uncertainty (ADR 0005), VALID fits")
+    print(
+        "| Resolution | Band | n | selected T: 95 % half-width median [IQR] "
+        "| 2-slope T1 half-width | 2-slope T2 half-width | analysis term / total (T1) "
+        "| DFN T1 in RS T1 95 % | DFN T2 in RS T2 95 % | same, RS chose 2 slopes (T1; T2) "
+        "| no uncertainty (selected model) |"
+    )
+    print("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+    for fraction, bands in (("octave", OCTAVES_HZ), ("third", THIRDS_HZ)):
+        for nominal in bands:
+            sel = [
+                r
+                for r in rows
+                if r["fraction"] == fraction
+                and r["band_hz"] == nominal
+                and (fraction == "octave" or r["metric"] == "slopes")
+                and r["rs_validity"] == "valid"
+            ]
+            if not sel:
+                continue
+            chosen: list[float] = []
+            for r in sel:
+                if r["rs_selected_slopes"] == 1:
+                    w = _half_width_pct(r, "rs1_t", "rs1_t_s")
+                    if w is not None:
+                        chosen.append(w)
+                elif r["rs_selected_slopes"] == 2:
+                    for key, value in (("rs2_t1", "rs2_t1_s"), ("rs2_t2", "rs2_t2_s")):
+                        w = _half_width_pct(r, key, value)
+                        if w is not None:
+                            chosen.append(w)
+            w1 = [w for r in sel if (w := _half_width_pct(r, "rs2_t1", "rs2_t1_s")) is not None]
+            w2 = [w for r in sel if (w := _half_width_pct(r, "rs2_t2", "rs2_t2_s")) is not None]
+            ratio = [
+                float(str(r["rs2_t1_analysis_sd_s"])) / float(str(r["rs2_t1_sd_s"]))
+                for r in sel
+                if r.get("rs2_t1_sd_s") not in ("", None) and float(str(r["rs2_t1_sd_s"])) > 0.0
+            ]
+            in1 = [
+                x
+                for r in sel
+                if r.get("dfn_t1_s") and (x := _inside(r, "rs2_t1", "dfn_t1_s")) is not None
+            ]
+            in2 = [
+                x
+                for r in sel
+                if r.get("dfn_t2_s") and (x := _inside(r, "rs2_t2", "dfn_t2_s")) is not None
+            ]
+            two = [r for r in sel if r["rs_selected_slopes"] == 2]
+            in1_two = [
+                x
+                for r in two
+                if r.get("dfn_t1_s") and (x := _inside(r, "rs2_t1", "dfn_t1_s")) is not None
+            ]
+            in2_two = [
+                x
+                for r in two
+                if r.get("dfn_t2_s") and (x := _inside(r, "rs2_t2", "dfn_t2_s")) is not None
+            ]
+            missing = sum(
+                1
+                for r in sel
+                if (r["rs_selected_slopes"] == 1 and r.get("rs1_t_sd_s") in ("", None))
+                or (r["rs_selected_slopes"] == 2 and r.get("rs2_t1_sd_s") in ("", None))
+            )
+            row = {
+                "resolution": fraction,
+                "band_hz": nominal,
+                "n_valid": len(sel),
+                "selected_half_width_pct_median": statistics.median(chosen) if chosen else "",
+                "t1_half_width_pct_median": statistics.median(w1) if w1 else "",
+                "t2_half_width_pct_median": statistics.median(w2) if w2 else "",
+                "analysis_over_total_t1_median": statistics.median(ratio) if ratio else "",
+                "dfn_t1_inside": sum(in1) if in1 else "",
+                "dfn_t1_compared": len(in1) if in1 else "",
+                "dfn_t2_inside": sum(in2) if in2 else "",
+                "dfn_t2_compared": len(in2) if in2 else "",
+                "selected_two_dfn_t1_inside": sum(in1_two) if in1_two else "",
+                "selected_two_dfn_t1_compared": len(in1_two) if in1_two else "",
+                "selected_two_dfn_t2_inside": sum(in2_two) if in2_two else "",
+                "selected_two_dfn_t2_compared": len(in2_two) if in2_two else "",
+                "selected_without_uncertainty": missing,
+            }
+            table.append(row)
+
+            def frac(hits: list[bool]) -> str:
+                return f"{sum(hits)}/{len(hits)}" if hits else "–"
+
+            print(
+                f"| {fraction} | {nominal:g} Hz | {len(sel)} | {_cell_abs(chosen)} | "
+                f"{_cell_abs(w1)} | {_cell_abs(w2)} | "
+                f"{(f'{statistics.median(ratio):.2f}' if ratio else '–')} | "
+                f"{frac(in1)} | {frac(in2)} | {frac(in1_two)}; {frac(in2_two)} | {missing} |"
+            )
+    return table
+
+
+def _cell_abs(values: list[float]) -> str:
+    if not values:
+        return "–"
+    m, lo, hi = _quartiles(values)
+    return f"{m:.1f} % [{lo:.1f}, {hi:.1f}]"
+
+
+def write_uncertainty_summary(table: list[dict[str, object]], path: Path) -> None:
+    fields = list(table[0]) if table else []
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        handle.write(
+            "# Derived from Zerwas & Kayku, St. Nicholas Chapel data set, "
+            "doi:10.5281/zenodo.20428705, CC-BY 4.0. Changes: ReverbScope slope-fit "
+            "uncertainty per band; DecayFitNet values copied from the data set.\n"
+        )
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        for row in table:
+            writer.writerow({k: _fmt(v) for k, v in row.items()})
 
 
 def _cell(values: list[float]) -> str:
@@ -673,8 +857,21 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="write the per-band one-third-octave summary CSV (docs/validation/...-thirds.csv)",
     )
+    parser.add_argument(
+        "--uncertainty-summary",
+        type=Path,
+        default=None,
+        help="write the per-band slope-uncertainty summary CSV (ADR 0005)",
+    )
     args = parser.parse_args(argv)
-    return run(args.data, args.out, args.cache, args.limit, args.thirds_summary)
+    return run(
+        args.data,
+        args.out,
+        args.cache,
+        args.limit,
+        args.thirds_summary,
+        args.uncertainty_summary,
+    )
 
 
 if __name__ == "__main__":

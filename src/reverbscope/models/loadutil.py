@@ -49,6 +49,7 @@ def record_name(kind: str) -> str:
         "band decay": pgettext("file record", "band decay"),
         "multi-slope fit": pgettext("file record", "multi-slope fit"),
         "decay slope model": pgettext("file record", "decay slope model"),
+        "slope uncertainty": pgettext("file record", "slope uncertainty"),
         "excitation band": pgettext("file record", "excitation band"),
         "harmonic distortion": pgettext("file record", "harmonic distortion"),
         "aliased distortion": pgettext("file record", "aliased distortion"),

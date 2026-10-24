@@ -242,6 +242,10 @@ def test_csv_export_writes_both_decay_models_of_each_band(tmp_path: Path) -> Non
         "band", "resolution", "slopes", "validity", "selected", "t1_s", "t2_s", "a1_db", "a2_db",
         "a1_share_percent", "a2_share_percent", "noise_term", "bic", "delta_bic",
         "knee_time_s", "knee_level_db",
+        # Uncertainty (ADR 0006), appended after the fit columns.
+        "t1_sd_s", "t1_ci95_low_s", "t1_ci95_high_s", "t2_sd_s", "t2_ci95_low_s",
+        "t2_ci95_high_s", "a1_sd_db", "a2_sd_db", "noise_sd_db", "knee_time_sd_s",
+        "t1_analysis_sd_s", "t2_analysis_sd_s", "data_rate_hz",
     ]  # fmt: skip
     broadband = result.decay.broadband
     fit = broadband.multi_slope
@@ -259,6 +263,13 @@ def test_csv_export_writes_both_decay_models_of_each_band(tmp_path: Path) -> Non
     assert float(two["a2_share_percent"]) == pytest.approx(model.energy_shares_percent[1])
     assert float(two["delta_bic"]) == pytest.approx(fit.delta_bic)
     assert two["knee_time_s"] != "" and two["knee_level_db"] != ""
+    spread = model.uncertainty
+    assert spread is not None
+    assert float(two["t1_sd_s"]) == pytest.approx(spread.decay_times_sd_s[0])
+    low, high = float(two["t2_ci95_low_s"]), float(two["t2_ci95_high_s"])
+    assert low < float(two["t2_s"]) < high
+    assert two["knee_time_sd_s"] != "" and one["knee_time_sd_s"] == ""
+    assert one["t1_sd_s"] != "" and one["t2_sd_s"] == ""
     # Every analysed band has at least one row.
     labels = {r["band"] for r in rows}
     assert {b.band_label for b in result.decay.bands if b.multi_slope is not None} <= labels

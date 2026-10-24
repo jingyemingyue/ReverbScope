@@ -10,6 +10,7 @@ here changes a stored value.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Collection, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import datetime
@@ -78,6 +79,7 @@ from reverbscope.models.result import (
     AnalysisResult,
     BandDecay,
     DecayMetric,
+    DecaySlopeModel,
     EnergyMetric,
     PlacementLength,
     PlacementResult,
@@ -717,11 +719,12 @@ def _decay_slopes(c: Console, result: AnalysisResult) -> list[str]:
             or fit.validity not in (Validity.VALID, Validity.UNRELIABLE)
         ):
             continue
-        mark = "" if fit.validity is Validity.VALID else " " + c.symbol("unsure")
         late_db = model.amplitudes_db[1] - model.amplitudes_db[0]
+        u = model.uncertainty
+        knee_sd = u.knee_time_sd_s if u is not None else None
         knee = (
-            _("{time:.2f} s at {level:.0f} dB").format(
-                time=fit.knee_time_s, level=fit.knee_level_db
+            _("{time} at {level:.0f} dB").format(
+                time=_with_sd(fit.knee_time_s, knee_sd), level=fit.knee_level_db
             )
             if fit.knee_time_s is not None and fit.knee_level_db is not None
             else c.dash()
@@ -729,8 +732,8 @@ def _decay_slopes(c: Console, result: AnalysisResult) -> list[str]:
         rows.append(
             [
                 band_text(band.band_label),
-                f"{model.decay_times_s[0]:.2f} s{mark}",
-                f"{model.decay_times_s[1]:.2f} s{mark}",
+                _slope_cell(c, model, 0, fit.validity),
+                _slope_cell(c, model, 1, fit.validity),
                 f"{late_db:+.1f} dB",
                 knee,
             ]
@@ -747,6 +750,7 @@ def _decay_slopes(c: Console, result: AnalysisResult) -> list[str]:
             "T20 and T30 above are unchanged and are marked when the curve is not straight."
         )
     )
+    lines += c.paragraph(_uncertainty_note())
     lines += c.table(
         [_("Band"), "T1", "T2", _("Late level"), _("Turning point")],
         rows,
@@ -755,9 +759,28 @@ def _decay_slopes(c: Console, result: AnalysisResult) -> list[str]:
     return lines
 
 
-def _slope_cell(c: Console, seconds: float, validity: Validity) -> str:
+def _uncertainty_note() -> str:
+    return _(
+        "± is one standard deviation of the fit (a 68 % interval): the random "
+        "fluctuation of the decay curve and how well the model fits it. "
+        "It is for this one response; it does not include the spread between "
+        "positions or repeated measurements. 95 % intervals are in decay_slopes.csv."
+    )
+
+
+def _with_sd(seconds: float, sd: float | None) -> str:
+    """``1.23 ± 0.04 s`` (``± <0.01`` when the deviation rounds to zero)."""
+    if sd is None or not math.isfinite(sd):
+        return f"{seconds:.2f} s"
+    spread = f"{sd:.2f}" if sd >= 0.005 else "<0.01"
+    return f"{seconds:.2f} ± {spread} s"
+
+
+def _slope_cell(c: Console, model: DecaySlopeModel, index: int, validity: Validity) -> str:
     mark = "" if validity is Validity.VALID else " " + c.symbol("unsure")
-    return f"{seconds:.2f} s{mark}"
+    u = model.uncertainty
+    sd = u.decay_times_sd_s[index] if u is not None and index < len(u.decay_times_sd_s) else None
+    return f"{_with_sd(model.decay_times_s[index], sd)}{mark}"
 
 
 def _third_octave_slopes(c: Console, result: AnalysisResult) -> list[str]:
@@ -792,8 +815,8 @@ def _third_octave_slopes(c: Console, result: AnalysisResult) -> list[str]:
             [
                 band_text(band.band_label),
                 str(model.slope_count),
-                _slope_cell(c, times[0], fit.validity),
-                _slope_cell(c, times[1], fit.validity) if len(times) > 1 else c.dash(),
+                _slope_cell(c, model, 0, fit.validity),
+                _slope_cell(c, model, 1, fit.validity) if len(times) > 1 else c.dash(),
                 _metric_cell(c, band.t30),
             ]
         )
@@ -805,6 +828,7 @@ def _third_octave_slopes(c: Console, result: AnalysisResult) -> list[str]:
             "decay and T2 the later, slower one, both extrapolated to 60 dB."
         ).format(two=two, fitted=fitted)
     )
+    lines += c.paragraph(_uncertainty_note())
     lines += c.table([_("Band"), _("Slopes"), "T1", "T2", "T30"], rows, align="lrrrr")
     legend = [
         v
