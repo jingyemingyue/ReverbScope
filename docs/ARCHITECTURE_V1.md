@@ -590,6 +590,11 @@ developer tools keeps `diagnostics.format_environment_report`.
 
 ### 5.8 GUI
 
+The desktop GUI as built (the workstation, with pyqtgraph charts) is
+described in [design/GUI_ARCHITECTURE.md](design/GUI_ARCHITECTURE.md), and
+its redesign follows [GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) §11–§19.
+The list below is the plan as this proposal first stated it.
+
 The GUI remains a PySide6 Essentials (LGPL) engineering tool with matplotlib
 plots; QtCharts and every other GPL-only Qt module stay banned (§6.2 adds
 an automated check).
