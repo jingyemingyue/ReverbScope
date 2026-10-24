@@ -39,6 +39,12 @@
     "number_or_null": { "type": ["number", "null"] },
     "string_or_null": { "type": ["string", "null"] },
     "number_array": { "type": "array", "items": { "type": "number" } },
+    "number_pair": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    },
     "string_array": { "type": "array", "items": { "type": "string" } },
     "count": { "type": "integer", "minimum": 0, "maximum": 9007199254740992 },
     "positive_count": { "type": "integer", "minimum": 1, "maximum": 9007199254740992 },
@@ -100,7 +106,36 @@
         "energy_shares_percent": { "$ref": "#/$defs/number_array" },
         "noise_term": { "type": "number" },
         "bic": { "type": "number" },
-        "rms_residual_db": { "type": "number" }
+        "rms_residual_db": { "type": "number" },
+        "uncertainty": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/slope_uncertainty" }]
+        }
+      }
+    },
+    "slope_uncertainty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decay_times_sd_s",
+        "decay_times_ci68_s",
+        "decay_times_ci95_s",
+        "amplitudes_sd_db",
+        "decay_times_analysis_sd_s",
+        "data_points",
+        "data_rate_hz"
+      ],
+      "properties": {
+        "method": { "type": "string" },
+        "decay_times_sd_s": { "$ref": "#/$defs/number_array" },
+        "decay_times_ci68_s": { "type": "array", "items": { "$ref": "#/$defs/number_pair" } },
+        "decay_times_ci95_s": { "type": "array", "items": { "$ref": "#/$defs/number_pair" } },
+        "amplitudes_sd_db": { "$ref": "#/$defs/number_array" },
+        "noise_sd_db": { "$ref": "#/$defs/number_or_null" },
+        "knee_time_sd_s": { "$ref": "#/$defs/number_or_null" },
+        "decay_times_analysis_sd_s": { "$ref": "#/$defs/number_array" },
+        "data_points": { "type": "number" },
+        "data_rate_hz": { "type": "number" },
+        "grid_adequate": { "type": "boolean" }
       }
     },
     "multi_slope": {

@@ -43,6 +43,7 @@ from reverbscope.models.result import (
     ReflectionsResult,
     ResonanceCandidate,
     ResonanceResult,
+    SlopeUncertainty,
     Validity,
 )
 
@@ -162,6 +163,53 @@ def _float_tuple(values: Any) -> tuple[float, ...]:
     return tuple(float(v) for v in values)
 
 
+def _interval_tuple(values: Any) -> tuple[tuple[float, float], ...]:
+    if values is None:
+        return ()
+    if not isinstance(values, (list, tuple)):
+        raise TypeError(_("expected a list of numbers"))
+    pairs = tuple(_float_tuple(v) for v in values)
+    if not all(len(p) == 2 for p in pairs):
+        raise TypeError(_("expected a list of numbers"))
+    return tuple((p[0], p[1]) for p in pairs)
+
+
+def slope_uncertainty_from_dict(data: Any, slope_count: int) -> SlopeUncertainty | None:
+    """A slope model's uncertainty; ``None`` for a file written before it existed."""
+    if data is None:
+        return None
+    payload = _obj(data, "slope uncertainty")
+    decay_sd = _float_tuple(payload.get("decay_times_sd_s"))
+    ci68 = _interval_tuple(payload.get("decay_times_ci68_s"))
+    ci95 = _interval_tuple(payload.get("decay_times_ci95_s"))
+    amplitude_sd = _float_tuple(payload.get("amplitudes_sd_db"))
+    analysis_sd = _float_tuple(payload.get("decay_times_analysis_sd_s"))
+    if not (
+        len(decay_sd)
+        == len(ci68)
+        == len(ci95)
+        == len(amplitude_sd)
+        == len(analysis_sd)
+        == slope_count
+    ):
+        raise SessionError(
+            _("{kind} is not consistent").format(kind=record_name("slope uncertainty"))
+        )
+    return SlopeUncertainty(
+        decay_times_sd_s=decay_sd,
+        decay_times_ci68_s=ci68,
+        decay_times_ci95_s=ci95,
+        amplitudes_sd_db=amplitude_sd,
+        noise_sd_db=_opt_float(payload.get("noise_sd_db")),
+        knee_time_sd_s=_opt_float(payload.get("knee_time_sd_s")),
+        decay_times_analysis_sd_s=analysis_sd,
+        data_points=float(payload["data_points"]),
+        data_rate_hz=float(payload["data_rate_hz"]),
+        grid_adequate=read_flag(payload.get("grid_adequate", False), "grid_adequate"),
+        method=str(payload.get("method", "")),
+    )
+
+
 def decay_slope_model_from_dict(data: Any) -> DecaySlopeModel:
     payload = _obj(data, "decay slope model")
     decays = _float_tuple(payload.get("decay_times_s"))
@@ -178,6 +226,7 @@ def decay_slope_model_from_dict(data: Any) -> DecaySlopeModel:
         noise_term=float(payload["noise_term"]),
         bic=float(payload["bic"]),
         rms_residual_db=float(payload["rms_residual_db"]),
+        uncertainty=slope_uncertainty_from_dict(payload.get("uncertainty"), count),
     )
 
 
