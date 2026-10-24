@@ -17,9 +17,10 @@ from typing import Any, cast
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -1067,6 +1068,10 @@ class StandalonePage(QWidget):
         self._action_layout.setSpacing(6)
         self._action_layout.addLayout(row)
         self._reason_above = False
+        # The bar lives in the New Measurement page's footer, not in this
+        # page, so this page's own resize does not follow the bar's width:
+        # the reason is placed again whenever the bar itself is resized.
+        self.action_bar.installEventFilter(self)
         layout.addStretch(1)
         self.refresh_devices()
         self._sync_readiness()
@@ -1174,6 +1179,11 @@ class StandalonePage(QWidget):
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
         self._place_reason()
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802 - Qt override
+        if watched is getattr(self, "action_bar", None) and event.type() == QEvent.Type.Resize:
+            self._place_reason()
+        return super().eventFilter(watched, event)
 
     def _reveal_step(self, index: int) -> None:
         target = (self.devices_box, self.sweep_box, self.run_button)[index]
@@ -1715,6 +1725,11 @@ class StandalonePage(QWidget):
             error_box(self, _("Measurement failed"), message)
 
 
+#: Below this chooser width the two ways in stack: two cards side by side need
+#: room for a heading of a few words each, in Chinese and in English.
+ROUTE_CARDS_SIDE_BY_SIDE_MIN_WIDTH = 560
+
+
 def measurement_routes() -> tuple[tuple[str, str, str, str], ...]:
     """The ways in, in the order the page offers them: ``(route, icon, title, caption)``.
 
@@ -1773,7 +1788,10 @@ class MeasurePage(QWidget):
         chooser.setSpacing(6)
         self.chooser_title = label(_("How is the sweep played and recorded?"), "section")
         chooser.addWidget(self.chooser_title)
-        cards = QHBoxLayout()
+        #: Side by side, or one above the other when the column is narrow
+        #: (960 px with the inspector open), so the second card is not cut off.
+        self.route_cards = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        cards = self.route_cards
         cards.setSpacing(12)
         self.route_buttons: dict[str, QPushButton] = {}
         self._route_marks: dict[str, QLabel] = {}
@@ -1805,6 +1823,24 @@ class MeasurePage(QWidget):
         _follow(self.standalone.sample_rate, self.daw.sample_rate)
         _follow(self.standalone.duration, self.daw.duration)
         self.set_route("standalone")
+        self.chooser.installEventFilter(self)
+
+    def cards_stacked(self) -> bool:
+        """Whether the two ways in are shown one above the other."""
+        return self.route_cards.direction() == QBoxLayout.Direction.TopToBottom
+
+    def _place_cards(self) -> None:
+        stacked = self.chooser.width() < ROUTE_CARDS_SIDE_BY_SIDE_MIN_WIDTH
+        direction = (
+            QBoxLayout.Direction.TopToBottom if stacked else QBoxLayout.Direction.LeftToRight
+        )
+        if self.route_cards.direction() != direction:
+            self.route_cards.setDirection(direction)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802 - Qt override
+        if watched is self.chooser and event.type() == QEvent.Type.Resize:
+            self._place_cards()
+        return super().eventFilter(watched, event)
 
     def _route_card(self, route: str, icon_name: str, title: str, caption: str) -> QPushButton:
         """A selectable card, drawn like the start panel's two ways in."""

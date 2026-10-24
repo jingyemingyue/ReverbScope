@@ -228,3 +228,56 @@ def test_the_choice_waits_while_a_take_runs(app: QApplication) -> None:
     window.standalone.busy_changed.emit(False)
     assert page.route_buttons["universal_daw"].isEnabled()
     window.close()
+
+
+def _pump(app: QApplication, seconds: float = 0.0) -> None:
+    import time
+
+    end = time.monotonic() + seconds
+    app.processEvents()
+    while time.monotonic() < end:
+        app.processEvents()
+        time.sleep(0.01)
+
+
+@pytest.mark.parametrize("language", ["en", "zh_CN"])
+def test_the_narrow_page_stacks_the_cards_and_moves_the_reason(
+    app: QApplication, language: str
+) -> None:
+    """960 x 640 with the inspector open: the two ways in stack instead of
+    the second card being cut off, and the reason Run is off moves above
+    the buttons when the pinned action bar (in the page's footer) narrows,
+    without anything else asking it to."""
+    from reverbscope.i18n import activate
+
+    activate(language)
+    try:
+        window = MainWindow()
+        window.resize(960, 640)
+        window.show()
+        window.show_mode("standalone")
+        _pump(app, 0.1)
+        page = window.measure
+        standalone = window.standalone
+        window.set_inspector_open(True)
+        _pump(app, 0.2)
+        assert page.chooser.width() < 560
+        assert page.cards_stacked()
+        first, second = (page.route_buttons[r] for r in ("standalone", "universal_daw"))
+        assert second.geometry().top() >= first.geometry().bottom()
+        assert first.width() == second.width() == page.chooser.width()
+        assert standalone.readiness_reason()
+        assert standalone.reason_above_buttons()
+        # Only the bar is resized (as the footer does): the reason follows.
+        standalone.action_bar.resize(900, standalone.action_bar.height())
+        assert not standalone.reason_above_buttons()
+        standalone.action_bar.resize(360, standalone.action_bar.height())
+        assert standalone.reason_above_buttons()
+        # Room again: the cards go back side by side.
+        window.set_inspector_open(False)
+        _pump(app, 0.2)
+        assert not page.cards_stacked()
+        assert first.geometry().top() == second.geometry().top()
+        window.close()
+    finally:
+        activate("en")
