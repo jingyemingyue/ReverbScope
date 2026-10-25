@@ -209,6 +209,9 @@ class ProjectPage(AnalysisView):
         scroll = self.findChild(QScrollArea)
         if scroll is not None:
             scroll.viewport().installEventFilter(self)
+            body = scroll.widget()
+            if body is not None:
+                body.setMinimumWidth(0)
 
         self.empty = label(
             _(
@@ -394,20 +397,20 @@ class ProjectPage(AnalysisView):
         add_needed = max(
             self.add_button.sizeHint().width(),
             self.add_button.minimumSizeHint().width(),
-            self.add_button.fontMetrics().horizontalAdvance(self.add_button.text()) + 34,
+            self.add_button.fontMetrics().horizontalAdvance(self.add_button.text()) + 26,
         )
         comp_needed = max(
             self.compare_button.sizeHint().width(),
             self.compare_button.minimumSizeHint().width(),
-            self.compare_button.fontMetrics().horizontalAdvance(self.compare_button.text()) + 34,
+            self.compare_button.fontMetrics().horizontalAdvance(self.compare_button.text()) + 26,
         )
         meas_needed = max(
             self.measure_button.sizeHint().width(),
             self.measure_button.minimumSizeHint().width(),
-            self.measure_button.fontMetrics().horizontalAdvance(self.measure_button.text()) + 34,
+            self.measure_button.fontMetrics().horizontalAdvance(self.measure_button.text()) + 26,
         )
         sp_act = self._tools_actions1.spacing()
-        actions_all_needed = add_needed + comp_needed + meas_needed + (2 * sp_act)
+        actions_all_needed = add_needed + comp_needed + meas_needed + (2 * sp_act) + 40
         actions_add_comp = add_needed + comp_needed + sp_act + 40
 
         if actions_all_needed <= available:
@@ -419,6 +422,8 @@ class ProjectPage(AnalysisView):
 
         state = (r1_mode, actions_mode)
         if state == self._tools_wrap_state:
+            if body is not None and viewport_w > 0 and body.width() > viewport_w:
+                body.resize(viewport_w, body.height())
             return
         self._tools_wrap_state = state
 
@@ -489,12 +494,12 @@ class ProjectPage(AnalysisView):
             self.tools_body.addLayout(self._tools_actions1)
         elif actions_mode == 1:
             self._tools_actions1.addWidget(self.add_button)
-            self._tools_actions1.addStretch(1)
             self._tools_actions1.addWidget(self.compare_button)
+            self._tools_actions1.addStretch(1)
             self.tools_body.addLayout(self._tools_actions1)
 
-            self._tools_actions2.addStretch(1)
             self._tools_actions2.addWidget(self.measure_button)
+            self._tools_actions2.addStretch(1)
             self.tools_body.addLayout(self._tools_actions2)
         else:
             self._tools_actions1.addWidget(self.add_button)
@@ -505,14 +510,13 @@ class ProjectPage(AnalysisView):
             self._tools_actions2.addStretch(1)
             self.tools_body.addLayout(self._tools_actions2)
 
-            self._tools_actions3.addStretch(1)
             self._tools_actions3.addWidget(self.measure_button)
+            self._tools_actions3.addStretch(1)
             self.tools_body.addLayout(self._tools_actions3)
 
         self.tools_body.addWidget(self.status)
         if body is not None:
             body.updateGeometry()
-            body.adjustSize()
             if viewport_w > 0 and body.width() > viewport_w:
                 body.resize(viewport_w, body.height())
 

@@ -59,6 +59,7 @@ class StartPanel(QWidget):
         self.scroll_area.viewport().installEventFilter(self)
         body = QWidget()
         body.setProperty("page", True)
+        body.setMinimumWidth(0)
         self.scroll_area.setWidget(body)
         outer.addWidget(self.scroll_area)
         layout = QVBoxLayout(body)
@@ -113,7 +114,8 @@ class StartPanel(QWidget):
         compare_button.setProperty("icon_name", "git-compare")
         self._sessions_layout = sessions_layout
         self._header_row = header
-        self._button_row = QHBoxLayout()
+        self._button_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        self._button_row.setSpacing(8)
         self._header_stacked: bool | None = None
         sessions_layout.addLayout(header)
         # Two selected rows go straight into Compare (MainWindow.show_compare).
@@ -205,12 +207,18 @@ class StartPanel(QWidget):
                         else QBoxLayout.Direction.LeftToRight
                     )
                     self._paths_layout.setDirection(new_dir)
+                    if hasattr(self, "_hero_row"):
+                        if paths_stacked:
+                            self._hero_row.setStretch(0, 0)
+                            self._hero_row.setStretch(1, 1)
+                            self._hero_row.setStretch(2, 0)
+                        else:
+                            self._hero_row.setStretch(0, 1)
+                            self._hero_row.setStretch(1, 4)
+                            self._hero_row.setStretch(2, 1)
                     self._paths_layout.invalidate()
                     if c_lay is not None:
                         c_lay.invalidate()
-                    if widget is not None:
-                        widget.updateGeometry()
-                        widget.adjustSize()
 
         needed = (
             self.sessions_label.sizeHint().width()
@@ -238,6 +246,21 @@ class StartPanel(QWidget):
                 self._header_row.addWidget(self.open_button)
                 self._header_row.addWidget(self.project_button)
 
+        if self._header_stacked:
+            btn_w = (
+                self.open_button.sizeHint().width()
+                + self.project_button.sizeHint().width()
+                + self._button_row.spacing()
+            )
+            b_dir = (
+                QBoxLayout.Direction.TopToBottom
+                if btn_w > available
+                else QBoxLayout.Direction.LeftToRight
+            )
+            if self._button_row.direction() != b_dir:
+                self._button_row.setDirection(b_dir)
+                self._button_row.invalidate()
+
         footer_needed = (
             self.compare_button.sizeHint().width() + self.guide_button.sizeHint().width() + 20
         )
@@ -264,7 +287,6 @@ class StartPanel(QWidget):
 
         if widget is not None and viewport_w > 0:
             widget.updateGeometry()
-            widget.adjustSize()
             if widget.width() > viewport_w:
                 widget.resize(viewport_w, widget.height())
 
@@ -296,6 +318,7 @@ class StartPanel(QWidget):
         self.composer = QFrame()
         self.composer.setProperty("composer", True)
         self.composer.setMaximumWidth(640)
+        self.composer.setMinimumWidth(0)
         self.composer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         inner = QVBoxLayout(self.composer)
         inner.setContentsMargins(16, 16, 16, 12)
@@ -326,6 +349,7 @@ class StartPanel(QWidget):
             button.setAccessibleName(title_text)
             button.setAccessibleDescription(text)
             button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            button.setMinimumWidth(0)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             card = QHBoxLayout(button)
             card.setContentsMargins(14, 10, 14, 10)
@@ -337,7 +361,9 @@ class StartPanel(QWidget):
             words = QVBoxLayout()
             words.setSpacing(2)
             heading = label(title_text, "panel-title")
+            heading.setMinimumWidth(0)
             detail = label(text, "caption", wrap=True)
+            detail.setMinimumWidth(0)
             words.addWidget(heading)
             words.addWidget(detail)
             card.addWidget(mark)
@@ -354,21 +380,23 @@ class StartPanel(QWidget):
         self.profile_mark = QLabel()
         self.profile_mark.setPixmap(icons.pixmap("mic", tokens()["text3"], 14))
         note.addWidget(self.profile_mark)
-        note.addWidget(
-            label(
-                _(
-                    "A recording profile changes only the wording and the thresholds, never the numbers."
-                ),
-                "caption",
-                wrap=True,
+        note_text = label(
+            _(
+                "A recording profile changes only the wording and the thresholds, never the numbers."
             ),
-            1,
+            "caption",
+            wrap=True,
         )
+        note_text.setMinimumWidth(0)
+        note_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        note.addWidget(note_text, 1)
         inner.addLayout(note)
         row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
         row.addStretch(1)
         row.addWidget(self.composer, 4)
         row.addStretch(1)
+        self._hero_row = row
         hero.addLayout(row)
         keys = label(
             _(
