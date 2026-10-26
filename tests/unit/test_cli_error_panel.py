@@ -257,7 +257,7 @@ def test_the_command_line_shows_the_error_card_where_the_style_says_so(
 
 
 def test_a_usage_error_follows_the_style_that_was_asked_for(
-    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """argparse fails before the options are parsed: the style is read from the
     command line, the environment and the stored setting by hand."""
@@ -273,26 +273,27 @@ def test_a_usage_error_follows_the_style_that_was_asked_for(
         ["--lang", "zh_CN", "--style", "boxed", "show", "somewhere", "--bogus"], capsys
     )
     assert err.startswith("╭─ ✗ 错误 ─")
-    # A terminal that would frame it, asked not to.
-    monkeypatch.setenv("WT_SESSION", "1")  # Windows Terminal and alike show the symbols
-    tty = Stream(tty=True)
-    monkeypatch.setattr("sys.stderr", tty)
-    monkeypatch.setenv("COLUMNS", "80")
-    with pytest.raises(SystemExit):
-        main(["--style", "plain", "show", "somewhere", "--bogus"])
-    assert strip_ansi(tty.getvalue()).startswith("× error:")
-    # The stored setting decides when the option is not given.
-    assert main(["config", "style", "plain"]) == 0
-    capsys.readouterr()
-    again = Stream(tty=True)
-    monkeypatch.setattr("sys.stderr", again)
-    with pytest.raises(SystemExit):
-        main(["show", "somewhere", "--bogus"])
-    assert strip_ansi(again.getvalue()).startswith("× error:")
-    assert main(["config", "style", "boxed"]) == 0
-    capsys.readouterr()
-    monkeypatch.undo()
-    monkeypatch.setenv("REVERBSCOPE_HOME", str(home / "home"))
+    # A terminal that would frame it, asked not to. A context of its own:
+    # monkeypatch.undo() would also undo the fixtures that keep the home in a
+    # temporary folder and the language in English whatever the host's locale.
+    with pytest.MonkeyPatch.context() as terminal:
+        terminal.setenv("WT_SESSION", "1")  # Windows Terminal and alike show the symbols
+        tty = Stream(tty=True)
+        terminal.setattr("sys.stderr", tty)
+        terminal.setenv("COLUMNS", "80")
+        with pytest.raises(SystemExit):
+            main(["--style", "plain", "show", "somewhere", "--bogus"])
+        assert strip_ansi(tty.getvalue()).startswith("× error:")
+        # The stored setting decides when the option is not given.
+        assert main(["config", "style", "plain"]) == 0
+        capsys.readouterr()
+        again = Stream(tty=True)
+        terminal.setattr("sys.stderr", again)
+        with pytest.raises(SystemExit):
+            main(["show", "somewhere", "--bogus"])
+        assert strip_ansi(again.getvalue()).startswith("× error:")
+        assert main(["config", "style", "boxed"]) == 0
+        capsys.readouterr()
     code, _out, err = invoke(["show", "somewhere", "--bogus"], capsys)
     assert code == 2 and err.startswith("╭─ ✗ Error ─")
 
