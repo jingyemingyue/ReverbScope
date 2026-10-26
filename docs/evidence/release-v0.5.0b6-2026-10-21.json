@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "audited_on": "2026-10-21",
+  "repository": "jingyemingyue/ReverbScope",
+  "method": "Release metadata from the GitHub API (release by tag), asset names from the release's expanded asset list, digests copied from the release's own SHA256SUMS (which does not list itself, the SBOM or the lock file), target from git ls-remote --tags origin. Nothing was downloaded except SHA256SUMS; no asset was installed or run for this record.",
+  "releases": [
+    {
+      "tag": "v0.5.0b6",
+      "draft": false,
+      "prerelease": true,
+      "target": "c323aa8be757ec950110c5cf247b5de50d46c5c2",
+      "published_at": "2026-10-21T13:42:11Z",
+      "url": "https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b6",
+      "assets": [
+        {
+          "name": "ReverbScope-Desktop-Linux-x86_64.tar.gz",
+          "digest": "sha256:cc0360485ed9e34fa3e7517277886093859c72f0d1fa720f5f1c375bd13b2c95",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Desktop-Linux-x86_64.tar.gz"
+        },
+        {
+          "name": "ReverbScope-Desktop-Windows-x64-Setup.exe",
+          "digest": "sha256:990dab5e057960c12dafaff71bfad88490a85c0959be560714515a60c12d5d84",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Desktop-Windows-x64-Setup.exe"
+        },
+        {
+          "name": "ReverbScope-Desktop-Windows-x64.zip",
+          "digest": "sha256:1703e247f60013fcf741cad45568aded807b82610c43b7eef528e4b06a1d7fb5",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Desktop-Windows-x64.zip"
+        },
+        {
+          "name": "ReverbScope-Desktop-macOS-arm64.dmg",
+          "digest": "sha256:bfee65d3f2123aaf573b7a600d6c53081534a22e3febc727c9b0260ce3ac6b0c",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Desktop-macOS-arm64.dmg"
+        },
+        {
+          "name": "ReverbScope-Desktop-macOS-x86_64.dmg",
+          "digest": "sha256:166b1d33c0439a263a65975854f66d63123c044cb380397aac113f79b9dfcab3",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Desktop-macOS-x86_64.dmg"
+        },
+        {
+          "name": "ReverbScope-Terminal-Linux-x86_64.tar.gz",
+          "digest": "sha256:e8630357c09cf8707300ebb85c7f41c04adce314dac2c22134238126e9bff87c",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Terminal-Linux-x86_64.tar.gz"
+        },
+        {
+          "name": "ReverbScope-Terminal-Windows-x64.zip",
+          "digest": "sha256:55bdb7db6516860118a92956ef8cb8ade17b86f581d46af4c6dbe0901b030b4b",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Terminal-Windows-x64.zip"
+        },
+        {
+          "name": "ReverbScope-Terminal-macOS-arm64.tar.gz",
+          "digest": "sha256:7fab85769a7efc164259fdee168b6c7daf048ce9909cb81ceec06d909e13dc8e",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Terminal-macOS-arm64.tar.gz"
+        },
+        {
+          "name": "ReverbScope-Terminal-macOS-x86_64.tar.gz",
+          "digest": "sha256:e320ac1b28e76226821086d4952efa9d471d5ea08e0559ca1993a97c25ac381a",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/ReverbScope-Terminal-macOS-x86_64.tar.gz"
+        },
+        {
+          "name": "SHA256SUMS",
+          "digest": null,
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/SHA256SUMS"
+        },
+        {
+          "name": "cyclonedx.sbom.json",
+          "digest": null,
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/cyclonedx.sbom.json"
+        },
+        {
+          "name": "generated-bundle.lock",
+          "digest": null,
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/generated-bundle.lock"
+        },
+        {
+          "name": "reverbscope-0.5.0b6-py3-none-any.whl",
+          "digest": "sha256:19f0a86efbbaf26906794a11665ae12068a20b7b7d0f4437af736dc901cd8e8f",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/reverbscope-0.5.0b6-py3-none-any.whl"
+        },
+        {
+          "name": "reverbscope-0.5.0b6.tar.gz",
+          "digest": "sha256:2ab86b464ca222f52ceba7bfcc5b95e36ba9b359d23757bf76ab988dbb9a7e7f",
+          "url": "https://github.com/jingyemingyue/ReverbScope/releases/download/v0.5.0b6/reverbscope-0.5.0b6.tar.gz"
+        }
+      ]
+    }
+  ]
+}

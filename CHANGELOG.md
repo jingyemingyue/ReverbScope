@@ -7,6 +7,14 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Documentation
+- Sync the pages with the published v0.5.0b6 pre-release: both READMEs, the
+  public-beta and installation guides, the editions, compatibility and user
+  guide banners, the roadmap and the release plan named v0.5.0b1 as the only
+  public download and said 0.5.0b6 had no Release. They now name v0.5.0b6 and
+  its ReverbScope asset names, and list b2–b5, rc1 and rc2 as Draft. The
+  changelog's compare links now reach v0.5.0b6 (b2–b5 were never tagged).
+
 ## [0.5.0b6] - 2026-10-21
 
 Software beta 6, the development line on `main`: the light sidebar desktop
@@ -1744,7 +1752,8 @@ repository is still private. Review follow-ups are tracked as issues
   inverse filters were changed to unit *in-band* gain. They now compare
   against `reference_pulse()`. Methodology docs matched the implementation.
 
-[Unreleased]: https://github.com/jingyemingyue/ReverbScope/compare/v0.5.0b1...HEAD
+[Unreleased]: https://github.com/jingyemingyue/ReverbScope/compare/v0.5.0b6...HEAD
+[0.5.0b6]: https://github.com/jingyemingyue/ReverbScope/compare/v0.5.0b1...v0.5.0b6
 [0.5.0b1]: https://github.com/jingyemingyue/ReverbScope/compare/v0.4.1...v0.5.0b1
 [0.4.1]: https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.4.1
 [0.4.0]: https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.4.0

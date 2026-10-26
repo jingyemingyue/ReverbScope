@@ -6,10 +6,10 @@
 
 **下载页面：** <https://github.com/jingyemingyue/ReverbScope/releases>
 
-**版本范围：** 本文介绍更名后的 ReverbScope 源码/候选构建。截至 2026-10-15，公开版仍是
-**RoomScope v0.5.0b1**，准确的文件名和命令见[公开 beta 指南](PUBLIC_TESTING.zh-CN.md)。
-rc2 与 b3 都是 **Draft**。下列文件名与编号步骤适用于维护者明确分享的候选文件，或未来通过验收后
-公开的更名预发布包；旧公开 beta 中没有这些文件。
+**版本范围：** 本文介绍 ReverbScope 构建。截至 2026-10-21，最新的公开版是预发布版 **v0.5.0b6**，
+下列文件名与编号步骤与它的文件一致；简短版见[公开 beta 指南](PUBLIC_TESTING.zh-CN.md)。
+b2–b5、rc1、rc2 都是 **Draft**。更早公开的 v0.5.0b1 和 v0.4.1 使用 RoomScope 文件名，
+请按它们标签下的文档操作。
 
 ReverbScope 有两个版本，
 都不需要 Python 或 Git：

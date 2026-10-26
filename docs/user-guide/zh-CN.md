@@ -1,6 +1,6 @@
 # ReverbScope 用户指南
 
-> 版本范围：更名后的源码/候选构建。公开包仍为旧名 RoomScope v0.5.0b1；rc2/b3 为 Draft。公开版请按[对应指南](../PUBLIC_TESTING.zh-CN.md)操作。
+> 版本范围：ReverbScope 源码与 2026-10-21 公开的预发布版 v0.5.0b6。b2–b5、rc1、rc2 为 Draft。下载文件名和第一步见[公开 beta 指南](../PUBLIC_TESTING.zh-CN.md)。
 
 [English](en.md) | **简体中文**
 
