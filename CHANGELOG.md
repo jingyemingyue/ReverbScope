@@ -90,7 +90,9 @@ and every screenshot is synthetic demo data.
 - **POSIX menu interrupts.** Menu input uses Python streams so Ctrl+C
   between the prompt and the read does not leave the menu waiting for Enter.
 - **Stable timing checks.** The time-frequency check keeps its one-second budget and uses
-  the median of five runs after warm-up to avoid a single CI scheduling pause.
+  the median of five runs after warm-up in a fresh process with a fixed
+  single-thread BLAS budget. Failures include wall/CPU times, library versions
+  and thread settings; imports and warm-up remain outside the timed work.
 - **A compact measurement desk.** Tool buttons now share the same flat
   chrome as the input controls. Body text uses a consistent 12 logical pixels,
   with the existing Chinese font fallbacks. Panel switches are visually
