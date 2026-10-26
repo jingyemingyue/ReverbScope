@@ -1,8 +1,9 @@
 # ReverbScope architecture
 
-Status: v0.1 foundation (2026-09). This document describes what exists and the
-extension points that later milestones (plug-ins, more profiles, calibrated
-SPL) must respect.
+Status: written for the v0.1 foundation (2026-09); the package layout (§2)
+was brought up to date with `main` at 0.5.0b6 on 2026-10-24. This document
+describes what exists and the extension points that later milestones
+(plug-ins, more profiles, calibrated SPL) must respect.
 
 The design for v1.0 -- the first release open to everyone -- is a separate
 proposal, [ARCHITECTURE_V1.md](ARCHITECTURE_V1.md) (Chinese digest:
@@ -25,16 +26,22 @@ are unchanged.
 ```
 src/reverbscope/
   __init__.py            version + lazy Tier 1 re-exports
+  version.py             package version from installed metadata
   errors.py              exception hierarchy (ReverbScopeError -> ...)
   logging_config.py      rotating log under $REVERBSCOPE_HOME
   settings.py            user settings (language, profile, backend, folders)
+  edition.py             Desktop / Terminal / developer defaults (docs/EDITIONS.md)
+  diagnostics.py         environment report (`reverbscope doctor`)
   i18n.py                gettext setup, locale selection, `_()`
+  labels.py              display words for stored machine values (validity, severity, ...)
+  health.py              measurement health: how far to trust a result, what to do
   locale/                zh_CN/LC_MESSAGES/reverbscope.po
   models/                data only, no algorithms
     audio.py             AudioSignal (samples, sample_rate, channel selection)
     configuration.py     SweepSettings, AnalysisSettings (validated, immutable)
     result.py            AnalysisResult and sub-results, Validity enum, JSON export
     result_load.py       JSON → AnalysisResult (unknown keys ignored)
+    loadutil.py          lenient JSON loading, schema-version gate
     session.py           MeasurementSession (metadata, paths, summary)
     comparison.py        ComparisonResult, MetricDelta, CompareSettings
     project.py           Project index (SHOULD)
@@ -42,6 +49,8 @@ src/reverbscope/
   core/                  pure DSP
     sweep.py             ESS generation, analytic + spectral inverse filters
     deconvolution.py     whole-recording deconvolution, IR location, confidence
+    linearity.py         clipping and non-linearity checks on the chain
+    playback_speed.py    sweep played at the wrong speed (sample-rate mismatch)
     impulse.py           envelopes, dB helpers
     filters.py           octave bands, Butterworth SOS, time-reversed filtering, smoothing
     decay.py             Schroeder integration, Lundeby truncation, EDT/T20/T30
@@ -60,11 +69,12 @@ src/reverbscope/
     recent.py            recent session paths under $REVERBSCOPE_HOME
     jsonutil.py          size-capped JSON object reads
     project_store.py     project.json index
-    exporters/           csv.py + reverbscope.exporters entry points
+    exporters/           csv.py + registry.py (reverbscope.exporters entry points)
   schemas/               result / session / comparison / project / sidecar JSON Schemas
   audio/                 optional (needs PortAudio); Standalone Mode only
     backend.py           AudioBackend protocol, DeviceInfo, get_backend()
     devices.py           PortAudio enumeration
+    inventory.py         every reachable device, with measurement advice
     portaudio.py         callback stream with progress and Stop
     fake.py              synthetic-room backend + make_rir
     playrec.py           compatibility wrapper around get_backend()
@@ -73,31 +83,53 @@ src/reverbscope/
     profiles.py          RecordingProfile protocol; seven profiles (generic, vocal,
                          voiceover, acoustic_guitar, drums, room_mic, choir)
     registry.py          built-ins + reverbscope.profiles entry points
+    explain.py           what a profile wants, in words, before a measurement
+    verdicts.py          per-aspect verdicts on a comparison
+    overview.py          project overview: every position under one profile
   cli/
     main.py              argparse subcommands, errors, exit codes
+    interactive.py       numbered menu when `reverbscope` runs without a command
+    config.py            `reverbscope config`: settings.json from the command line
     console.py           terminal layout: colour policy, symbols, widths, tables, progress
     render.py            every report and message (the GUI's "Full report" panes too)
     report.py            format_report / format_comparison_report: render.py as plain text
   demo.py                reverbscope demo: two simulated positions through the real pipeline
-  ui/                    optional (needs PySide6)
-    app.py, main_window.py, pages.py, results.py, plots.py, workers.py, state.py
-    browser.py           session list (Home and Compare); project.json folders
-    compare_view.py      two-session comparison
-    settings_dialog.py   language, profile, backend, copy-recording
+  display/               what the workstation draws, from stored results; no Qt,
+                         never changes a result (docs/design/GUI_ARCHITECTURE.md §5)
+    curves.py            decimation, display smoothing, level alignment
+    etc.py               energy-time curve and reflection markers
+    timefreq.py          spectrogram and waterfall of the stored IR
+  ui/                    optional (needs PySide6); the desktop workstation
+    app.py, main_window.py   entry point and the window (GUI_ARCHITECTURE.md §2)
+    navigator.py         project, positions and every open measurement
+    workspace.py         what is open, selected and drawn together
+    analysis_workspace.py    the centre column: grouped analysis views
+    views/               overview, frequency, impulse, decay, timefreq, noise, report
+    inspector.py         the current measurement and how far to trust it
+    measure_strip.py, pages.py   take controls; DAW and Standalone set-up
+    compare_view.py, comparison.py   current measurement against the baseline
+    project_view.py      one room, several microphone positions
+    pg.py, plotkit.py, axis_ranges.py   the only pyqtgraph import; chart panel
+    plots.py, qt.py      matplotlib tape-measure picture and its Qt loader
+    settings_dialog.py, profile_dialog.py, dev_tools.py, start_panel.py
+    browser.py, state.py, ui_state.py, workers.py, health_nav.py, tables.py,
+    theme.py, icons.py, widgets.py, notice.py
 ```
 
 Dependency direction (arrows point at what may be imported):
 
 ```
-ui / cli  -->  interpretation  -->  models
+ui / cli  -->  interpretation  -->  health  -->  models
    |               |
    +--> io --------+--> core --> models
    |
    +--> audio (Standalone Mode only)
+
+ui  -->  display  -->  core.reflections, models   (no Qt in display)
 ```
 
-`core` never imports `io`, `audio`, `ui` or `cli`. `models` imports nothing
-from the rest of the package except `errors`.
+`core` never imports `io`, `audio`, `ui`, `cli` or `display`. `models`
+imports nothing from the rest of the package except `errors`.
 
 ## 3. Data flow
 

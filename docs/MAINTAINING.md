@@ -16,7 +16,7 @@ and [API_STABILITY.md](API_STABILITY.md) (what must not change silently).
 
 | Line | Branch | Version in `pyproject.toml` | What lands there |
 | --- | --- | --- | --- |
-| Beta (development) | `main` | `0.5.0b3`, then `0.5.0b4`, … | Everything: fixes, features, UX, docs |
+| Beta (development) | `main` | `0.5.0b6` (published 2026-10-21), then `0.5.0b7`, … | Everything: fixes, features, UX, docs |
 | Release candidate | `release/0.5.0` | `0.5.0rc1`, then `rc2`, … until `0.5.0` | Only correctness, crash, packaging, cross-platform, hardware/DAW compatibility, documentation, localization and release-engineering fixes, each with a regression test where one can express it ([RELEASE_PLAN.md §2a](RELEASE_PLAN.md#2a-two-lines-beta-and-release-candidate-2026-10-06)) |
 
 Rules that keep them consistent:
@@ -97,12 +97,13 @@ of a policy file does not prove that private reporting or branch rules are enabl
   snapshot; push; the Release run opens the new draft. Merge the same commit
   into `main` only if it carries a fix; the version bump itself stays on the
   candidate line.
-* **Cut the next beta** on `main`: the same commit shape with `0.5.0b3`;
-  move the `[Unreleased]` entries under the new heading.
+* **Cut the next beta** on `main`: the same commit shape with the next beta
+  number (`0.5.0b7` after `0.5.0b6`); move the `[Unreleased]` entries under
+  the new heading.
 * **Repository settings** (require appropriate admin permission; some can be
   managed with `gh`/API, not this session's connector): the `main` ruleset (require the nine CI jobs, block force
   pushes and deletions, require a pull request with 0 approvals while there
-  is one maintainer), the same for `release/**`, Pages, description, topics,
+  is one maintainer), the same for `release/**`, description, topics,
   homepage; the macOS Developer ID secrets ([RELEASE_PLAN.md §3b](RELEASE_PLAN.md#3b-macos-signing-today-and-with-a-developer-id)).
 * **Close or merge pull requests**, decide on reports (§5), fill the results
   log in [HARDWARE_TESTS.md](HARDWARE_TESTS.md) from issues only.

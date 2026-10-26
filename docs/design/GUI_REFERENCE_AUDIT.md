@@ -1,7 +1,10 @@
 # GUI 2.0: reference audit
 
+以 [GUIDELINES.zh-CN.md](../GUIDELINES.zh-CN.md) 为准。Where this file and
+the guidelines disagree, the guidelines win (§2.2).
+
 What the workstation borrows from other programs, and under what terms.
-[GUI_2_ARCHITECTURE.md](GUI_2_ARCHITECTURE.md) is the design; this file is
+[GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) is the design; this file is
 the record that keeps it clean.
 
 ## What was consulted

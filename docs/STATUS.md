@@ -6,6 +6,41 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 42: 2026-10-24 — **0.5.0b6 is public: the first pre-release
+under the ReverbScope name** (`main` @ `c323aa8`, the target of the tag
+`v0.5.0b6`).
+
+* [v0.5.0b6](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b6)
+  was published on 2026-10-21 as a GitHub pre-release with 14 assets: nine
+  Desktop and Terminal bundles, `SHA256SUMS`, `cyclonedx.sbom.json`,
+  `generated-bundle.lock`, the wheel and the source archive (asset list read
+  from the GitHub API on 2026-10-24; nothing was downloaded or installed for
+  this snapshot). It is beta 6 of the software, not 0.5.0: unsigned, and no
+  hardware or DAW cell of the release plan's matrix has a dated PASS.
+* Since snapshot 41 the line gained the light sidebar workstation and
+  dropped the 3D room view, the image-source checks and scan import (both
+  from #97's `gui/light-sidebar-impl`, which builds on #95's
+  `gui/remove-3d-room`, merged through #99; the last tree with the room
+  view is the tag `archive/3d-room-before-removal`). It also corrected how
+  the measurement health describes peaks above full scale and refreshed
+  both READMEs and their screenshots (synthetic demo data).
+  The execution guidelines are at v2.1.3 (`docs/GUIDELINES.zh-CN.md`).
+  The CHANGELOG's `[0.5.0b6]` section lists every change.
+* On `c323aa8` the CI run
+  [39605020644](https://github.com/jingyemingyue/ReverbScope/actions/runs/39605020644)
+  and the Release run
+  [39605020819](https://github.com/jingyemingyue/ReverbScope/actions/runs/39605020819)
+  succeeded. On 2026-10-24, in a Linux x86_64 container (Python 3.12.3,
+  PySide6 Essentials 6.11.2, NumPy 2.5.4, SciPy 1.18.1, offscreen), ruff,
+  ruff format, `mypy --platform linux` (114 source files), the doc-link,
+  CLI-doc and source-safety scripts passed on a docs-only branch whose code
+  is `c323aa8`. Automated evidence only: no real interface, DAW, macOS,
+  Windows or packaged application was run.
+* `release/0.5.0` is unchanged at `0.5.0rc2` (Draft). Open on 2026-10-24:
+  #93, #96, #97, #98, #100, #101, #102 and #103; the hardware and DAW
+  reports that would let 0.5.0 be cut are still missing
+  ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
+
 Snapshot 41: 2026-10-14 (UTC+8) — **narrow-window workstation controls and
 an Apple Silicon acceptance checklist**, continuing PR #58 from
 `987d66268888b60d6e9e6b54f379b4ec7c50ceb8`.
