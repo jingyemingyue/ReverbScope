@@ -557,6 +557,7 @@ _FIELD_OPTIONS = {
     "level_dbfs": "--level",
     "channel": "--channel",
     "fr_smoothing_fraction": "--smoothing",
+    "third_octave_decay": "--third-octave",
     "placement_distance_m": "--speaker-distance",
     "placement_mic_height_m": "--mic-height",
     "placement_temperature_c": "--temperature",
@@ -628,6 +629,14 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
         default=6,
         metavar=pgettext("fraction metavar", "N"),
         help=_("fractional-octave smoothing 1/N (0 = off)"),
+    )
+    analysis.add_argument(
+        "--third-octave",
+        action="store_true",
+        help=_(
+            "also analyse the decay in one-third-octave bands (50 Hz-10 kHz), with the "
+            "single/double-slope fit; slower, octave results unchanged"
+        ),
     )
     analysis.add_argument(
         "--profile",
@@ -720,6 +729,7 @@ def _analysis_settings(
         return AnalysisSettings(
             channel=args.channel,
             fr_smoothing_fraction=args.smoothing,
+            third_octave_decay=bool(getattr(args, "third_octave", False)),
             placement_distance_m=args.speaker_distance,
             placement_mic_height_m=args.mic_height,
             placement_temperature_c=args.temperature,

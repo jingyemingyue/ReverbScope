@@ -138,6 +138,45 @@ def iec_band(nominal_hz: float, fraction: int = 1) -> Band:
     )
 
 
+#: Nominal mid-band frequencies of one decade of one-third-octave bands
+#: (IEC 61260-1:2014, Annex E): the nominal value of exact band ``x`` (``b`` =
+#: 3) is ``R10[x mod 10] * 10 ** (x // 10 + 2)`` Hz, since ten one-third-octave
+#: steps of the base-10 ratio are exactly a factor of ten.
+THIRD_OCTAVE_NOMINAL_DECADE: tuple[float, ...] = (
+    10.0,
+    12.5,
+    16.0,
+    20.0,
+    25.0,
+    31.5,
+    40.0,
+    50.0,
+    63.0,
+    80.0,
+)
+
+
+def third_octave_nominal_hz(index: int) -> float:
+    """Nominal mid-band frequency of one-third-octave band ``index`` (``x``)."""
+    decade, step = divmod(index, 10)
+    return float(f"{THIRD_OCTAVE_NOMINAL_DECADE[step] * 10.0 ** (decade + 2):.6g}")
+
+
+def third_octave_bands_of(octave_nominals_hz: tuple[float, ...]) -> tuple[Band, ...]:
+    """The three IEC 61260-1 one-third-octave bands inside each octave band.
+
+    Octave band ``x`` (exact mid-band ``f_r G^x``) holds the one-third-octave
+    bands ``3x - 1``, ``3x`` and ``3x + 1``; the octave set 63 Hz-8 kHz gives
+    50 Hz-10 kHz. Each band is labelled with its nominal frequency, ascending,
+    without duplicates.
+    """
+    indices: set[int] = set()
+    for nominal in octave_nominals_hz:
+        octave = nearest_band_index(nominal, 1)
+        indices.update((3 * octave - 1, 3 * octave, 3 * octave + 1))
+    return tuple(iec_band(third_octave_nominal_hz(index), 3) for index in sorted(indices))
+
+
 def band_fits(band: Band, sample_rate: int, max_relative_to_nyquist: float = 0.9) -> bool:
     return band.high_hz < max_relative_to_nyquist * sample_rate / 2.0 and band.low_hz > 0.0
 

@@ -158,9 +158,10 @@ def rewrite_md_href(href: str, page: str = "index.md") -> str:
     in_repo = posixpath.normpath(posixpath.join("docs", posixpath.dirname(page), path))
     if in_repo != "docs" and not in_repo.startswith("docs/"):
         return REPO_BLOB + in_repo + frag
-    # The generator emits Markdown pages, not JSON attachments. Evidence
-    # snapshots must point to their source rather than a missing local file.
-    if path.endswith(".json"):
+    # The generator emits Markdown pages, not JSON or CSV attachments. Evidence
+    # snapshots and data tables must point to their source rather than a
+    # missing local file.
+    if path.endswith((".json", ".csv")):
         return REPO_BLOB + in_repo + frag
     if path.endswith(".md"):
         path = path[: -len(".md")] + ".html"

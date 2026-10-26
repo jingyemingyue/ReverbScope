@@ -1036,3 +1036,27 @@ def test_a_path_that_starts_with_a_tilde_is_in_the_home_folder(
     assert main(["analyze-ir", "--ir", "~/ir.wav", "--band", "100", "8000"]) == 0
     assert str(home / "ir.wav") in capsys.readouterr().out
     assert not (work / "~").exists()
+
+
+def test_third_octave_flag_adds_the_one_third_octave_decay(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--third-octave is stored in the analysis settings and adds the
+    one-third-octave bands to result.json and the report; without it neither
+    the key nor the table is there."""
+    ir = write_wav(tmp_path / "ir.wav", make_rir(48000, rt60_s=0.5) * 0.5, 48000)
+    argv = ["analyze-ir", "--ir", str(ir), "--band", "40", "16000"]
+    assert main([*argv, "--out", str(tmp_path / "plain")]) == 0
+    plain_report = capsys.readouterr().out
+    assert main([*argv, "--third-octave", "--out", str(tmp_path / "thirds")]) == 0
+    thirds_report = capsys.readouterr().out
+    plain = json.loads((tmp_path / "plain" / "result.json").read_text(encoding="utf-8"))
+    thirds = json.loads((tmp_path / "thirds" / "result.json").read_text(encoding="utf-8"))
+    assert plain["analysis_settings"]["third_octave_decay"] is False
+    assert "third_octave_bands" not in plain["decay"]
+    assert thirds["analysis_settings"]["third_octave_decay"] is True
+    labels = [band["band_label"] for band in thirds["decay"]["third_octave_bands"]]
+    assert labels[0] == "50 Hz" and labels[-1] == "10 kHz" and len(labels) == 24
+    assert thirds["decay"]["bands"] == plain["decay"]["bands"]
+    assert "one-third octave" not in plain_report
+    assert "Decay slopes, one-third octave" in thirds_report

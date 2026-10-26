@@ -176,7 +176,9 @@ from reverbscope.core.filters import (
     band_fits,
     bandpass_sos,
     iec_band,
+    third_octave_bands_of,
 )
+from reverbscope.core.multislope import fit_multi_slope
 from reverbscope.errors import ConfigurationError, InvalidAudioError
 from reverbscope.i18n import _, diag
 from reverbscope.models.audio import FloatArray
@@ -1551,6 +1553,24 @@ def analyze_band(
             basis = metric.name
             break
 
+    late_decay_s = (
+        -60.0 / trunc.late_slope_db_per_s
+        if trunc.late_slope_db_per_s is not None and trunc.late_slope_db_per_s < 0.0
+        else None
+    )
+    multi_slope = fit_multi_slope(
+        power,
+        sample_rate,
+        onset=onset,
+        time_origin_index=origin,
+        first_index=first_index,
+        decay_range_db=float(trunc.peak_db - trunc.noise_floor_db),
+        bandwidth_hz=band.bandwidth_hz if band is not None else None,
+        reference_decays_s=(t30.seconds, t20.seconds, edt.seconds),
+        late_decay_s=late_decay_s,
+        cut_short=trunc.cut_short_db is not None,
+    )
+
     edc_time, edc_db = _decimate_curve(curve, sample_rate)
     return BandDecay(
         band_label=band.label if band is not None else "broadband",
@@ -1577,6 +1597,7 @@ def analyze_band(
         c80=c80,
         d50=d50,
         centre_time=centre,
+        multi_slope=multi_slope,
     )
 
 
@@ -1702,6 +1723,80 @@ def _result_notes(
     return tuple(notes)
 
 
+@dataclass(frozen=True)
+class _PreparedSignal:
+    """The broadband signal with its lead-in, and what every band shares."""
+
+    signal: FloatArray
+    direct: int
+    known: bool
+    excitation_bw: float | None
+    spread_s: float
+
+
+def _prepare_signal(
+    ir: FloatArray,
+    sample_rate: int,
+    lead_in_s: float,
+    direct_index: int | None,
+    excitation_band: ExcitationBand | None,
+) -> _PreparedSignal:
+    signal = _as_decay_signal(ir)
+    lead = round(lead_in_s * sample_rate)
+    pad = max(0, lead - (direct_index if direct_index is not None else 0))
+    if pad:
+        signal = np.concatenate([np.zeros(pad, dtype=np.float64), signal])
+    excitation_bw = (
+        excitation_band.high_hz - excitation_band.low_hz if excitation_band is not None else None
+    )
+    return _PreparedSignal(
+        signal=signal,
+        direct=(direct_index if direct_index is not None else 0) + pad,
+        known=direct_index is not None,
+        excitation_bw=excitation_bw,
+        spread_s=DIRECT_SOUND_MARGIN_S + pulse_spread_s(excitation_bw),
+    )
+
+
+def _search_start(prepared: _PreparedSignal, bandwidth_hz: float | None, sample_rate: int) -> int:
+    if not prepared.known:
+        return 0
+    return max(0, prepared.direct - round(onset_search_window_s(bandwidth_hz) * sample_rate))
+
+
+def _analyze_bands(
+    prepared: _PreparedSignal,
+    sample_rate: int,
+    bands: Sequence[Band],
+    excitation_band: ExcitationBand | None,
+    noise_margin_db: float,
+) -> list[BandDecay]:
+    """Each of ``bands`` filtered time-reversed and analysed by :func:`analyze_band`."""
+    out: list[BandDecay] = []
+    for band in bands:
+        if not band_fits(band, sample_rate):
+            continue
+        if excitation_band is not None and not excitation_band.contains(band.low_hz, band.high_hz):
+            out.append(_outside_excitation_band(band, excitation_band))
+            continue
+        filtered = apply_bandpass(
+            prepared.signal, bandpass_sos(band, sample_rate), time_reversed=True
+        )
+        out.append(
+            analyze_band(
+                filtered,
+                sample_rate,
+                band,
+                noise_margin_db=noise_margin_db,
+                direct_index=prepared.direct if prepared.known else None,
+                time_origin_index=prepared.direct,
+                onset_search_start=_search_start(prepared, band.bandwidth_hz, sample_rate),
+                direct_spread_s=prepared.spread_s,
+            )
+        )
+    return out
+
+
 def analyze_decay(
     ir: FloatArray,
     sample_rate: int,
@@ -1719,64 +1814,87 @@ def analyze_decay(
     except C50, C80, D50 and ``Ts``, which are timed from each curve's onset.
     Bands that are not fully inside ``excitation_band`` are returned with
     ``Validity.OUTSIDE_EXCITATION`` and no numbers; bands above 0.9 * Nyquist
-    are skipped.
+    are skipped. The one-third-octave bands of
+    :attr:`AnalysisSettings.third_octave_decay` are a separate call,
+    :func:`analyze_third_octave_decay`, with its own lead-in.
     """
     sample_rate = _require_sample_rate(sample_rate)
-    signal = _as_decay_signal(ir)
-    known = direct_index is not None
-    lead = round(decay_lead_in_s(settings) * sample_rate)
-    pad = max(0, lead - (direct_index if direct_index is not None else 0))
-    if pad:
-        signal = np.concatenate([np.zeros(pad, dtype=np.float64), signal])
-    direct = (direct_index if direct_index is not None else 0) + pad
-    origin = direct
-    excitation_bw = (
-        excitation_band.high_hz - excitation_band.low_hz if excitation_band is not None else None
+    prepared = _prepare_signal(
+        ir, sample_rate, decay_lead_in_s(settings), direct_index, excitation_band
     )
-    spread_s = DIRECT_SOUND_MARGIN_S + pulse_spread_s(excitation_bw)
-    noise_margin = settings.decay_noise_margin_db
-
-    def search_start(bandwidth_hz: float | None) -> int:
-        if not known:
-            return 0
-        return max(0, direct - round(onset_search_window_s(bandwidth_hz) * sample_rate))
-
+    known = prepared.known
     broadband = analyze_band(
-        signal,
+        prepared.signal,
         sample_rate,
         None,
-        noise_margin_db=noise_margin,
-        direct_index=direct if known else None,
-        time_origin_index=origin,
-        onset_search_start=search_start(excitation_bw),
-        direct_spread_s=spread_s,
-        broadband_bandwidth_hz=excitation_bw,
+        noise_margin_db=settings.decay_noise_margin_db,
+        direct_index=prepared.direct if known else None,
+        time_origin_index=prepared.direct,
+        onset_search_start=_search_start(prepared, prepared.excitation_bw, sample_rate),
+        direct_spread_s=prepared.spread_s,
+        broadband_bandwidth_hz=prepared.excitation_bw,
     )
-    bands: list[BandDecay] = []
-    for center in settings.octave_bands_hz:
-        band = iec_band(center, 1)
-        if not band_fits(band, sample_rate):
-            continue
-        if excitation_band is not None and not excitation_band.contains(band.low_hz, band.high_hz):
-            bands.append(_outside_excitation_band(band, excitation_band))
-            continue
-        filtered = apply_bandpass(signal, bandpass_sos(band, sample_rate), time_reversed=True)
-        bands.append(
-            analyze_band(
-                filtered,
-                sample_rate,
-                band,
-                noise_margin_db=noise_margin,
-                direct_index=direct if known else None,
-                time_origin_index=origin,
-                onset_search_start=search_start(band.bandwidth_hz),
-                direct_spread_s=spread_s,
-            )
-        )
+    bands = _analyze_bands(
+        prepared,
+        sample_rate,
+        [iec_band(center, 1) for center in settings.octave_bands_hz],
+        excitation_band,
+        settings.decay_noise_margin_db,
+    )
     return DecayResult(
         method=DECAY_METHOD,
         broadband=broadband,
         bands=tuple(bands),
         notes=_result_notes(broadband, bands, excitation_band),
         time_origin=DECAY_TIME_ORIGIN if known else TIME_ORIGIN_SIGNAL_START,
+    )
+
+
+def third_octave_decay_bands(settings: AnalysisSettings) -> tuple[Band, ...]:
+    """The one-third-octave bands analysed when ``settings.third_octave_decay``."""
+    return third_octave_bands_of(settings.octave_bands_hz)
+
+
+def third_octave_lead_in_s(settings: AnalysisSettings) -> float:
+    """Signal needed before the direct sound for the one-third-octave bands (s).
+
+    The same rule as :func:`decay_lead_in_s` with the narrowest
+    one-third-octave band: a time-reversed filter of a third of the
+    bandwidth rings three times as long before the direct sound.
+    """
+    narrowest = min(band.bandwidth_hz for band in third_octave_decay_bands(settings))
+    return max(DECAY_LEAD_IN_MIN_S, DECAY_LEAD_IN_BANDWIDTHS / narrowest)
+
+
+def analyze_third_octave_decay(
+    ir: FloatArray,
+    sample_rate: int,
+    settings: AnalysisSettings,
+    *,
+    direct_index: int | None = None,
+    excitation_band: ExcitationBand | None = None,
+) -> tuple[BandDecay, ...]:
+    """One-third-octave band decay analysis (IEC 61260-1, base 10).
+
+    The bands are :func:`third_octave_decay_bands` (the three inside each of
+    ``settings.octave_bands_hz``); each is analysed by :func:`analyze_band`
+    exactly as an octave band is (time-reversed Butterworth filter, onset,
+    Lundeby truncation, EDT/T20/T30 and the single- versus double-slope fit),
+    with the band's own bandwidth in every bandwidth-dependent rule. ``ir``
+    should contain :func:`third_octave_lead_in_s` of signal before the direct
+    sound; missing lead-in is zero-padded. The broadband curve is the
+    octave analysis's and is not repeated here.
+    """
+    sample_rate = _require_sample_rate(sample_rate)
+    prepared = _prepare_signal(
+        ir, sample_rate, third_octave_lead_in_s(settings), direct_index, excitation_band
+    )
+    return tuple(
+        _analyze_bands(
+            prepared,
+            sample_rate,
+            third_octave_decay_bands(settings),
+            excitation_band,
+            settings.decay_noise_margin_db,
+        )
     )

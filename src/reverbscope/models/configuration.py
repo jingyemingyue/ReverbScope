@@ -151,6 +151,11 @@ class AnalysisSettings:
     #: Maximum impulse response length analysed (s).
     ir_max_length_s: float = 6.0
     octave_bands_hz: tuple[float, ...] = DEFAULT_OCTAVE_BANDS_HZ
+    #: Also analyse the decay in the one-third-octave bands inside the octave
+    #: bands (63 Hz-8 kHz gives 50 Hz-10 kHz), including the single- versus
+    #: double-slope fit. Opt-in: it adds about three times the octave-band
+    #: work, and the octave results are the same with it on or off.
+    third_octave_decay: bool = False
     #: Frequency-response window length (s) after the direct sound. ``None``
     #: uses the whole valid impulse response.
     fr_window_s: float | None = None
@@ -194,6 +199,10 @@ class AnalysisSettings:
         _require(
             list(self.octave_bands_hz) == sorted(self.octave_bands_hz),
             _("octave_bands_hz must be ascending"),
+        )
+        _require(
+            isinstance(self.third_octave_decay, bool),
+            _("third_octave_decay must be true or false"),
         )
         _require(self.fr_window_s is None or self.fr_window_s > 0.0, _("fr_window_s must be > 0"))
         _require(self.fr_smoothing_fraction >= 0, _("fr_smoothing_fraction must be >= 0"))

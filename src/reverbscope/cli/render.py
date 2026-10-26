@@ -698,7 +698,127 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
         lines += _legend(c, legend)
     for note in notes:
         lines += c.status("info", note)
+    lines += _decay_slopes(c, result)
+    lines += _third_octave_slopes(c, result)
     lines += _energy(c, result)
+    return lines
+
+
+def _decay_slopes(c: Console, result: AnalysisResult) -> list[str]:
+    """Bands whose energy decay has two slopes (shown only when one has)."""
+    rows: list[list[str]] = []
+    for band in (result.decay.broadband, *result.decay.bands):
+        fit = band.multi_slope
+        model = fit.selected if fit is not None else None
+        if (
+            fit is None
+            or model is None
+            or model.slope_count != 2
+            or fit.validity not in (Validity.VALID, Validity.UNRELIABLE)
+        ):
+            continue
+        mark = "" if fit.validity is Validity.VALID else " " + c.symbol("unsure")
+        late_db = model.amplitudes_db[1] - model.amplitudes_db[0]
+        knee = (
+            _("{time:.2f} s at {level:.0f} dB").format(
+                time=fit.knee_time_s, level=fit.knee_level_db
+            )
+            if fit.knee_time_s is not None and fit.knee_level_db is not None
+            else c.dash()
+        )
+        rows.append(
+            [
+                band_text(band.band_label),
+                f"{model.decay_times_s[0]:.2f} s{mark}",
+                f"{model.decay_times_s[1]:.2f} s{mark}",
+                f"{late_db:+.1f} dB",
+                knee,
+            ]
+        )
+    if not rows:
+        return []
+    lines = c.section(_("Double-slope decay"), _("two-exponential fit of the decay curve"))
+    lines += c.paragraph(
+        _(
+            "In these bands the decay curve is better described by two slopes than by "
+            "one (Bayesian information criterion and plausibility checks): T1 is the "
+            "early, faster decay and T2 the later, slower one, both extrapolated to "
+            "60 dB. Late level is the slower slope's start relative to the faster one's. "
+            "T20 and T30 above are unchanged and are marked when the curve is not straight."
+        )
+    )
+    lines += c.table(
+        [_("Band"), "T1", "T2", _("Late level"), _("Turning point")],
+        rows,
+        align="lrrrr",
+    )
+    return lines
+
+
+def _slope_cell(c: Console, seconds: float, validity: Validity) -> str:
+    mark = "" if validity is Validity.VALID else " " + c.symbol("unsure")
+    return f"{seconds:.2f} s{mark}"
+
+
+def _third_octave_slopes(c: Console, result: AnalysisResult) -> list[str]:
+    """Every one-third-octave band's slope count, T1, T2 and T30 (only when the
+    analysis was asked for one-third-octave bands)."""
+    bands = result.decay.third_octave_bands
+    if not bands:
+        return []
+    rows: list[list[str]] = []
+    seen: set[Validity] = set()
+    two = 0
+    fitted = 0
+    for band in bands:
+        fit = band.multi_slope
+        model = fit.selected if fit is not None else None
+        seen.add(band.t30.validity)
+        if fit is None or model is None:
+            validity = fit.validity if fit is not None else band.t30.validity
+            seen.add(validity)
+            symbol = c.symbol("warn" if validity is Validity.INSUFFICIENT_RANGE else "skip")
+            rows.append(
+                [band_text(band.band_label), symbol, c.dash(), c.dash(), _metric_cell(c, band.t30)]
+            )
+            continue
+        seen.add(fit.validity)
+        if fit.validity is Validity.VALID:
+            fitted += 1
+            if model.slope_count == 2:
+                two += 1
+        times = model.decay_times_s
+        rows.append(
+            [
+                band_text(band.band_label),
+                str(model.slope_count),
+                _slope_cell(c, times[0], fit.validity),
+                _slope_cell(c, times[1], fit.validity) if len(times) > 1 else c.dash(),
+                _metric_cell(c, band.t30),
+            ]
+        )
+    lines = c.section(_("Decay slopes, one-third octave"), _("single- or two-slope fit"))
+    lines += c.paragraph(
+        _(
+            "Two slopes in {two} of {fitted} one-third-octave bands with a valid fit. "
+            "With one slope, T1 is its decay time; with two, T1 is the early, faster "
+            "decay and T2 the later, slower one, both extrapolated to 60 dB."
+        ).format(two=two, fitted=fitted)
+    )
+    lines += c.table([_("Band"), _("Slopes"), "T1", "T2", "T30"], rows, align="lrrrr")
+    legend = [
+        v
+        for v in (
+            Validity.UNRELIABLE,
+            Validity.INSUFFICIENT_RANGE,
+            Validity.NOT_COMPUTED,
+            Validity.OUTSIDE_EXCITATION,
+        )
+        if v in seen
+    ]
+    if legend:
+        lines.append("")
+        lines += _legend(c, legend)
     return lines
 
 
