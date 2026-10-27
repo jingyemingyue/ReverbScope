@@ -78,7 +78,13 @@ class SettingsDialog(QDialog):
         )
         self.developer_tools.setChecked(self._settings.developer_tools)
         form.addRow(_("Language"), self.language)
-        self.language_hint = label(_(RESTART_FOR_LANGUAGE), "hint", wrap=True)
+        # Literal msgid (not _(RESTART_FOR_LANGUAGE)): keep gettext extractable
+        # and out of DYNAMIC_CALLS in tests/unit/test_i18n_catalog.py.
+        self.language_hint = label(
+            _("The language change takes full effect after ReverbScope restarts."),
+            "hint",
+            wrap=True,
+        )
         form.addRow(self.language_hint)
         form.addRow(_("Default profile"), self.profile)
         form.addRow(_("Audio backend"), self.backend)
