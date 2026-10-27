@@ -28,6 +28,11 @@ from reverbscope.interpretation.profiles import profile_title
 from reverbscope.settings import load_settings, save_settings
 from reverbscope.ui.widgets import label
 
+#: English msgid for the restart hint. Shown through ``_()`` so the Chinese
+#: UI is not bilingual (guidelines §9.2 / §16.2). Exported so the zh GUI
+#: English scan can whitelist the same words.
+RESTART_FOR_LANGUAGE = "The language change takes full effect after ReverbScope restarts."
+
 
 class SettingsDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -73,13 +78,7 @@ class SettingsDialog(QDialog):
         )
         self.developer_tools.setChecked(self._settings.developer_tools)
         form.addRow(_("Language"), self.language)
-        # One string through _(): the previous bilingual block mixed Chinese
-        # and English on every host (guidelines §9.2 / §16.2).
-        self.language_hint = label(
-            _("The language change takes full effect after ReverbScope restarts."),
-            "hint",
-            wrap=True,
-        )
+        self.language_hint = label(_(RESTART_FOR_LANGUAGE), "hint", wrap=True)
         form.addRow(self.language_hint)
         form.addRow(_("Default profile"), self.profile)
         form.addRow(_("Audio backend"), self.backend)

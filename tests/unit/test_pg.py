@@ -81,7 +81,9 @@ def test_the_desktop_bundle_leaves_pyqtgraph_extras_out() -> None:
         "OpenGL",
     ):
         assert f'"{module}"' in excludes, module
-    desktop = spec[spec.index("    else [") :]
+    # Desktop excludes (not hiddenimports): the else-list that unpacks DEV_ONLY.
+    marker = "else [\n        *DEV_ONLY_EXCLUDES"
+    desktop = spec[spec.index(marker) :]
     assert "*PYQTGRAPH_EXCLUDES" in desktop.split("]", 1)[0]
 
 
