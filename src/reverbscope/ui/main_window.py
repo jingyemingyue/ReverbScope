@@ -829,13 +829,22 @@ class MainWindow(QMainWindow):
         return self._measure_busy() or self.model.loading
 
     def _project_loading_changed(self, loading: bool) -> None:
-        """Disable strip Start while sessions load so a take cannot race current."""
+        """Disable Start / Run / Analyze while sessions load (set_current race)."""
+        tip = _("Reading the project's sessions...")
         if loading:
             self.strip.start_button.setEnabled(False)
-            # Reuse the existing catalog msgid (navigator / project_view).
-            self.strip.start_button.setToolTip(_("Reading the project's sessions..."))
+            self.strip.start_button.setToolTip(tip)
+            self.standalone.run_button.setEnabled(False)
+            self.standalone.run_button.setToolTip(tip)
+            self.daw.analyze_button.setEnabled(False)
+            self.daw.analyze_button.setToolTip(tip)
             return
         self.strip._sync_start()
+        self.standalone._sync_readiness()
+        self.standalone.run_button.setToolTip("")
+        if not self.daw.is_busy():
+            self.daw.analyze_button.setEnabled(True)
+            self.daw.analyze_button.setToolTip("")
 
     def _measure_position(self, position: str, mode: str) -> None:
         """Measure ``position`` of the open project with ``mode``."""

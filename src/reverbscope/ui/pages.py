@@ -656,6 +656,10 @@ class DawModePage(QWidget):
             # reference to the running one, and Qt aborts the process when a
             # QThread is destroyed while it runs.
             return
+        # Project still loading sessions: same race as strip Start (set_current).
+        host_busy = getattr(self.window(), "_workflow_busy", None)
+        if callable(host_busy) and host_busy():
+            return
         if self._recording is None:
             QMessageBox.warning(
                 self, _("No recording"), _("Choose the recorded WAV file first (Step 3).")
@@ -1491,6 +1495,10 @@ class StandalonePage(QWidget):
         from reverbscope.audio.backend import get_backend
 
         if self.is_busy():
+            return
+        # Project still loading sessions: same race as strip Start (set_current).
+        host_busy = getattr(self.window(), "_workflow_busy", None)
+        if callable(host_busy) and host_busy():
             return
         if not self.output_chosen():
             # OUT-4: the strip's Start and Ctrl+Return are off too; this is the
