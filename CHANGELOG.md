@@ -39,6 +39,8 @@ All notable changes to ReverbScope are documented here. The format follows
   take or DAW analysis.
 - **DAW Sample rate combo refreshes the Hz-mismatch banner** when the
   operator changes it after importing a recording.
+- **Strip Start stays off while a project is still loading sessions**, so a
+  finished take cannot lose ``current`` to a late loader ``set_current``.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

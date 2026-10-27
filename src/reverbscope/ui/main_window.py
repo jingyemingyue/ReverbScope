@@ -203,6 +203,9 @@ class MainWindow(QMainWindow):
         self.strip.mode_changed.connect(self._strip_mode)
         self.strip.setup_requested.connect(self.show_mode)
         self.strip.start_requested.connect(self._strip_start)
+        # A project still reading sessions must not start a take that races
+        # set_current with the loader (workflow reliability).
+        self.model.loading_changed.connect(self._project_loading_changed)
         self.workspace.view_chosen.connect(self.show_view)
         self.inspector.locate_requested.connect(self.show_view)
         from reverbscope.ui.views.overview import OverviewView
@@ -788,16 +791,30 @@ class MainWindow(QMainWindow):
         """A take or analysis on either measure page is still running."""
         return self.standalone.is_busy() or self.daw.is_busy()
 
+    def _workflow_busy(self) -> bool:
+        """Measuring, analysing, or still reading an opened project's sessions."""
+        return self._measure_busy() or self.model.loading
+
+    def _project_loading_changed(self, loading: bool) -> None:
+        """Disable strip Start while sessions load so a take cannot race current."""
+        if loading:
+            self.strip.start_button.setEnabled(False)
+            self.strip.start_button.setToolTip(
+                _("Reading the project's sessions · available when it finishes")
+            )
+            return
+        self.strip._sync_start()
+
     def _measure_position(self, position: str, mode: str) -> None:
         """Measure ``position`` of the open project with ``mode``."""
-        if self._measure_busy():
+        if self._workflow_busy():
             return
         self._prepare_position(position)
         self.show_mode(mode)
 
     def _measure_at(self, position: str) -> None:
         """A position row's menu: measure there with the strip's mode."""
-        if self._measure_busy():
+        if self._workflow_busy():
             return
         self._prepare_position(position)
         self.model.add_position(position)
@@ -870,11 +887,11 @@ class MainWindow(QMainWindow):
             self.standalone.refresh_devices()
 
     def _strip_mode(self, mode: str) -> None:
-        if not self._measure_busy():
+        if not self._workflow_busy():
             self._apply_mode(mode)
 
     def _strip_start(self, mode: str) -> None:
-        if self._measure_busy():
+        if self._workflow_busy():
             return
         if mode == "universal_daw":
             self.show_mode(mode)
