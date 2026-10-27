@@ -7,6 +7,25 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- **Device and sweep controls stay locked while a take is sounding** (C8):
+  host API, input/output, sample rate, channels, duration and level on the
+  Standalone page and the measure strip can no longer be edited mid-sweep.
+- **Stop on a stalled PortAudio device aborts the stream** after the cancel
+  grace period, so closing the window cannot hang inside `close()` on a
+  stuck CoreAudio or WASAPI device. Hardware mute latency remains untested.
+- **Report page no longer claims chart CSV is missing**: the hint lists only
+  the still-CLI-only items (session CSV, bug-report zip, analyze-ir).
+- **Loading a DAW reference sweep syncs the Sample rate combo**, and a Hz
+  mismatch between recording and sweep shows a warning banner.
+- **macOS App menu roles** for Settings, About and Quit; mnemonic `&` is
+  stripped on Darwin (guidelines §18.1).
+
+### Changed
+- **macOS DMG post-build checks** also verify `CFBundleIdentifier`, HiDPI,
+  and that the DMG file name's arch matches `lipo`. Ad-hoc and Developer ID
+  entitlements are covered by a static unit test.
+
 ## [0.5.0b6] - 2026-10-21
 
 Software beta 6, the development line on `main`: the light sidebar desktop

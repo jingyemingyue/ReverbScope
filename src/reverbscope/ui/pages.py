@@ -576,6 +576,7 @@ class DawModePage(QWidget):
                 channels=recording.n_channels,
             )
         )
+        self._warn_if_rate_mismatch()
         self.sync_steps()
 
     def _choose_reference(self) -> None:
@@ -598,7 +599,38 @@ class DawModePage(QWidget):
         self._sweep_path = path
         if reference.settings is not None:
             self._sweep_settings = reference.settings
+            # Keep the Sample rate combo aligned with the loaded sweep so a
+            # later Generate and the saved session.json use the same Hz.
+            rate = reference.settings.sample_rate
+            row = self.sample_rate.findData(rate)
+            if row >= 0 and self.sample_rate.currentIndex() != row:
+                self.sample_rate.setCurrentIndex(row)
         self.reference_label.setText(_("Reference: {name}").format(name=path.name))
+        self._warn_if_rate_mismatch()
+
+    def _warn_if_rate_mismatch(self) -> None:
+        """Surface a Hz mismatch between the imported take and the sweep.
+
+        The Sample rate combo / ``sweep_settings`` and the recording's rate
+        must agree for a trustworthy deconvolution. Chart CSV already works;
+        this only warns — it does not rewrite schema or DSP.
+        """
+        if self._recording is None:
+            return
+        sweep_hz = int(self._sweep_settings.sample_rate)
+        take_hz = int(self._recording.sample_rate)
+        if take_hz == sweep_hz:
+            return
+        set_banner_text(
+            self.status,
+            _(
+                "Sample rates differ: the recording is {take} Hz and the sweep "
+                "is {sweep} Hz. Re-export the take at {sweep} Hz, or load the "
+                "matching reference sweep, before you trust the result."
+            ).format(take=take_hz, sweep=sweep_hz),
+            "warn",
+        )
+        self.status_changed.emit(self.status.text(), "warn")
 
     # --- step 4 -----------------------------------------------------------------
     def start_analysis(self, *, blocking: bool = False) -> None:

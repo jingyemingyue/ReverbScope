@@ -65,9 +65,7 @@ def _settle(app: QApplication, worker: QThread | None, timeout_ms: int = 5000) -
     app.processEvents()
 
 
-def test_device_and_sweep_controls_lock_while_a_take_plays(
-    app: QApplication, held_take
-) -> None:
+def test_device_and_sweep_controls_lock_while_a_take_plays(app: QApplication, held_take) -> None:
     """Regression: host/input/output/rate/channel/level stayed editable during
     a sounding take, contradicting C8 even though the worker had already
     captured the indices."""

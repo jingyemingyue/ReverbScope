@@ -252,6 +252,8 @@ class MainWindow(QMainWindow):
         compare_action.triggered.connect(self.show_compare)
         settings_action = QAction(_("&Settings..."), self)
         settings_action.setShortcut("Ctrl+,")
+        # macOS App menu: Preferences (guidelines §12.14 / §18.1).
+        settings_action.setMenuRole(QAction.MenuRole.PreferencesRole)
         settings_action.triggered.connect(self.show_settings)
         #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
         self.busy_actions = (
@@ -263,6 +265,7 @@ class MainWindow(QMainWindow):
         )
         quit_action = QAction(_("&Quit"), self)
         quit_action.setShortcut("Ctrl+Q")
+        quit_action.setMenuRole(QAction.MenuRole.QuitRole)
         quit_action.triggered.connect(self.close)
         for action in (new_action, open_action, project_action, self.close_project_action):
             file_menu.addAction(action)
@@ -335,15 +338,26 @@ class MainWindow(QMainWindow):
         self.getting_started_action.triggered.connect(self.show_getting_started)
         help_menu.addAction(self.getting_started_action)
         about_action = QAction(_("&About ReverbScope"), self)
+        # macOS App menu: About (guidelines §18.1).
+        about_action.setMenuRole(QAction.MenuRole.AboutRole)
         about_action.triggered.connect(self._about)
         licenses_action = QAction(_("&Third-party licenses..."), self)
+        licenses_action.setMenuRole(QAction.MenuRole.NoRole)
         licenses_action.triggered.connect(self._open_licenses)
         self.report_action = QAction(_("&Environment Report for Bug Reports..."), self)
+        self.report_action.setMenuRole(QAction.MenuRole.NoRole)
         self.report_action.triggered.connect(self.show_environment_report)
         help_menu.addAction(self.report_action)
         help_menu.addSeparator()
         help_menu.addAction(about_action)
         help_menu.addAction(licenses_action)
+
+        # §18.1: mnemonic ampersands are for Windows/Linux menu bars only.
+        if sys.platform == "darwin":
+            for action in self.findChildren(QAction):
+                title = action.text()
+                if "&" in title:
+                    action.setText(title.replace("&", ""))
 
     def _weak(self, call: Callable[..., Any], default: Any = None) -> Callable[..., Any]:
         """``call(window, *args)`` holding the window by a weak reference only.

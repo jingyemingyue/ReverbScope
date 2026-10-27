@@ -195,6 +195,23 @@ def test_the_mac_app_declares_its_chinese_localization(tmp_path: Path) -> None:
     module.check_localizations(app, info)
 
 
+def test_macos_entitlements_cover_adhoc_and_developer_id() -> None:
+    """CI rehearsal (``sign_app.sh --runtime``) needs the adhoc entitlements;
+    notarization needs the Developer ID file without library-validation off."""
+    import plistlib
+
+    macos = Path("packaging/macos")
+    adhoc = plistlib.loads((macos / "entitlements-adhoc.plist").read_bytes())
+    release = plistlib.loads((macos / "entitlements.plist").read_bytes())
+    audio = "com.apple.security.device.audio-input"
+    unsigned = "com.apple.security.cs.allow-unsigned-executable-memory"
+    disable = "com.apple.security.cs.disable-library-validation"
+    assert adhoc.get(audio) is True and release.get(audio) is True
+    assert adhoc.get(unsigned) is True and release.get(unsigned) is True
+    assert adhoc.get(disable) is True
+    assert disable not in release
+
+
 def test_macos_dmg_check_rejects_identity_and_arch_mismatches(tmp_path: Path) -> None:
     """A wrong CFBundleIdentifier or an arm64 DMG that only contains x86_64
     must fail the post-build check before the Release assets are uploaded."""
