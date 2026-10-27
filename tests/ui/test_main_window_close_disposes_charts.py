@@ -22,7 +22,9 @@ def app() -> QApplication:
     return QApplication.instance() or QApplication([])
 
 
-def test_close_disposes_charts_each_time(app: QApplication, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_close_disposes_charts_each_time(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Regression: a closed window that skips dispose_charts leaves pyqtgraph
     objects alive until interpreter shutdown (conftest has to clean them up)."""
     calls: list[object] = []
