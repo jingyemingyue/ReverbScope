@@ -342,20 +342,6 @@ class MainWindow(QMainWindow):
         self.getting_started_action = QAction(_("&Getting started"), self)
         self.getting_started_action.triggered.connect(self.show_getting_started)
         help_menu.addAction(self.getting_started_action)
-        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
-        #: Start panel / Getting started / Close Project are included: each
-        #: would interrupt a take even though File ▸ Open is already locked.
-        self.busy_actions = (
-            new_action,
-            open_action,
-            project_action,
-            self.close_project_action,
-            self.save_action,
-            settings_action,
-            start_action,
-            self.getting_started_action,
-            *self.measure_mode_actions,
-        )
         about_action = QAction(_("&About ReverbScope"), self)
         # macOS App menu: About (guidelines §18.1).
         about_action.setMenuRole(QAction.MenuRole.AboutRole)
@@ -367,6 +353,21 @@ class MainWindow(QMainWindow):
         self.report_action.setMenuRole(QAction.MenuRole.NoRole)
         self.report_action.triggered.connect(self.show_environment_report)
         help_menu.addAction(self.report_action)
+        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
+        #: Start panel / Getting started / Close Project / Environment Report
+        #: are included: each would interrupt a take or cover Stop with a modal.
+        self.busy_actions = (
+            new_action,
+            open_action,
+            project_action,
+            self.close_project_action,
+            self.save_action,
+            settings_action,
+            start_action,
+            self.getting_started_action,
+            self.report_action,
+            *self.measure_mode_actions,
+        )
         help_menu.addSeparator()
         help_menu.addAction(about_action)
         help_menu.addAction(licenses_action)
@@ -587,6 +588,8 @@ class MainWindow(QMainWindow):
             self.navigator.open_project_button,
             self.navigator.open_session_button,
             self.navigator.settings_button,
+            self.navigator.help_button,
+            self.navigator.report_button,
             self.workspace.save_button,
         ):
             button.setEnabled(not busy)
@@ -1128,6 +1131,10 @@ class MainWindow(QMainWindow):
         self.home.restore_walkthrough()
 
     def show_settings(self) -> None:
+        # busy_actions disables the menu item; still refuse if PreferencesRole
+        # or a signal reaches here while a take is sounding.
+        if self._measure_busy():
+            return
         from reverbscope.ui.settings_dialog import SettingsDialog
 
         before = load_settings()
@@ -1195,6 +1202,9 @@ class MainWindow(QMainWindow):
         DeviceInspector(self._tools_backend(), self).exec()
 
     def show_environment_report(self) -> None:
+        # A modal over a sounding take steals Esc from Stop; lock with busy.
+        if self._measure_busy():
+            return
         from reverbscope.ui.dev_tools import EnvironmentReport
 
         EnvironmentReport(self._tools_backend(), self).exec()
