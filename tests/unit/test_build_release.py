@@ -74,15 +74,18 @@ def test_file_names_match_the_release_workflow(
     built = MODULE.Target(*target)
     assert built.archives == archives
     assert built.checksum_name == checksums
-    # The workflow writes each runner's checksum file from the same manifest.
+    # The workflow writes each official runner's checksum file from the manifest.
     assert "rd.CHECKSUM_FILES[sums_name]" in WORKFLOW
+    if built.system == "Windows":
+        assert "windows-latest" not in WORKFLOW
+        for name in archives:
+            assert name not in WORKFLOW
 
 
 @pytest.mark.parametrize(
     ("target", "expected"),
     [
         (("Linux", "X64", "x86_64"), "Linux archive (Desktop Edition)"),
-        (("Windows", "X64", "AMD64"), "Windows installer"),
         (("macOS", "ARM64", "arm64"), "macOS disk image"),
     ],
 )

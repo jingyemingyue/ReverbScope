@@ -58,13 +58,13 @@ commit SHA with its version in a comment.
 release file (`pyproject.toml`, `packaging/`, the bundle scripts, the
 workflow itself, `requirements/`), on `v*` tags, on pull requests that touch
 those files, and by hand (**Actions → Release → Run workflow**). It runs the
-quality job, builds sdist and wheel, the four platform bundles (Linux,
-macOS arm64, macOS x86_64, Windows; Desktop and Terminal Edition each),
-smoke-tests every bundle (`scripts/smoke_bundle.py`), installs, smokes and
-uninstalls the Windows installer, builds and checks both DMGs, writes the
+quality job, builds sdist and wheel, the official bundles (Linux,
+macOS arm64, macOS x86_64; Desktop and Terminal Edition each; no Windows
+installer or zip),
+smoke-tests every bundle (`scripts/smoke_bundle.py`), builds and checks both DMGs, writes the
 SBOM, checks the exact file set (`scripts/release_draft.py stage`) and, on
 `main` or `release/**` while no tag `v<version>` exists, opens or refreshes
-the **draft** release `v<version>` with exactly 14 files. A pull request run
+the **draft** release `v<version>` with exactly 11 files. A pull request run
 drafts nothing. A documentation-only push builds nothing.
 
 **Dependabot** (`.github/dependabot.yml`) opens pull requests for the pinned
@@ -72,7 +72,7 @@ GitHub Actions. Take them one at a time: a major version of
 `upload-artifact` / `download-artifact` changes how the Release workflow
 passes files between jobs, so merge such a bump only after its pull request
 has had a green *Release* run (the workflow runs on pull requests that change
-it) and the draft refreshed from `main` afterwards still holds 14 files.
+it) and the draft refreshed from `main` afterwards still holds 11 files.
 
 ## 3. What only a maintainer does
 

@@ -14,7 +14,7 @@ session files and reports the same numbers. The Chinese translation is
 
 | | Desktop Edition | Terminal Edition |
 | --- | --- | --- |
-| Downloads | `ReverbScope-Desktop-macOS-arm64.dmg`, `ReverbScope-Desktop-macOS-x86_64.dmg`, `ReverbScope-Desktop-Windows-x64-Setup.exe`, `ReverbScope-Desktop-Windows-x64.zip`, `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `ReverbScope-Terminal-macOS-arm64.tar.gz`, `ReverbScope-Terminal-macOS-x86_64.tar.gz`, `ReverbScope-Terminal-Windows-x64.zip`, `ReverbScope-Terminal-Linux-x86_64.tar.gz` |
+| Downloads | `ReverbScope-Desktop-macOS-arm64.dmg` (primary), `ReverbScope-Desktop-macOS-x86_64.dmg`, `ReverbScope-Desktop-Linux-x86_64.tar.gz`. No official Windows installer or zip | `ReverbScope-Terminal-macOS-arm64.tar.gz`, `ReverbScope-Terminal-macOS-x86_64.tar.gz`, `ReverbScope-Terminal-Linux-x86_64.tar.gz`. No official Windows zip |
 | GUI (windows, charts) | yes | no: `reverbscope gui` says to install the Desktop Edition |
 | Command line (`reverbscope`, every command) | yes | yes |
 | Analysis, comparison, Standalone measurement, English / Chinese | yes | yes |

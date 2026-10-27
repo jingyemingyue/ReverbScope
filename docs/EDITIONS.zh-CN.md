@@ -10,7 +10,7 @@ ReverbScope 只有一套代码。它提供两个可下载的**版本**，而且�
 
 | | 桌面版（Desktop Edition） | 终端版（Terminal Edition） |
 | --- | --- | --- |
-| 下载文件 | `ReverbScope-Desktop-macOS-arm64.dmg`、`ReverbScope-Desktop-macOS-x86_64.dmg`、`ReverbScope-Desktop-Windows-x64-Setup.exe`、`ReverbScope-Desktop-Windows-x64.zip`、`ReverbScope-Desktop-Linux-x86_64.tar.gz` | `ReverbScope-Terminal-macOS-arm64.tar.gz`、`ReverbScope-Terminal-macOS-x86_64.tar.gz`、`ReverbScope-Terminal-Windows-x64.zip`、`ReverbScope-Terminal-Linux-x86_64.tar.gz` |
+| 下载文件 | `ReverbScope-Desktop-macOS-arm64.dmg`（优先）、`ReverbScope-Desktop-macOS-x86_64.dmg`、`ReverbScope-Desktop-Linux-x86_64.tar.gz`。没有官方 Windows 安装程序或 zip | `ReverbScope-Terminal-macOS-arm64.tar.gz`、`ReverbScope-Terminal-macOS-x86_64.tar.gz`、`ReverbScope-Terminal-Linux-x86_64.tar.gz`。没有官方 Windows zip |
 | 图形界面（窗口、图表） | 有 | 没有：`reverbscope gui` 会提示安装桌面版 |
 | 命令行（`reverbscope`，全部命令） | 有 | 有 |
 | 分析、对比、独立模式测量、中英文 | 有 | 有 |

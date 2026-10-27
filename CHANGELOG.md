@@ -7,6 +7,13 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **Official downloads are macOS-first.** New GitHub Release assets no longer
+  include a Windows installer or zip. Apple silicon is the primary desktop
+  build; the Intel Mac DMG and the Linux archives stay, as do the Python
+  wheel and sdist. Windows source and the Windows CI job remain; that is
+  not a promise that the Windows GUI is supported.
+
 ## [0.5.0b6] - 2026-10-21
 
 Software beta 6, the development line on `main`: the light sidebar desktop

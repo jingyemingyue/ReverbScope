@@ -22,7 +22,7 @@ body:
     attributes:
       label: How ReverbScope was installed
       options:
-        - Desktop Edition, Windows installer (ReverbScope-Desktop-Windows-x64-Setup.exe)
+        - Windows source build (no official installer)
         - Desktop Edition, Windows zip
         - Desktop Edition, macOS disk image (.dmg)
         - Desktop Edition, Linux archive (.tar.gz)

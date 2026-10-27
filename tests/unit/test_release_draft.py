@@ -33,6 +33,7 @@ def _load() -> ModuleType:
 rd = _load()
 VERSION = "0.4.1"
 SETUP = "ReverbScope-Desktop-Windows-x64-Setup.exe"
+DMG = "ReverbScope-Desktop-macOS-arm64.dmg"
 TAG = "v0.4.1"
 SHA = "ab4e0573cf1208f6c74b673c866511fc89269aa9"
 OLD_SHA = "909f332838a896d76025f0dc2024ced5dbd48910"
@@ -50,7 +51,6 @@ def _write_run(folder: Path, version: str = VERSION) -> Path:
         "bundle-ubuntu-latest": rd.CHECKSUM_FILES["SHA256SUMS-Linux-X64"],
         "bundle-macos-latest": rd.CHECKSUM_FILES["SHA256SUMS-macOS-ARM64"],
         "bundle-macos-15-intel": rd.CHECKSUM_FILES["SHA256SUMS-macOS-X64"],
-        "bundle-windows-latest": rd.CHECKSUM_FILES["SHA256SUMS-Windows-X64"],
     }
     for artifact, names in layout.items():
         (folder / artifact).mkdir(parents=True)
@@ -60,7 +60,6 @@ def _write_run(folder: Path, version: str = VERSION) -> Path:
         "SHA256SUMS-Linux-X64": "bundle-ubuntu-latest",
         "SHA256SUMS-macOS-ARM64": "bundle-macos-latest",
         "SHA256SUMS-macOS-X64": "bundle-macos-15-intel",
-        "SHA256SUMS-Windows-X64": "bundle-windows-latest",
     }
     for sums, artifact in sums_dir.items():
         lines = []
@@ -182,18 +181,26 @@ OLD_DRAFT_NAMES = (
 # ---------------------------------------------------------------------- manifest
 
 
+def test_windows_source_and_ci_stay_while_binaries_leave_the_release() -> None:
+    """Freezing official Windows downloads must not delete the Windows tree."""
+    assert Path("packaging/windows/reverbscope.iss").is_file()
+    assert Path("packaging/windows/terminal/ReverbScope Terminal.cmd").is_file()
+    assert 'sys.platform == "win32"' in Path("scripts/build_release.py").read_text(encoding="utf-8")
+    ci = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "windows-latest" in ci
+    release = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    assert "windows-latest" not in release
+
+
 def test_expected_manifest_is_exact() -> None:
     assert rd.expected_assets(VERSION) == {
         # Desktop Edition (GUI + command line)
         "ReverbScope-Desktop-macOS-arm64.dmg",
         "ReverbScope-Desktop-macOS-x86_64.dmg",
-        "ReverbScope-Desktop-Windows-x64-Setup.exe",
-        "ReverbScope-Desktop-Windows-x64.zip",
         "ReverbScope-Desktop-Linux-x86_64.tar.gz",
         # Terminal Edition (command line only)
         "ReverbScope-Terminal-macOS-arm64.tar.gz",
         "ReverbScope-Terminal-macOS-x86_64.tar.gz",
-        "ReverbScope-Terminal-Windows-x64.zip",
         "ReverbScope-Terminal-Linux-x86_64.tar.gz",
         # Python, checksums, SBOM
         "reverbscope-0.4.1-py3-none-any.whl",
@@ -203,12 +210,20 @@ def test_expected_manifest_is_exact() -> None:
         "generated-bundle.lock",
     }
     assert not rd.expected_assets(VERSION) & rd.LEGACY_ASSETS
+    assert "ReverbScope-Desktop-macOS-arm64.dmg" in rd.expected_assets(VERSION)
+    assert "ReverbScope-Desktop-macOS-x86_64.dmg" in rd.expected_assets(VERSION)
+    for name in rd.HISTORICAL_WINDOWS_BINARIES:
+        assert name not in rd.expected_assets(VERSION)
+        assert name not in rd.downloads(VERSION)
+        assert name in rd.LEGACY_ASSETS
+    assert rd.HISTORICAL_WINDOWS_CHECKSUM in rd.LEGACY_ASSETS
+    assert rd.HISTORICAL_WINDOWS_CHECKSUM not in rd.CHECKSUM_FILES
 
 
 def test_every_download_name_says_edition_system_and_cpu() -> None:
     pattern = re.compile(
-        r"ReverbScope-(Desktop|Terminal)-(macOS-(arm64|x86_64)|Windows-x64|Linux-x86_64)"
-        r"(-Setup\.exe|\.dmg|\.zip|\.tar\.gz)"
+        r"ReverbScope-(Desktop|Terminal)-(macOS-(arm64|x86_64)|Linux-x86_64)"
+        r"(\.dmg|\.tar\.gz)"
     )
     archives = [name for names in rd.CHECKSUM_FILES.values() for name in names]
     assert all(pattern.fullmatch(name) for name in archives), archives
@@ -247,10 +262,13 @@ def test_manifest_matches_the_workflow_and_local_builder() -> None:
         ("Linux", "X64", "x86_64"),
         ("macOS", "ARM64", "arm64"),
         ("macOS", "X64", "x86_64"),
-        ("Windows", "X64", "AMD64"),
     ):
         target = builder.Target(system, arch, machine)
         assert rd.CHECKSUM_FILES[target.checksum_name] == target.archives
+    windows = builder.Target("Windows", "X64", "AMD64")
+    assert windows.checksum_name == rd.HISTORICAL_WINDOWS_CHECKSUM
+    assert windows.archives == rd.HISTORICAL_WINDOWS_BINARIES
+    assert windows.checksum_name not in rd.CHECKSUM_FILES
 
 
 def test_draft_job_uses_the_script_not_a_tag_lookup() -> None:
@@ -300,24 +318,54 @@ def test_stage_rejects_a_wrong_version(tmp_path: Path) -> None:
 
 def test_stage_rejects_the_same_name_from_two_artifacts(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
-    (run / "sbom" / "ReverbScope-Terminal-Windows-x64.zip").write_bytes(b"x")
+    (run / "sbom" / "ReverbScope-Terminal-Linux-x86_64.tar.gz").write_bytes(b"x")
     with pytest.raises(rd.ReleaseError, match="two artifacts"):
+        rd.stage(run, tmp_path / "out", VERSION)
+
+
+def test_stage_rejects_a_missing_macos_arm64_dmg(tmp_path: Path) -> None:
+    run = _write_run(tmp_path / "artifacts")
+    dmg = run / "bundle-macos-latest" / "ReverbScope-Desktop-macOS-arm64.dmg"
+    dmg.unlink()
+    with pytest.raises(rd.ReleaseError, match=re.escape("ReverbScope-Desktop-macOS-arm64.dmg")):
         rd.stage(run, tmp_path / "out", VERSION)
 
 
 def test_stage_rejects_a_checksum_that_does_not_match(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
-    (run / "bundle-windows-latest" / SETUP).write_bytes(b"rebuilt later")
-    with pytest.raises(rd.ReleaseError, match=re.escape(f"{SETUP} is")):
+    name = "ReverbScope-Desktop-macOS-arm64.dmg"
+    (run / "bundle-macos-latest" / name).write_bytes(b"rebuilt later")
+    with pytest.raises(rd.ReleaseError, match=re.escape(f"{name} is")):
         rd.stage(run, tmp_path / "out", VERSION)
 
 
 def test_stage_rejects_a_checksum_file_naming_other_files(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
-    sums = run / "bundle-windows-latest" / "SHA256SUMS-Windows-X64"
+    sums = run / "bundle-macos-latest" / "SHA256SUMS-macOS-ARM64"
     sums.write_text(sums.read_text(encoding="utf-8").splitlines()[0] + "\n", encoding="utf-8")
     with pytest.raises(rd.ReleaseError, match="expected exactly"):
         rd.stage(run, tmp_path / "out", VERSION)
+
+
+def test_a_new_run_rejects_a_windows_binary_as_an_extra_file(tmp_path: Path) -> None:
+    run = _write_run(tmp_path / "artifacts")
+    (run / "bundle-macos-latest" / SETUP).write_bytes(b"old windows installer")
+    with pytest.raises(rd.ReleaseError, match=re.escape(SETUP)):
+        rd.stage(run, tmp_path / "out", VERSION)
+
+
+def test_plan_treats_historical_windows_binaries_as_removable_legacy() -> None:
+    names = (
+        "ReverbScope-Desktop-macOS-arm64.dmg",
+        *rd.HISTORICAL_WINDOWS_BINARIES,
+        rd.HISTORICAL_WINDOWS_CHECKSUM,
+    )
+    draft = _release(1, draft=True, names=names)
+    plan = rd.plan_sync([draft], draft, VERSION)
+    assert set(rd.HISTORICAL_WINDOWS_BINARIES) <= set(plan.obsolete)
+    assert rd.HISTORICAL_WINDOWS_CHECKSUM in plan.obsolete
+    assert not set(rd.HISTORICAL_WINDOWS_BINARIES) & set(plan.replace)
+    assert "ReverbScope-Desktop-macOS-arm64.dmg" in plan.replace
 
 
 @pytest.mark.parametrize(
@@ -522,17 +570,17 @@ def test_sync_is_idempotent(staged: dict[str, Path]) -> None:
 
 def test_sync_retries_a_failed_upload_without_leaving_a_partial(staged: dict[str, Path]) -> None:
     client = FakeGitHub([_release(9, draft=True)])
-    client.fail_uploads[SETUP] = 1
+    client.fail_uploads[DMG] = 1
     rd.sync(client, VERSION, SHA, staged, "notes")
     states = {a["name"]: a["state"] for a in client.releases[9]["assets"]}
-    assert states[SETUP] == "uploaded"
+    assert states[DMG] == "uploaded"
     assert set(states.values()) == {"uploaded"}
 
 
 def test_sync_gives_up_after_repeated_upload_failures(staged: dict[str, Path]) -> None:
     client = FakeGitHub([_release(10, draft=True)])
-    client.fail_uploads[SETUP] = 5
-    with pytest.raises(rd.ReleaseError, match=re.escape(f"upload of {SETUP} failed")):
+    client.fail_uploads[DMG] = 5
+    with pytest.raises(rd.ReleaseError, match=re.escape(f"upload of {DMG} failed")):
         rd.sync(client, VERSION, SHA, staged, "notes")
 
 
@@ -549,7 +597,7 @@ def test_verify_checks_target_digest_and_names(staged: dict[str, Path]) -> None:
         rd.verify(client, 11, VERSION, SHA, staged, "notes")
     client.releases[11]["target_commitish"] = SHA
 
-    asset = next(a for a in client.releases[11]["assets"] if a["name"] == SETUP)
+    asset = next(a for a in client.releases[11]["assets"] if a["name"] == DMG)
     asset["digest"] = "sha256:" + "0" * 64
     with pytest.raises(rd.ReleaseError, match="digest"):
         rd.verify(client, 11, VERSION, SHA, staged, "notes")
@@ -572,7 +620,7 @@ def test_main_stage_command(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     run = _write_run(tmp_path / "artifacts")
     argv = ["stage", "--artifacts", str(run), "--out", str(tmp_path / "o"), "--version", VERSION]
     assert rd.main(argv) == 0
-    assert SETUP in capsys.readouterr().out
+    assert DMG in capsys.readouterr().out
     (run / "sbom" / "stray.txt").write_text("x", encoding="utf-8")
     argv[4] = str(tmp_path / "o2")
     assert rd.main(argv) == 1

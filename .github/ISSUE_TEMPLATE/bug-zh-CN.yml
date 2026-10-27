@@ -22,7 +22,7 @@ body:
     attributes:
       label: ReverbScope 的安装方式
       options:
-        - 桌面版，Windows 安装程序（ReverbScope-Desktop-Windows-x64-Setup.exe）
+        - Windows 源码构建（没有官方安装程序）
         - 桌面版，Windows zip 压缩包
         - 桌面版，macOS 磁盘映像（.dmg）
         - 桌面版，Linux 压缩包（.tar.gz）

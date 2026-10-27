@@ -1,6 +1,8 @@
 # ReverbScope 发布计划（中文摘要）
 
 > 当前发布状态（2026-10-15）：v0.4.1 / v0.5.0b1 已公开且沿用旧名 RoomScope；rc1、rc2、b2、b3 都是 Draft。下方旧日期章节为历史准备记录。见 [OSS 审计](OSS_READINESS.md)与[公开测试指南](PUBLIC_TESTING.zh-CN.md)。
+>
+> **官方二进制（维护者决定，2026-10-27）：macOS 优先。** 新的 GitHub Release 资产是 macOS DMG（Apple 芯片优先，Intel 仍保留）、Linux 压缩包、Python wheel 与 sdist、`SHA256SUMS` 和 SBOM，共 **11** 个文件。不再构建或上传 Windows 安装程序和 zip。Windows 源码、`packaging/windows/` 和 Windows CI 保留。下一次刷新**草稿** Release 的工作流会把旧的 Windows 资产名当作历史名称并从该草稿中移除。已发布的 Release 不会被改写。本次不执行这次 sync。
 
 [English](RELEASE_PLAN.md) | **简体中文**
 
