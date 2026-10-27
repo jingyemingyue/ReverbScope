@@ -54,6 +54,9 @@ All notable changes to ReverbScope are documented here. The format follows
   they cannot bypass File ▸ Open's busy lock or switch the view mid-take.
 - **Environment Report, Settings, and sidebar Help stay locked while
   measuring**, so a modal cannot cover Stop or steal Esc from a sounding take.
+- **Standalone room / position / mic / placement stay locked while a take
+  sounds** (C8), matching DAW Analyze so mid-take metadata edits cannot
+  rewrite the session after Stop.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

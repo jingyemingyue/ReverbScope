@@ -88,6 +88,10 @@ def test_device_and_sweep_controls_lock_while_a_take_plays(app: QApplication, he
         page.level,
         page.profile,
         page.latency,
+        page.room,
+        page.position,
+        page.mic,
+        page.placement,
         page.refresh_button,
         page.run_button,
         page.back_button,
@@ -112,6 +116,10 @@ def test_device_and_sweep_controls_lock_while_a_take_plays(app: QApplication, he
         page.sample_rate,
         page.duration,
         page.level,
+        page.room,
+        page.position,
+        page.mic,
+        page.placement,
         page.refresh_button,
     ):
         assert widget.isEnabled()

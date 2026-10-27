@@ -1653,10 +1653,10 @@ class StandalonePage(QWidget):
             self.back_button.setEnabled(not busy)
         if hasattr(self, "refresh_button"):
             self.refresh_button.setEnabled(not busy)
-        # C8: while measuring, device routing and the sweep level/duration
-        # must stay fixed. The running worker already captured the indices;
-        # locking the widgets stops the operator from thinking a mid-take
-        # edit will apply (and keeps Esc/Stop as the only live controls).
+        # C8: while measuring, device routing, sweep level/duration, and
+        # session metadata stay fixed. The worker already snapped placement;
+        # room/position/mic are read after the take, so mid-edit would still
+        # change the saved session. Lock them like DAW Analyze does.
         for name in (
             "host_api",
             "input_device",
@@ -1670,6 +1670,10 @@ class StandalonePage(QWidget):
             "acknowledge",
             "profile",
             "latency",
+            "room",
+            "position",
+            "mic",
+            "placement",
         ):
             widget = getattr(self, name, None)
             if widget is not None:
