@@ -763,6 +763,7 @@ class DawModePage(QWidget):
             self.mic,
             self.placement,
             self.profile,
+            self.profile_help,
         ):
             widget.setEnabled(not busy)
         self.progress.setVisible(busy)
@@ -1674,6 +1675,7 @@ class StandalonePage(QWidget):
             "position",
             "mic",
             "placement",
+            "profile_help",
         ):
             widget = getattr(self, name, None)
             if widget is not None:

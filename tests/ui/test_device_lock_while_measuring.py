@@ -92,6 +92,7 @@ def test_device_and_sweep_controls_lock_while_a_take_plays(app: QApplication, he
         page.position,
         page.mic,
         page.placement,
+        page.profile_help,
         page.refresh_button,
         page.run_button,
         page.back_button,

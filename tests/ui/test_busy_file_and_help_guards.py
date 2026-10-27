@@ -169,7 +169,9 @@ def test_compare_is_blocked_while_a_take_runs(app: QApplication, held_take) -> N
         page.run_button.click()
         assert page.is_busy()
         assert not window.compare_action.isEnabled()
+        assert not window.view_actions["compare"].isEnabled()
         window.show_compare()
+        window.show_view("compare")
         app.processEvents()
         assert window.stack.currentWidget() is before
     finally:
@@ -177,6 +179,41 @@ def test_compare_is_blocked_while_a_take_runs(app: QApplication, held_take) -> N
         _settle(app, page._measure_worker)
         _settle(app, page._analysis_worker)
     assert window.compare_action.isEnabled()
+    assert window.view_actions["compare"].isEnabled()
+    window.close()
+
+
+def test_about_is_blocked_while_a_take_runs(
+    app: QApplication, held_take, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reverbscope.ui import main_window as mw
+
+    opened: list[object] = []
+
+    class _FakeBox:
+        def exec(self) -> int:
+            opened.append(self)
+            return 0
+
+    monkeypatch.setattr(mw, "about_box", lambda _parent=None: _FakeBox())
+
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    try:
+        page.run_button.click()
+        assert page.is_busy()
+        assert not window.about_action.isEnabled()
+        window._about()
+        app.processEvents()
+        assert opened == []
+    finally:
+        held_take.set()
+        _settle(app, page._measure_worker)
+        _settle(app, page._analysis_worker)
     window.close()
 
 

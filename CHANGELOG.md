@@ -58,6 +58,12 @@ All notable changes to ReverbScope are documented here. The format follows
   sounds** (C8), matching DAW Analyze so mid-take metadata edits cannot
   rewrite the session after Stop.
 - **File ▸ Compare Sessions stays locked while measuring.**
+- **View ▸ Compare / Ctrl+0 also refuse while measuring**, matching File ▸
+  Compare so the analysis bar cannot leave a sounding take.
+- **Help ▸ About stays locked while measuring**, same modal-over-Stop rule
+  as Environment Report and Settings.
+- **Profile help button locks with the profile combo** on Standalone and
+  DAW while busy (C8).
 - **Ctrl+Return has one owner per mode**: Standalone Start or DAW Analyze,
   never both at once (Qt would fire neither).
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,

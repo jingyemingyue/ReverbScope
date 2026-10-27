@@ -342,10 +342,10 @@ class MainWindow(QMainWindow):
         self.getting_started_action = QAction(_("&Getting started"), self)
         self.getting_started_action.triggered.connect(self.show_getting_started)
         help_menu.addAction(self.getting_started_action)
-        about_action = QAction(_("&About ReverbScope"), self)
+        self.about_action = QAction(_("&About ReverbScope"), self)
         # macOS App menu: About (guidelines §18.1).
-        about_action.setMenuRole(QAction.MenuRole.AboutRole)
-        about_action.triggered.connect(self._about)
+        self.about_action.setMenuRole(QAction.MenuRole.AboutRole)
+        self.about_action.triggered.connect(self._about)
         licenses_action = QAction(_("&Third-party licenses..."), self)
         licenses_action.setMenuRole(QAction.MenuRole.NoRole)
         licenses_action.triggered.connect(self._open_licenses)
@@ -355,7 +355,7 @@ class MainWindow(QMainWindow):
         help_menu.addAction(self.report_action)
         #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
         #: Start panel / Getting started / Close Project / Environment Report /
-        #: Compare are included: each would interrupt a take or cover Stop.
+        #: Compare / About are included: each would interrupt a take or cover Stop.
         self.busy_actions = (
             new_action,
             open_action,
@@ -367,10 +367,11 @@ class MainWindow(QMainWindow):
             start_action,
             self.getting_started_action,
             self.report_action,
+            self.about_action,
             *self.measure_mode_actions,
         )
         help_menu.addSeparator()
-        help_menu.addAction(about_action)
+        help_menu.addAction(self.about_action)
         help_menu.addAction(licenses_action)
 
         # §18.1: mnemonic ampersands are for Windows/Linux menu bars only.
@@ -584,6 +585,10 @@ class MainWindow(QMainWindow):
         for action in self.busy_actions:
             action.setEnabled(not busy)
             action.setToolTip(reason if busy else action.text().replace("&", ""))
+        compare_view = self.view_actions.get("compare")
+        if compare_view is not None:
+            compare_view.setEnabled(not busy)
+            compare_view.setToolTip(reason if busy else compare_view.text().replace("&", ""))
         for button in (
             self.navigator.new_button,
             self.navigator.open_project_button,
@@ -735,6 +740,10 @@ class MainWindow(QMainWindow):
     # --- views ---------------------------------------------------------------------------
 
     def show_view(self, view_id: str) -> None:
+        # Ctrl+0 / analysis-bar Compare must not leave a sounding take; File ▸
+        # Compare already goes through show_compare's busy gate.
+        if view_id == "compare" and self._measure_busy():
+            return
         view = self.workspace.show_view(view_id)
         self._preferred_view = view_id
         self._set_place(view.title())
@@ -1230,6 +1239,8 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(home)))
 
     def _about(self) -> None:
+        if self._measure_busy():
+            return
         about_box(self).exec()
 
     def _open_licenses(self) -> None:
