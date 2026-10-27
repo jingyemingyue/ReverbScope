@@ -595,6 +595,17 @@ class MainWindow(QMainWindow):
                 button.setToolTip(reason)
             elif button.property("idle_tip"):
                 button.setToolTip(str(button.property("idle_tip")))
+        # Recent list also opens sessions: File ▸ Open is locked while busy, so
+        # double-click must not bypass that gate (sidebar recent / start panel).
+        recent = self.navigator.recent
+        if busy:
+            recent.setProperty("idle_tip", recent.property("idle_tip") or recent.toolTip())
+            recent.setEnabled(False)
+            recent.setToolTip(reason)
+        else:
+            recent.setEnabled(True)
+            if recent.property("idle_tip"):
+                recent.setToolTip(str(recent.property("idle_tip")))
         self.navigator.new_button.setIcon(
             icons.icon("lock" if busy else "plus", 16, tone="" if busy else "accent")
         )
@@ -742,6 +753,8 @@ class MainWindow(QMainWindow):
     # --- opening ---------------------------------------------------------------------------
 
     def choose_session(self) -> None:
+        if self._measure_busy():
+            return
         path, _filter = QFileDialog.getOpenFileName(
             self,
             _("Open session"),
@@ -754,8 +767,12 @@ class MainWindow(QMainWindow):
     def open_session_path(self, path: str | Path) -> bool:
         """Open a saved session into the list and make it current.
 
-        It is added, not swapped in: the take and everything else open stay.
+        It is added, not swapped in: a finished unsaved take stays in the list.
+        While a take or analysis is running, refuse (same gate as File ▸ Open):
+        recent / start-panel shortcuts must not switch the view mid-measure.
         """
+        if self._measure_busy():
+            return False
         try:
             loaded = load_measurement(path)
         except ReverbScopeError as exc:
@@ -779,6 +796,8 @@ class MainWindow(QMainWindow):
 
     def _show_session(self, path: str) -> None:
         """A row of the project view: select it, or open it when it is not in the list."""
+        if self._measure_busy():
+            return
         key = folder_key(path)
         if self.model.entry(key) is not None:
             self.model.set_current(key)
@@ -788,6 +807,8 @@ class MainWindow(QMainWindow):
 
     def _open_pair(self, baseline: str, candidate: str) -> None:
         """Two sessions picked in Compare: open both, compare them."""
+        if self._measure_busy():
+            return
         if not (self.open_session_path(baseline) and self.open_session_path(candidate)):
             return
         self.model.set_baseline(folder_key(baseline))
@@ -795,6 +816,8 @@ class MainWindow(QMainWindow):
         self.show_view("compare")
 
     def choose_project(self) -> None:
+        if self._measure_busy():
+            return
         directory = QFileDialog.getExistingDirectory(self, _("Open project folder"))
         if directory:
             self.show_project(Path(directory))
@@ -802,6 +825,8 @@ class MainWindow(QMainWindow):
     def show_project(self, path: str | Path | None = None) -> None:
         """The project view: for ``path`` (opened, or offered to be made), or
         the project already open, read again."""
+        if path is not None and self._measure_busy():
+            return
         if path is not None:
             self._save_selection()
             if not self.project.open_path(Path(path)):

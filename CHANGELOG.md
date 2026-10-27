@@ -50,6 +50,8 @@ All notable changes to ReverbScope are documented here. The format follows
   unsaved live take**, matching New Measurement.
 - **DAW Analyze locks sweep / import / channel / profile controls** while
   analysis runs (C8), matching Standalone's mid-take device lock.
+- **Open Session and the sidebar recent list refuse while measuring**, so
+  they cannot bypass File ▸ Open's busy lock or switch the view mid-take.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

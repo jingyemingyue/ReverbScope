@@ -829,9 +829,13 @@ def held_analysis(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-d
 def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
     app: QApplication, tmp_path: Path, short_sweep: SweepSettings, held_analysis
 ) -> None:
-    """The page only checked that it was visible when the result arrived.
-    Ctrl+O then Ctrl+1 to wait for the analysis put the new take's result
-    under the opened session's room, settings and recording."""
+    """While analysis runs, Open is refused (File ▸ Open / recent busy lock).
+
+    After it finishes, opening a saved session is additive: the take keeps its
+    own room and result, and the opened session keeps its result. The old race
+    (Ctrl+O mid-analysis putting the take under the opened session) cannot
+    happen through the UI once Open is gated.
+    """
     from reverbscope.core.pipeline import Reference, analyze
     from reverbscope.io.session_store import save_measurement
     from reverbscope.models.session import MeasurementSession
@@ -857,29 +861,25 @@ def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
     page.room.setText("Booth A")
     try:
         page.start_analysis()
-        assert window.open_session_path(folder)  # Ctrl+O while it runs
-        opened = window.model.current()
-        assert opened is not None
-        studio_x = opened.result
-        window.show_mode("universal_daw")  # back to the page to wait for it
+        assert page.is_busy()
+        assert not window.open_session_path(folder)  # busy: same as File ▸ Open
     finally:
         held_analysis.set()
         _settle(app, page._worker)
-    # Opening a session adds it to the list instead of replacing the take, so
-    # the late result is no longer discarded: it joins the list as a take of
-    # its own, under its own room, and the opened session keeps its result.
-    assert window.model.entry(opened.key) is opened
-    assert opened.session is not None and opened.session.room_name == "Studio X"
-    assert opened.result is studio_x
     takes = [entry for entry in window.model.entries() if entry.is_take]
     assert len(takes) == 1
     take_entry = takes[0]
     assert take_entry.session is not None and take_entry.session.room_name == "Booth A"
-    assert take_entry.result is not None and take_entry.result is not studio_x
-    assert take_entry.result is window.state.result
-    assert window.state.session.room_name == "Booth A"
+    assert take_entry.result is not None and take_entry.result is window.state.result
     assert take_entry.result.decay.broadband.rt60_estimate_s == pytest.approx(0.3, abs=0.1)
     assert page.analyze_button.isEnabled()
+    take_result = take_entry.result
+    assert window.open_session_path(folder)
+    opened_entry = window.model.current()
+    assert opened_entry is not None
+    assert opened_entry.session is not None and opened_entry.session.room_name == "Studio X"
+    assert window.model.entry(take_entry.key) is take_entry
+    assert take_entry.result is take_result
     window.close()
 
 
