@@ -252,6 +252,29 @@ def test_the_real_dialog_cancel_discard_and_save(
     window.close()
 
 
+def test_getting_started_asks_before_showing_start_with_an_unsaved_take(
+    app: QApplication, home: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    window = MainWindow()
+    window.show()
+    _finish_take(window, short_sweep)
+    assert window.state.unsaved_take is True
+    asked: list[bool] = []
+    monkeypatch.setattr(
+        window, "_ask_about_unsaved_take", lambda: asked.append(True) or False, raising=True
+    )
+    before = window.stack.currentWidget()
+    window.show_getting_started()
+    assert asked == [True]
+    assert window.stack.currentWidget() is before
+    assert window.stack.currentWidget() is not window.home
+    window.show_start_panel()
+    assert asked == [True, True]
+    assert window.stack.currentWidget() is not window.home
+    window.state.unsaved_take = False
+    window.close()
+
+
 def test_close_while_standalone_post_record_analysis_prompts(
     app: QApplication, home: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
 ) -> None:

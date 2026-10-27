@@ -44,6 +44,8 @@ All notable changes to ReverbScope are documented here. The format follows
 - **Closing during post-record Standalone analysis asks before discarding**
   the in-memory recording (Save is offered only once a result exists).
 - **Clearing a DAW recording clears a leftover sample-rate mismatch banner.**
+- **View ▸ Start panel and Help ▸ Getting started ask before leaving an
+  unsaved live take**, matching New Measurement.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

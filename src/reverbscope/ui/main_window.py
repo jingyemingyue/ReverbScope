@@ -303,7 +303,7 @@ class MainWindow(QMainWindow):
         start_action.setToolTip(
             _("Unavailable while a measurement is running."),
         )
-        start_action.triggered.connect(self._show_start)
+        start_action.triggered.connect(self.show_start_panel)
         view_menu.addAction(start_action)
         reset_layout = QAction(_("Reset the layout"), self)
         reset_layout.triggered.connect(self.reset_layout)
@@ -699,9 +699,17 @@ class MainWindow(QMainWindow):
         self.daw.clear_recording()
         self._show_start()
 
+    def show_start_panel(self) -> None:
+        """View ▸ Start panel: ask before abandoning an unsaved live take."""
+        if self._measure_busy():
+            return
+        if not self._leave_take():
+            return
+        self._show_start()
+
     def _show_start(self) -> None:
-        # View ▸ Start panel is in busy_actions so the menu stays off while a
-        # take runs. New Measurement (_go_home) still calls this after Stop.
+        # Low-level: New Measurement (_go_home) calls this after _leave_take.
+        # View ▸ Start panel goes through show_start_panel so it asks first.
         self.home.refresh_recent()
         self.navigator.refresh_recent()
         self.home.show_walkthrough(not load_settings().walkthrough_dismissed)
@@ -1071,6 +1079,8 @@ class MainWindow(QMainWindow):
     def show_getting_started(self) -> None:
         """The start panel with the first-measurement card, and the card stays from now on."""
         if self._measure_busy():
+            return
+        if not self._leave_take():
             return
         import contextlib
         from dataclasses import replace
