@@ -799,9 +799,8 @@ class MainWindow(QMainWindow):
         """Disable strip Start while sessions load so a take cannot race current."""
         if loading:
             self.strip.start_button.setEnabled(False)
-            self.strip.start_button.setToolTip(
-                _("Reading the project's sessions · available when it finishes")
-            )
+            # Reuse the existing catalog msgid (navigator / project_view).
+            self.strip.start_button.setToolTip(_("Reading the project's sessions..."))
             return
         self.strip._sync_start()
 
