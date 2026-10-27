@@ -272,6 +272,7 @@ def test_close_while_standalone_post_record_analysis_prompts(
     window.close()
     assert asked == [True]
     assert window.isVisible()
+
     # Discard path: generation bump so a late result cannot revive the take.
     def discard_ok() -> bool:
         window._discard_take()
