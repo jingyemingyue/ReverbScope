@@ -157,6 +157,29 @@ def test_environment_report_is_blocked_while_a_take_runs(
     window.close()
 
 
+def test_compare_is_blocked_while_a_take_runs(app: QApplication, held_take) -> None:
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    before = window.stack.currentWidget()
+    try:
+        page.run_button.click()
+        assert page.is_busy()
+        assert not window.compare_action.isEnabled()
+        window.show_compare()
+        app.processEvents()
+        assert window.stack.currentWidget() is before
+    finally:
+        held_take.set()
+        _settle(app, page._measure_worker)
+        _settle(app, page._analysis_worker)
+    assert window.compare_action.isEnabled()
+    window.close()
+
+
 def test_close_project_is_disabled_while_measure_busy(
     app: QApplication, tmp_path: Path, held_analysis
 ) -> None:

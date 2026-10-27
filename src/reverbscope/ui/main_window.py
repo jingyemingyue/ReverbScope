@@ -255,9 +255,9 @@ class MainWindow(QMainWindow):
         self.save_action = QAction(_("&Save Session..."), self)
         self.save_action.setShortcut("Ctrl+S")
         self.save_action.triggered.connect(self.save_take)
-        compare_action = QAction(_("&Compare Sessions..."), self)
-        compare_action.setShortcut("Ctrl+Shift+C")
-        compare_action.triggered.connect(self.show_compare)
+        self.compare_action = QAction(_("&Compare Sessions..."), self)
+        self.compare_action.setShortcut("Ctrl+Shift+C")
+        self.compare_action.triggered.connect(self.show_compare)
         settings_action = QAction(_("&Settings..."), self)
         settings_action.setShortcut("Ctrl+,")
         # macOS App menu: Preferences (guidelines §12.14 / §18.1).
@@ -271,7 +271,7 @@ class MainWindow(QMainWindow):
             file_menu.addAction(action)
         file_menu.addSeparator()
         file_menu.addAction(self.save_action)
-        file_menu.addAction(compare_action)
+        file_menu.addAction(self.compare_action)
         file_menu.addSeparator()
         file_menu.addAction(settings_action)
         file_menu.addSeparator()
@@ -354,14 +354,15 @@ class MainWindow(QMainWindow):
         self.report_action.triggered.connect(self.show_environment_report)
         help_menu.addAction(self.report_action)
         #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
-        #: Start panel / Getting started / Close Project / Environment Report
-        #: are included: each would interrupt a take or cover Stop with a modal.
+        #: Start panel / Getting started / Close Project / Environment Report /
+        #: Compare are included: each would interrupt a take or cover Stop.
         self.busy_actions = (
             new_action,
             open_action,
             project_action,
             self.close_project_action,
             self.save_action,
+            self.compare_action,
             settings_action,
             start_action,
             self.getting_started_action,
@@ -905,6 +906,8 @@ class MainWindow(QMainWindow):
         self.show_compare()
 
     def show_compare(self) -> None:
+        if self._measure_busy():
+            return
         selected = self.home.browser.selected_pair()
         if selected is not None:
             self.compare.set_paths(*selected)

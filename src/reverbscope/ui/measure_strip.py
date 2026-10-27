@@ -373,10 +373,11 @@ class MeasureStrip(QWidget):
         self.advanced_button.setVisible(live)
         self.advanced_bar.setVisible(live and self.advanced_button.isChecked())
         self.start_button.setText(_("Start") if live else _("Import recording..."))
-        # In DAW mode Ctrl+Return belongs to the DAW page's Analyze: two
-        # visible buttons with one shortcut would make Qt fire neither.
-        shortcut = QKeySequence("Ctrl+Return") if live else QKeySequence()
-        self.start_button.setShortcut(shortcut)
+        # Exactly one owner of Ctrl+Return: Standalone Start vs DAW Analyze.
+        # Both used WindowShortcut, so Qt could fire neither when both were set.
+        enter = QKeySequence("Ctrl+Return")
+        self.start_button.setShortcut(enter if live else QKeySequence())
+        self.daw.analyze_button.setShortcut(QKeySequence() if live else enter)
         native = native_shortcut("Ctrl+Return") if live else ""
         self.start_button.setToolTip(
             _("Play the sweep and record it ({shortcut}).").format(shortcut=native)

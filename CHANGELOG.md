@@ -57,6 +57,9 @@ All notable changes to ReverbScope are documented here. The format follows
 - **Standalone room / position / mic / placement stay locked while a take
   sounds** (C8), matching DAW Analyze so mid-take metadata edits cannot
   rewrite the session after Stop.
+- **File ▸ Compare Sessions stays locked while measuring.**
+- **Ctrl+Return has one owner per mode**: Standalone Start or DAW Analyze,
+  never both at once (Qt would fire neither).
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.
