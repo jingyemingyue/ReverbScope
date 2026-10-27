@@ -608,15 +608,16 @@ class MainWindow(QMainWindow):
         return ""
 
     def _pending_memory_recording(self) -> bool:
-        """Live Standalone recording in memory before it is listed as unsaved.
+        """Live Standalone take in flight before it is listed as unsaved.
 
-        Between ``_on_recorded`` and analysis finishing there is no navigator
-        entry yet; closing then would drop the only copy with no prompt.
-        Demo / fake-backend takes are synthetic and never ask.
+        Covers the sounding sweep (``recording`` still None) and the
+        post-record analysis window before ``add_take``. Closing either
+        without a prompt would drop the only copy. Demo / fake-backend
+        takes are synthetic and never ask.
         """
         if self.standalone.demo_mode or self.standalone._take_synthetic:
             return False
-        if self.state.recording is None or self.state.recording_path is not None:
+        if self.state.recording_path is not None:
             return False
         if self._unsaved_take_key():
             return False

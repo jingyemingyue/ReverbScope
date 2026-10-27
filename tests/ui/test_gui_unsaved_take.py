@@ -275,6 +275,60 @@ def test_getting_started_asks_before_showing_start_with_an_unsaved_take(
     window.close()
 
 
+def test_close_while_a_real_standalone_sweep_sounds_prompts(
+    app: QApplication, home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Closing while a non-synthetic sweep still sounds must ask first."""
+    import threading
+
+    from reverbscope.audio.fake import FakeBackend
+    from reverbscope.errors import MeasurementCancelledError
+
+    release = threading.Event()
+    real = FakeBackend.play_and_record
+
+    def held(self, *args, cancel=None, **kwargs):  # type: ignore[no-untyped-def]
+        while not release.wait(0.01):
+            if cancel is not None and cancel.is_set():
+                raise MeasurementCancelledError("stopped")
+        return real(self, *args, cancel=cancel, **kwargs)
+
+    monkeypatch.setattr(FakeBackend, "play_and_record", held)
+    window = MainWindow()
+    window.show()
+    # Demo starts without level-ack; then treat the sounding take as live so
+    # _pending_memory_recording must fire (sweep stage: recording still None).
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.run_button.click()
+    app.processEvents()
+    assert page.is_busy()
+    page.demo_mode = False
+    page._take_synthetic = False
+    assert window.state.recording is None
+    asked: list[bool] = []
+    monkeypatch.setattr(
+        window, "_ask_about_unsaved_take", lambda: asked.append(True) or False, raising=True
+    )
+    window.close()
+    assert asked == [True]
+    assert window.isVisible()
+    release.set()
+    worker = page._measure_worker
+    if worker is not None:
+        elapsed = 0
+        while worker.isRunning() and elapsed < 5000:
+            app.processEvents()
+            worker.wait(20)
+            elapsed += 20
+    page._take_synthetic = True
+    page.demo_mode = True
+    monkeypatch.setattr(window.standalone, "is_busy", lambda: False)
+    window.close()
+
+
 def test_close_while_standalone_post_record_analysis_prompts(
     app: QApplication, home: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
