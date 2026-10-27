@@ -55,11 +55,7 @@ def _settle(app: QApplication, worker: QThread | None, timeout_ms: int = 8000) -
     app.processEvents()
 
 
-def test_daw_analyze_locks_new_open_and_start_panel(
-    app: QApplication, tmp_path: Path, held_analysis
-) -> None:
-    window = MainWindow()
-    window.show()
+def _start_held_daw(window: MainWindow, tmp_path: Path, app: QApplication) -> object:
     window.show_mode("universal_daw")
     page = window.daw
     settings = SweepSettings(sample_rate=48000, duration_s=0.5, level_dbfs=-20.0)
@@ -70,14 +66,58 @@ def test_daw_analyze_locks_new_open_and_start_panel(
     page.set_recording(
         write_wav(tmp_path / "take.wav", take.samples, take.sample_rate, subtype="FLOAT")
     )
+    page.start_analysis()
+    app.processEvents()
+    assert page._busy_flag
+    return page
+
+
+def test_daw_analyze_locks_new_open_and_start_panel(
+    app: QApplication, tmp_path: Path, held_analysis
+) -> None:
+    window = MainWindow()
+    window.show()
+    page = _start_held_daw(window, tmp_path, app)
     try:
-        page.start_analysis()
-        app.processEvents()
-        assert page._busy_flag
         for action in window.busy_actions:
             assert not action.isEnabled(), action.text()
     finally:
         held_analysis.set()
         _settle(app, page._worker)
     assert all(action.isEnabled() for action in window.busy_actions)
+    window.close()
+
+
+def test_daw_import_and_analysis_controls_lock_while_analyzing(
+    app: QApplication, tmp_path: Path, held_analysis
+) -> None:
+    """C8: DAW page inputs must not change under a running Analyze."""
+    window = MainWindow()
+    window.show()
+    page = _start_held_daw(window, tmp_path, app)
+    locked = [
+        page.sample_rate,
+        page.duration,
+        page.level,
+        page.save_sweep_button,
+        page.recording_button,
+        page.reference_button,
+        page.channel,
+        page.loopback_channel,
+        page.room,
+        page.position,
+        page.mic,
+        page.placement,
+        page.profile,
+        page.analyze_button,
+        page.back_button,
+    ]
+    try:
+        for widget in locked:
+            assert not widget.isEnabled(), widget.objectName() or widget.__class__.__name__
+    finally:
+        held_analysis.set()
+        _settle(app, page._worker)
+    for widget in locked:
+        assert widget.isEnabled(), widget.objectName() or widget.__class__.__name__
     window.close()

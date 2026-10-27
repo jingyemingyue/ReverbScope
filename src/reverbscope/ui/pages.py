@@ -742,6 +742,25 @@ class DawModePage(QWidget):
         self.analyze_button.setEnabled(not busy)
         # Leaving mid-analysis would let the late result replace another session.
         self.back_button.setEnabled(not busy)
+        # C8: analysis already snapped channel/profile/placement/recording; the
+        # operator must not change them under a running Analyze (Standalone
+        # locks its sweep/device row the same way while a take sounds).
+        for widget in (
+            self.sample_rate,
+            self.duration,
+            self.level,
+            self.save_sweep_button,
+            self.recording_button,
+            self.reference_button,
+            self.channel,
+            self.loopback_channel,
+            self.room,
+            self.position,
+            self.mic,
+            self.placement,
+            self.profile,
+        ):
+            widget.setEnabled(not busy)
         self.progress.setVisible(busy)
         set_banner_text(self.status, text, tone)
         self.busy_changed.emit(busy)
