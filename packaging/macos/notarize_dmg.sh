@@ -12,7 +12,7 @@
 #   APPLE_API_KEY_ID         its Key ID
 #   APPLE_API_ISSUER_ID      the Issuer ID shown on the same page
 #   RUNNER_TEMP              a scratch directory (set by GitHub Actions)
-set -eu
+set -euo pipefail
 DMG="${1:?usage: notarize_dmg.sh DMG}"
 : "${MACOS_SIGNING_IDENTITY:?}" "${APPLE_API_KEY_P8_BASE64:?}" "${APPLE_API_KEY_ID:?}"
 : "${APPLE_API_ISSUER_ID:?}" "${RUNNER_TEMP:?}"

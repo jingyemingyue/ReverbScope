@@ -208,6 +208,10 @@ def test_macos_sign_and_dmg_scripts_wire_entitlements_and_arch() -> None:
     assert "uname -m" in dmg
     assert "ReverbScope-Desktop-macOS-" in dmg
     assert "hdiutil create" in dmg
+    assert "pipefail" in dmg
+    for name in ("notarize_dmg.sh", "import_certificate.sh"):
+        body = Path("packaging/macos", name).read_text(encoding="utf-8")
+        assert "pipefail" in body, name
 
 
 def test_macos_entitlements_cover_adhoc_and_developer_id() -> None:
