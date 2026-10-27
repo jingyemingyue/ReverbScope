@@ -17,6 +17,7 @@ switches them off.
 from __future__ import annotations
 
 import functools
+import os
 from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
@@ -26,6 +27,8 @@ from PySide6.QtCore import QByteArray, QPointF, QRect, QRectF, QSize, QSizeF, Qt
 from PySide6.QtGui import QBrush, QColor, QGuiApplication, QImage, QImageWriter, QPainter
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsView
+
+from reverbscope.io.jsonutil import discard, keep_mode, temporary_beside
 
 if TYPE_CHECKING:
     from pyqtgraph import ColorMap, PlotItem
@@ -126,32 +129,48 @@ def disable_menus(plot_item: PlotItem) -> None:
 
 
 def svg_export(chart: Chart, path: str | Path) -> None:
-    """Write ``chart`` as it looks on screen to an SVG file at ``path``."""
+    """Write ``chart`` as it looks on screen to an SVG file at ``path``.
+
+    Writes beside ``path`` then replaces it, so a failed mid-write keeps any
+    previous SVG (same idea as chart CSV).
+    """
+    target = Path(path)
     size = _size(chart)
     width, height = max(1, round(size.width())), max(1, round(size.height()))
-    generator = QSvgGenerator()
-    generator.setFileName(str(path))
-    generator.setSize(QSize(width, height))
-    generator.setViewBox(QRect(0, 0, width, height))
-    generator.setTitle("ReverbScope")
-    # pyqtgraph caches axes in QPictures, which replay scaled by the screen's
-    # DPI over the device's: at QSvgGenerator's default 72 dpi they shrank to
-    # three quarters and no longer lined up with the curves.
-    screen = QGuiApplication.primaryScreen()
-    generator.setResolution(round(screen.logicalDotsPerInchX()) if screen is not None else 96)
-    painter = QPainter()
-    if not painter.begin(generator):
-        raise OSError(f"cannot write {path}")
+    temporary = temporary_beside(target, f"{target.suffix}.tmp")
     try:
-        _paint(chart, painter, QSizeF(width, height), scale=1.0)
+        generator = QSvgGenerator()
+        generator.setFileName(str(temporary))
+        generator.setSize(QSize(width, height))
+        generator.setViewBox(QRect(0, 0, width, height))
+        generator.setTitle("ReverbScope")
+        # pyqtgraph caches axes in QPictures, which replay scaled by the screen's
+        # DPI over the device's: at QSvgGenerator's default 72 dpi they shrank to
+        # three quarters and no longer lined up with the curves.
+        screen = QGuiApplication.primaryScreen()
+        generator.setResolution(round(screen.logicalDotsPerInchX()) if screen is not None else 96)
+        painter = QPainter()
+        if not painter.begin(generator):
+            raise OSError(f"cannot write {target}")
+        try:
+            _paint(chart, painter, QSizeF(width, height), scale=1.0)
+        finally:
+            painter.end()
+        keep_mode(temporary, target)
+        os.replace(temporary, target)
     finally:
-        painter.end()
+        discard(temporary)
 
 
 def png_export(chart: Chart, path: str | Path, scale: float = 2.0) -> None:
-    """Write ``chart`` to a PNG file at ``path``, ``scale`` times its size on screen."""
+    """Write ``chart`` to a PNG file at ``path``, ``scale`` times its size on screen.
+
+    Writes beside ``path`` then replaces it, so a failed mid-write keeps any
+    previous PNG (same idea as chart CSV).
+    """
     if not scale > 0:
         raise ValueError(f"scale must be positive, not {scale!r}")
+    target = Path(path)
     size = _size(chart)
     width = max(1, round(size.width() * scale))
     height = max(1, round(size.height() * scale))
@@ -164,9 +183,15 @@ def png_export(chart: Chart, path: str | Path, scale: float = 2.0) -> None:
         _paint(chart, painter, QSizeF(width, height), scale=scale)
     finally:
         painter.end()
-    writer = QImageWriter(str(path), QByteArray(b"png"))
-    if not writer.write(image):
-        raise OSError(f"cannot write {path}: {writer.errorString()}")
+    temporary = temporary_beside(target, f"{target.suffix}.tmp")
+    try:
+        writer = QImageWriter(str(temporary), QByteArray(b"png"))
+        if not writer.write(image):
+            raise OSError(f"cannot write {target}: {writer.errorString()}")
+        keep_mode(temporary, target)
+        os.replace(temporary, target)
+    finally:
+        discard(temporary)
 
 
 def _size(chart: Chart) -> QSizeF:

@@ -70,6 +70,7 @@ All notable changes to ReverbScope are documented here. The format follows
   or a finished project load runs mid-analysis.
 - **DAW rate-mismatch warning follows the real sweep**, not the Sample rate
   combo alone; Analyze refuses a take/sweep Hz mismatch.
+- **Chart PNG/SVG export is atomic**: a failed write keeps any previous file.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

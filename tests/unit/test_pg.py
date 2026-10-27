@@ -201,6 +201,30 @@ def test_png_export_refuses_a_bad_scale(pg: ModuleType, plot: Any, tmp_path: Pat
 
 
 @pytest.mark.gui
+def test_png_export_keeps_the_previous_file_when_write_fails(
+    pg: ModuleType, plot: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed mid-write must not truncate an existing PNG."""
+    from PySide6.QtGui import QImageWriter
+
+    out = tmp_path / "chart.png"
+    pg.png_export(plot, out, scale=1.0)
+    previous = out.read_bytes()
+    assert previous.startswith(b"\x89PNG")
+
+    real_write = QImageWriter.write
+
+    def boom(self, image):  # type: ignore[no-untyped-def]
+        real_write(self, image)
+        return False
+
+    monkeypatch.setattr(QImageWriter, "write", boom)
+    with pytest.raises(OSError, match="cannot write"):
+        pg.png_export(plot, out, scale=1.0)
+    assert out.read_bytes() == previous
+
+
+@pytest.mark.gui
 def test_plot_widget_owns_pyqtgraph_menus_and_closes_once(pg: ModuleType) -> None:
     """pyqtgraph builds its menus and settings panel as parentless windows; a
     sweep that closed every top-level widget deleted them under pyqtgraph and
