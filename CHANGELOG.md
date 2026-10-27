@@ -25,6 +25,14 @@ All notable changes to ReverbScope are documented here. The format follows
 - **Settings language hint** is a single `_()` string (no bilingual mix).
 - **Control chrome contrast** (`control` token) meets WCAG AA 4.5:1 on both
   light and dark surfaces (level-ack checkbox).
+- **MeasureWorker reports out-of-memory** with the same non-bug wording as
+  analysis (no longer “This is a bug in ReverbScope”).
+- **Fake backend honours Stop before room convolution**, so Esc/Stop is not
+  stuck behind `fftconvolve` on a long demo sweep.
+- **Chart CSV export is atomic**: a failed write keeps any previous file.
+- **DAW Analyze locks busy menus** the same way Standalone takes do.
+- **`sign_app.sh` uses `pipefail`** so a failed nested `codesign` is not
+  swallowed by a pipeline.
 
 ### Changed
 - **macOS DMG post-build checks** also verify `CFBundleIdentifier`, HiDPI,

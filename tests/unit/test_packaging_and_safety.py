@@ -202,6 +202,8 @@ def test_macos_sign_and_dmg_scripts_wire_entitlements_and_arch() -> None:
     assert "entitlements-adhoc.plist" in sign
     assert "entitlements.plist" in sign
     assert "--options runtime" in sign
+    # Nested ``find | while codesign`` must not swallow a failed codesign.
+    assert "pipefail" in sign
     dmg = Path("packaging/macos/make_dmg.sh").read_text(encoding="utf-8")
     assert "uname -m" in dmg
     assert "ReverbScope-Desktop-macOS-" in dmg

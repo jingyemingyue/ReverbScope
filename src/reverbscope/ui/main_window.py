@@ -182,6 +182,11 @@ class MainWindow(QMainWindow):
         self.standalone.busy_changed.connect(
             self._weak(lambda window, busy: window._busy_changed(busy, "standalone"))
         )
+        # DAW Analyze also locks New/Open/Save/Settings/Start panel; without
+        # this the strip could start a Standalone take over a running analysis.
+        self.daw.busy_changed.connect(
+            self._weak(lambda window, busy: window._busy_changed(busy, "universal_daw"))
+        )
         self.inspector.compare_requested.connect(self.show_compare)
         self.inspector.same_gain.toggled.connect(self.compare.same_gain.setChecked)
         self.compare.same_gain.toggled.connect(self.inspector.same_gain.setChecked)

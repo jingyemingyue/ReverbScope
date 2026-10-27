@@ -15,7 +15,7 @@
 #                                   hardened runtime, secure timestamp and
 #                                   entitlements.plist, ready for notarization
 #                                   (not run yet: no certificate)
-set -eu
+set -euo pipefail
 APP="${1:?usage: sign_app.sh APP [--runtime | --identity IDENTITY]}"
 shift
 HERE="$(cd "$(dirname "$0")" && pwd)"

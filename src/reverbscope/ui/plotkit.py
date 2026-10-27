@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import csv
 import math
+import os
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -846,13 +847,24 @@ class ChartPanel(QWidget):
             target = target.with_suffix(f".{kind}")
         self.export(kind, target)
 
-    def export(self, kind: str, path: Path) -> Path:
-        if kind == "png":
-            png_export(self.plot, path)
-        elif kind == "svg":
-            svg_export(self.plot, path)
-        else:
-            self.export_csv(path)
+    def export(self, kind: str, path: Path) -> Path | None:
+        from reverbscope.ui.widgets import error_box
+
+        try:
+            if kind == "png":
+                png_export(self.plot, path)
+            elif kind == "svg":
+                svg_export(self.plot, path)
+            else:
+                self.export_csv(path)
+        except OSError as exc:
+            # Dialog only: do not re-raise into the Qt event loop.
+            error_box(
+                self,
+                _("Cannot export"),
+                _("Could not write {path}: {error}").format(path=path, error=exc),
+            )
+            return None
         return path
 
     def export_csv(self, path: Path) -> Path:
@@ -860,23 +872,35 @@ class ChartPanel(QWidget):
 
         The header says what each curve is and which display processing was
         applied to it, so an exported smoothed or aligned curve is never
-        mistaken for the stored one.
+        mistaken for the stored one. Writes beside ``path`` then replaces it,
+        so a failed mid-write keeps any previous CSV (same idea as #104 for
+        the session exporter; this path does not use that module).
         """
-        with path.open("w", newline="", encoding="utf-8") as handle:
-            handle.write(f"# ReverbScope {self.title_text}\n")
-            handle.write(f"# x: {self.x_label}\n# y: {self.y_label}\n")
-            visible = [s for s in self.series if s.visible]
-            for series in visible:
-                processing = series.processing or _("as stored")
-                handle.write(f"# {series.name}: {processing}\n")
-            writer = csv.writer(handle)
-            writer.writerow(["curve", "x", "y"])
-            for series in visible:
-                factor, offset = series.shift
-                xs, ys = series.x / factor, series.y - offset
-                for xv, yv in zip(xs.tolist(), ys.tolist(), strict=True):
-                    if math.isfinite(xv) and math.isfinite(yv):
-                        writer.writerow([series.name, f"{xv:.6g}", f"{yv:.6g}"])
+        from reverbscope.io.jsonutil import discard, keep_mode, temporary_beside
+
+        temporary = temporary_beside(path, f"{path.suffix}.tmp")
+        try:
+            with temporary.open("w", newline="", encoding="utf-8") as handle:
+                handle.write(f"# ReverbScope {self.title_text}\n")
+                handle.write(f"# x: {self.x_label}\n# y: {self.y_label}\n")
+                visible = [s for s in self.series if s.visible]
+                for series in visible:
+                    processing = series.processing or _("as stored")
+                    handle.write(f"# {series.name}: {processing}\n")
+                writer = csv.writer(handle)
+                writer.writerow(["curve", "x", "y"])
+                for series in visible:
+                    factor, offset = series.shift
+                    xs, ys = series.x / factor, series.y - offset
+                    for xv, yv in zip(xs.tolist(), ys.tolist(), strict=True):
+                        if math.isfinite(xv) and math.isfinite(yv):
+                            writer.writerow([series.name, f"{xv:.6g}", f"{yv:.6g}"])
+                handle.flush()
+                os.fsync(handle.fileno())
+            keep_mode(temporary, path)
+            os.replace(temporary, path)
+        finally:
+            discard(temporary)
         return path
 
 

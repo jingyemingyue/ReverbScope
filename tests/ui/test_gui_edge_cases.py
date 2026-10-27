@@ -355,3 +355,35 @@ def test_a_worker_that_runs_out_of_memory_says_so_and_does_not_call_it_a_bug(
     assert "not enough memory" in shown[0].lower() and "bug" not in shown[0]
     assert workers.gui_failure_text(MemoryError()) == workers.out_of_memory_text()
     assert workers.gui_failure_text(RuntimeError("x")) == workers.unexpected_error_text()
+
+
+def test_a_measure_worker_that_runs_out_of_memory_says_so(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MeasureWorker used to funnel MemoryError into unexpected_error_text()."""
+    import numpy as np
+
+    from reverbscope.audio import backend as backend_module
+    from reverbscope.ui import workers
+
+    class _OomBackend:
+        name = "oom"
+
+        def play_and_record(self, *_args: object, **_kwargs: object) -> object:
+            raise MemoryError("Unable to allocate recording buffer")
+
+    monkeypatch.setattr(backend_module, "get_backend", lambda name=None: _OomBackend())
+    worker = workers.MeasureWorker(
+        np.zeros(8),
+        48000,
+        input_device=None,
+        output_device=None,
+        input_channels=[1],
+        output_channel=1,
+        level_dbfs=-20.0,
+    )
+    shown: list[str] = []
+    worker.failed.connect(shown.append)
+    worker.run()
+    assert shown == [workers.out_of_memory_text()]
+    assert "bug" not in shown[0].lower()
