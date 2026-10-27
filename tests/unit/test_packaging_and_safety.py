@@ -195,6 +195,19 @@ def test_the_mac_app_declares_its_chinese_localization(tmp_path: Path) -> None:
     module.check_localizations(app, info)
 
 
+def test_macos_sign_and_dmg_scripts_wire_entitlements_and_arch() -> None:
+    """The release scripts must keep pointing at both entitlement files and
+    stamp the DMG name with the build machine's arch (arm64 / x86_64)."""
+    sign = Path("packaging/macos/sign_app.sh").read_text(encoding="utf-8")
+    assert "entitlements-adhoc.plist" in sign
+    assert "entitlements.plist" in sign
+    assert "--options runtime" in sign
+    dmg = Path("packaging/macos/make_dmg.sh").read_text(encoding="utf-8")
+    assert "uname -m" in dmg
+    assert "ReverbScope-Desktop-macOS-" in dmg
+    assert "hdiutil create" in dmg
+
+
 def test_macos_entitlements_cover_adhoc_and_developer_id() -> None:
     """CI rehearsal (``sign_app.sh --runtime``) needs the adhoc entitlements;
     notarization needs the Developer ID file without library-validation off."""
