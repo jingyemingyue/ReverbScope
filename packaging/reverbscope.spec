@@ -125,7 +125,9 @@ a = Analysis(
         (str(ROOT / "src" / "reverbscope" / "locale"), "reverbscope/locale"),
         (str(BUILD_INFO_FILE), "reverbscope"),
     ],
-    hiddenimports=["reverbscope.cli.main"] if TERMINAL else ["reverbscope.cli.main", "reverbscope.ui.app"],
+    hiddenimports=["reverbscope.cli.main"]
+    if TERMINAL
+    else ["reverbscope.cli.main", "reverbscope.ui.app"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
