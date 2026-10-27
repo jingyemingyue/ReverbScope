@@ -31,8 +31,9 @@ All notable changes to ReverbScope are documented here. The format follows
   stuck behind `fftconvolve` on a long demo sweep.
 - **Chart CSV export is atomic**: a failed write keeps any previous file.
 - **DAW Analyze locks busy menus** the same way Standalone takes do.
-- **`sign_app.sh` uses `pipefail`** so a failed nested `codesign` is not
-  swallowed by a pipeline.
+- **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
+  `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
+  not swallowed.
 
 ### Changed
 - **macOS DMG post-build checks** also verify `CFBundleIdentifier`, HiDPI,
