@@ -1006,13 +1006,14 @@ class StandalonePage(QWidget):
             return
         above = self.level.value() > SAFE_MAX_LEVEL_DBFS
         self.safe_band.setVisible(above)
-        self.acknowledge.setEnabled(above)
+        busy = self._busy_flag or self.is_busy()
+        # C8: a take in progress must not accept a mid-sweep level ack.
+        self.acknowledge.setEnabled(above and not busy)
         missing = not self.output_chosen() and bool(self._devices)
         if bool(self.output_device.property("missing")) != missing:
             self.output_device.setProperty("missing", missing)
             self.output_device.style().unpolish(self.output_device)
             self.output_device.style().polish(self.output_device)
-        busy = self._busy_flag or self.is_busy()
         reason = self.readiness_reason()
         if not busy:
             self.run_button.setEnabled(not reason)
@@ -1571,6 +1572,43 @@ class StandalonePage(QWidget):
             self.back_button.setEnabled(not busy)
         if hasattr(self, "refresh_button"):
             self.refresh_button.setEnabled(not busy)
+        # C8: while measuring, device routing and the sweep level/duration
+        # must stay fixed. The running worker already captured the indices;
+        # locking the widgets stops the operator from thinking a mid-take
+        # edit will apply (and keeps Esc/Stop as the only live controls).
+        for name in (
+            "host_api",
+            "input_device",
+            "output_device",
+            "sample_rate",
+            "input_channel",
+            "loopback_channel",
+            "output_channel",
+            "duration",
+            "level",
+            "acknowledge",
+            "profile",
+            "latency",
+        ):
+            widget = getattr(self, name, None)
+            if widget is not None:
+                widget.setEnabled(not busy)
+        if hasattr(self, "wasapi_exclusive"):
+            if busy:
+                self.wasapi_exclusive.setEnabled(False)
+                self.coreaudio_set_rate.setEnabled(False)
+            else:
+                api = self.host_api.currentData() if self.host_api.count() else None
+                kind = next(
+                    (
+                        a.kind
+                        for a in (self._inventory.host_apis if self._inventory else ())
+                        if a.name == api
+                    ),
+                    "",
+                )
+                self.wasapi_exclusive.setEnabled(kind == "wasapi")
+                self.coreaudio_set_rate.setEnabled(kind == "coreaudio")
         self.progress.setVisible(busy)
         if not busy and hasattr(self, "progress") and self.progress.maximum() == 100:
             self.progress.setValue(0)

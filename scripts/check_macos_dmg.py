@@ -29,20 +29,50 @@ def check_localizations(app: Path, info: dict) -> None:
         assert purpose and purpose != info["NSMicrophoneUsageDescription"], (language, purpose)
 
 
-def check_app(app: Path, version: str) -> Path:
-    info = plistlib.loads((app / "Contents" / "Info.plist").read_bytes())
+def check_bundle_identity(info: dict, version: str) -> None:
+    """Stable identity keys the Finder, TCC and updates rely on."""
     assert info["CFBundleShortVersionString"] == version
     assert info["CFBundleVersion"] == version
+    assert info["CFBundleIdentifier"] == "org.reverbscope.ReverbScope", info.get(
+        "CFBundleIdentifier"
+    )
+    assert info["CFBundleExecutable"] == "ReverbScope", info.get("CFBundleExecutable")
+    assert info["CFBundleName"] == "ReverbScope", info.get("CFBundleName")
+    assert info["CFBundlePackageType"] == "APPL", info.get("CFBundlePackageType")
+    assert info.get("NSHighResolutionCapable") is True, info.get("NSHighResolutionCapable")
     assert info["NSMicrophoneUsageDescription"]
-    check_localizations(app, info)
     # The bundled NumPy / SciPy wheels are built for macOS 14 (macosx_14_0).
     assert info["LSMinimumSystemVersion"] == "14.0", info.get("LSMinimumSystemVersion")
+
+
+def check_dmg_arch_name(dmg: Path, archs: str) -> None:
+    """Release DMG names carry the CPU (``…-macOS-arm64.dmg`` / ``…-x86_64.dmg``).
+
+    A mismatch means an Apple Silicon build was labelled Intel (or the reverse)
+    and would be offered to the wrong Macs on the Releases page.
+    """
+    name = dmg.name
+    if "-macOS-" not in name:
+        return
+    listed = set(archs.split())
+    if "arm64" in name and "arm64" not in listed:
+        raise AssertionError(f"DMG name {name!r} says arm64 but lipo reports {archs!r}")
+    if "x86_64" in name and "x86_64" not in listed:
+        raise AssertionError(f"DMG name {name!r} says x86_64 but lipo reports {archs!r}")
+
+
+def check_app(app: Path, version: str, *, dmg: Path | None = None) -> Path:
+    info = plistlib.loads((app / "Contents" / "Info.plist").read_bytes())
+    check_bundle_identity(info, version)
+    check_localizations(app, info)
     executable = app / "Contents" / "MacOS" / info["CFBundleExecutable"]
     assert executable.is_file(), executable
     # The app is built for the runner's architecture: arm64 on Apple silicon,
     # x86_64 on an Intel runner.
-    archs = subprocess.check_output(["lipo", "-archs", str(executable)], text=True)
+    archs = subprocess.check_output(["lipo", "-archs", str(executable)], text=True).strip()
     assert platform.machine() in archs.split(), (platform.machine(), archs)
+    if dmg is not None:
+        check_dmg_arch_name(dmg, archs)
     subprocess.run(["codesign", "--verify", "--deep", "--strict", str(app)], check=True)
     return executable
 
@@ -65,14 +95,14 @@ def main() -> None:
             assert (mount / "Applications").is_symlink()
             assert os.readlink(mount / "Applications") == "/Applications"
             app = mount / "ReverbScope.app"
-            check_app(app, version)
+            check_app(app, version, dmg=dmg)
             installed = root / "Applications" / "ReverbScope.app"
             installed.parent.mkdir()
             subprocess.run(["ditto", str(app), str(installed)], check=True)
         finally:
             subprocess.run(["hdiutil", "detach", str(mount)], check=True)
 
-        executable = check_app(installed, version)
+        executable = check_app(installed, version, dmg=dmg)
         env = os.environ.copy()
         env["QT_QPA_PLATFORM"] = "offscreen"
         # The report a bug reporter pastes, from the copied app: library

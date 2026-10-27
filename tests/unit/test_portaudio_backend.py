@@ -135,6 +135,11 @@ def _fake_sounddevice(script: _Script) -> SimpleNamespace:
                 time.sleep(script.finish_delay_s)
                 self.finished_callback()
 
+        def abort(self) -> None:
+            """Mirror sounddevice.Stream.abort(): stop the device without draining."""
+            script.aborted.append(True)
+            self.closed.set()
+
         def __enter__(self) -> Stream:
             self.thread.start()
             return self
@@ -258,6 +263,9 @@ def test_stop_on_a_stalled_device_does_not_wait_for_the_timeout(script: _Script)
     with pytest.raises(MeasurementCancelledError):
         _take(frames=48000 * 10, cancel=cancel)
     assert time.monotonic() - started < 3.0
+    # Grace expiry must abort the hung stream so the context manager's close()
+    # cannot block the GUI thread on a stalled CoreAudio/WASAPI device.
+    assert script.aborted == [True]
 
 
 def test_a_failing_final_progress_report_keeps_the_take(

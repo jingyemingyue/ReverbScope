@@ -195,6 +195,33 @@ def test_the_mac_app_declares_its_chinese_localization(tmp_path: Path) -> None:
     module.check_localizations(app, info)
 
 
+def test_macos_dmg_check_rejects_identity_and_arch_mismatches(tmp_path: Path) -> None:
+    """A wrong CFBundleIdentifier or an arm64 DMG that only contains x86_64
+    must fail the post-build check before the Release assets are uploaded."""
+    import plistlib
+    import tomllib
+
+    module = _load("check_macos_dmg", Path("scripts") / "check_macos_dmg.py")
+    version = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"][
+        "version"
+    ]
+    info = plistlib.loads((Path("packaging/macos") / "Info.plist").read_bytes())
+    info["CFBundleShortVersionString"] = version
+    info["CFBundleVersion"] = version
+    module.check_bundle_identity(info, version)
+
+    broken = dict(info)
+    broken["CFBundleIdentifier"] = "org.example.Wrong"
+    with pytest.raises(AssertionError):
+        module.check_bundle_identity(broken, version)
+
+    module.check_dmg_arch_name(tmp_path / "ReverbScope-Desktop-macOS-arm64.dmg", "arm64")
+    with pytest.raises(AssertionError, match="arm64"):
+        module.check_dmg_arch_name(tmp_path / "ReverbScope-Desktop-macOS-arm64.dmg", "x86_64")
+    with pytest.raises(AssertionError, match="x86_64"):
+        module.check_dmg_arch_name(tmp_path / "ReverbScope-Desktop-macOS-x86_64.dmg", "arm64")
+
+
 def test_smoke_bundle_finds_explicit_binary(tmp_path: Path) -> None:
     module = _load("smoke_bundle", Path("scripts") / "smoke_bundle.py")
     fake = tmp_path / "reverbscope"

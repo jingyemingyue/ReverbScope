@@ -423,6 +423,10 @@ class MeasureStrip(QWidget):
         )
         self.mode.setEnabled(not busy)
         self.position.setEnabled(not busy)
+        # C8: device and channel controls must not change while a take runs.
+        # The strip mirrors the page; locking both keeps the bar honest.
+        for widget in self.device_widgets:
+            widget.setEnabled(not busy)
         # The page's Stop is on exactly while the sweep plays (the worker may
         # not have started yet when the busy signal arrives).
         running = busy and self.standalone.stop_button.isEnabled()
