@@ -3,9 +3,10 @@
 Runs the steps of the ``bundle`` job of ``.github/workflows/release.yml`` on
 the machine it is started on (except the ones that change that machine, see
 below), and writes the same file names into
-``dist/``, so a maintainer can build on a Mac (Apple silicon and/or Intel), a
-Windows PC and a Linux PC and attach the results to the draft Release by
-hand (``docs/RELEASE_PLAN.md`` §3a):
+``dist/``, so a maintainer can build on a Mac (Apple silicon and/or Intel)
+or a Linux PC and attach those official files to the draft Release by
+hand (``docs/RELEASE_PLAN.md`` §3a). A Windows PC can still build the
+historical names locally; those files are not official Release assets:
 
 * Desktop Edition: PyInstaller -> license bundle (with a notice for every
   native library PyInstaller collected) -> ``--strip`` bundle gate -> smoke
@@ -17,13 +18,10 @@ hand (``docs/RELEASE_PLAN.md`` §3a):
   refused politely);
 * Linux: ``ReverbScope-Desktop-Linux-x86_64.tar.gz`` and
   ``ReverbScope-Terminal-Linux-x86_64.tar.gz``;
-* Windows: ``ReverbScope-Desktop-Windows-x64.zip``,
-  ``ReverbScope-Terminal-Windows-x64.zip`` and, with Inno Setup installed,
-  ``ReverbScope-Desktop-Windows-x64-Setup.exe``. The installer is compiled but
-  not installed, smoke-tested and uninstalled as the workflow does, because
-  that would change this PC; run it by hand (``/VERYSILENT /CURRENTUSER
-  /DIR=<folder>``, ``smoke_bundle.py --root <folder>``, ``unins000.exe
-  /VERYSILENT``) before publishing a locally built installer;
+* Windows (local only, **not** an official GitHub Release asset): the same
+  historical names can still be built on a Windows PC for inspection. The
+  release workflow does not upload them. Do not attach them to a public
+  Release;
 * macOS: ad-hoc signed ``ReverbScope.app`` in
   ``ReverbScope-Desktop-macOS-<arch>.dmg``, mounted and launched by
   ``check_macos_dmg.py``, and ``ReverbScope-Terminal-macOS-<arch>.tar.gz``;

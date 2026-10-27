@@ -31,7 +31,7 @@ ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版
 | --- | --- | --- |
 | Apple 芯片（M1 及更新）的 Mac，macOS 14 或更新 | `ReverbScope-Desktop-macOS-arm64.dmg` | [macOS](#macos) |
 | Intel 处理器的 Mac，macOS 14 或更新 | `ReverbScope-Desktop-macOS-x86_64.dmg` | [macOS](#macos) |
-| Windows 10 或 11，64 位 | `ReverbScope-Desktop-Windows-x64-Setup.exe`（安装程序）或 `ReverbScope-Desktop-Windows-x64.zip`（免安装） | [Windows](#windows) |
+| Windows 10 或 11，64 位 | 没有官方安装程序或 zip | [Windows](#windows) |
 | Linux x86_64（glibc 2.39 或更新，例如 Ubuntu 24.04+） | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | [Linux](#linux) |
 
 **终端版**（只有命令行）：
@@ -40,7 +40,7 @@ ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版
 | --- | --- | --- |
 | Apple 芯片的 Mac，macOS 14 或更新 | `ReverbScope-Terminal-macOS-arm64.tar.gz` | [终端版](#终端版) |
 | Intel 处理器的 Mac，macOS 14 或更新 | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | [终端版](#终端版) |
-| Windows 10 或 11，64 位 | `ReverbScope-Terminal-Windows-x64.zip` | [终端版](#终端版) |
+| Windows 10 或 11，64 位 | 没有官方终端版 zip | [终端版](#终端版) |
 | Linux x86_64（glibc 2.39 或更新） | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | [终端版](#终端版) |
 
 **Python 开发者**（任何装有 Python 3.12–3.14 的系统）：`reverbscope-<version>-py3-none-any.whl` 或
@@ -110,36 +110,11 @@ ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版
 
 ## Windows
 
+**不是官方下载（2026-10-27）。** 新的 Release 不再包含 Windows 安装程序或 zip。
+源码和 CI 还在，这不等于 Windows 应用已验收。本地源码构建仍可能生成
+`reverbscope-gui.exe`（旁边是 `reverbscope.exe`）；这两个文件不是 GitHub Release 资产。
+
 本节是**桌面版**；只有命令行的下载见[终端版](#终端版)。
-
-### 安装程序（推荐）
-
-1. 在[下载页面](https://github.com/jingyemingyue/ReverbScope/releases)下载 `ReverbScope-Desktop-Windows-x64-Setup.exe`。
-2. 运行它。如果 SmartScreen 提示“Windows 已保护你的电脑”，点 **更多信息 → 仍要运行**
-   （见[警告说明](#未签名构建的警告)）。
-3. 如果安装程序询问为所有用户还是只为你安装，选 **只为我安装**（不需要管理员权限）。ReverbScope 会被安装到
-   `%LOCALAPPDATA%\Programs\ReverbScope`。安装界面按 Windows 显示语言使用英文或简体中文；可以勾选
-   *创建桌面快捷方式*。
-4. 从 **开始菜单 → ReverbScope** 启动（或者在最后一页保持勾选“运行 ReverbScope”）。命令行工具也一并安装在
-   安装文件夹里：`reverbscope.exe`。
-
-### ZIP（免安装）
-
-1. 下载 `ReverbScope-Desktop-Windows-x64.zip`。
-2. 右键点它 → **全部解压缩…** → **提取**。不要不解压就在 ZIP 里直接运行：程序需要旁边的 `_internal` 文件夹。
-3. 打开解压出来的 `ReverbScope-Desktop-Windows-x64` 文件夹，里面有：
-
-   ```text
-   reverbscope-gui.exe        桌面程序（双击这个）
-   reverbscope.exe            命令行工具
-   _internal\               程序库（要和 .exe 放在一起）
-   THIRD_PARTY_LICENSES\    内置组件的许可证
-   ```
-
-4. 双击 **`reverbscope-gui.exe`**。SmartScreen 可能会警告：**更多信息 → 仍要运行**。
-
-整个文件夹可以移动到任何地方（比如“文档”），只要 `_internal` 和 `.exe` 文件在一起。要用命令行工具，在该文件夹
-打开终端，运行 `.\reverbscope.exe --help`。
 
 ### Windows 上的麦克风权限
 
@@ -202,10 +177,7 @@ xattr -dr com.apple.quarantine reverbscope-terminal
 它只改动这些文件，不会关闭 Gatekeeper，也不应该关闭 Gatekeeper。这是未签名预发布构建的临时办法；签名后的构建不需要这一步。用 `curl` 下载的文件没有这个标记。Linux 终端版
 做测量时需要 `libportaudio2`（`sudo apt install libportaudio2`），不需要图形库。
 
-**Windows**（`ReverbScope-Terminal-Windows-x64.zip`）：右键 → **全部解压缩…**，打开解压出的文件夹，双击
-**`ReverbScope Terminal.cmd`**。它会在该文件夹里打开一个命令提示符，可以直接输入 `reverbscope.exe demo` 或
-`reverbscope.exe --help`。（直接双击 `reverbscope.exe` 的话，窗口会在输出后立刻关闭。）在 PowerShell 中，于该文件夹运行
-`.\reverbscope.exe demo` 也一样。
+**Windows：** 没有官方终端版 zip。本地源码构建不是 Release 资产。
 
 **在 PowerShell 中保存报告。** 输出重定向到文件或交给其他程序时，每条 `reverbscope` 命令都写出 UTF-8。命令提示符的 `>`
 会原样保存。Windows PowerShell 5.1，以及把输出交给 `Select-String`、`Out-File` 等命令时的 PowerShell 7，则按控制台代码页解码，
@@ -272,7 +244,7 @@ sha256sum ReverbScope-Terminal-Linux-x86_64.tar.gz         # Linux
 ```
 
 ```powershell
-Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell（SHA256）
+Get-FileHash .\ReverbScope-Desktop-macOS-arm64.dmg   # Windows PowerShell（SHA256）
 ```
 
 一致说明文件就是发布页上附带的那个，但不能证明是谁构建的；这正是代码签名将来要补上的。
@@ -298,7 +270,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 
 * **macOS：** 退出 ReverbScope，打开新的 DMG，再把 ReverbScope 拖到“应用程序”上，选 **替换**。新构建可能会再出现一次
   首次打开的警告。
-* **Windows 安装程序：** 运行新的 `ReverbScope-Desktop-Windows-x64-Setup.exe`，它会替换已安装的版本。
+* **Windows：** 没有官方安装程序或 zip 可以更新。
 * **Windows ZIP / Linux / 终端版：** 删除旧文件夹，解压新的压缩包。
 * **wheel：** 在同一个虚拟环境里运行 `pip install --upgrade "./reverbscope-<新版本>-py3-none-any.whl[gui]"`。
 * **开发者安装：** `git pull`，然后再运行一次 `pip install -e ".[dev,gui]"`。

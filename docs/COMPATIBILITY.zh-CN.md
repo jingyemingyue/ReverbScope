@@ -10,7 +10,7 @@ ReverbScope 能在哪些平台上运行、能与哪些东西配合，以及**每
 
 | 平台 | 交付物 | 验证方式 |
 | --- | --- | --- |
-| Windows 10/11 x64 | 桌面版：`ReverbScope-Desktop-Windows-x64-Setup.exe`、`ReverbScope-Desktop-Windows-x64.zip`；终端版：`ReverbScope-Terminal-Windows-x64.zip` | `windows-latest` 上的发布工作流：冻结包冒烟测试（命令行、中英文演示、stdout 只有 JSON、模拟测量、离屏图形界面、不带参数启动的窗口启动器），用 Inno Setup 构建安装程序，按当前用户安装、检查开始菜单项，在安装目录中冒烟测试，再卸载并确认开始菜单项已删除；终端版经过“不含 Qt / PySide6 / matplotlib”门禁和冒烟测试（演示、JSON、`gui` 友好拒绝）；Windows / Python 3.12 上的 CI 测试套件 |
+| Windows 10/11 x64 | 没有官方安装程序或 zip（源码保留） | `windows-latest` / Python 3.12 上的 CI 测试套件（自动化）。发布工作流不再构建 Windows 安装包。不是硬件或图形界面验收 |
 | macOS 14+，Apple 芯片 | 桌面版：`ReverbScope-Desktop-macOS-arm64.dmg`；终端版：`ReverbScope-Terminal-macOS-arm64.tar.gz` | `macos-latest`（macOS 26）上的发布工作流：挂载 DMG、复制应用、`gui --smoke`、模拟 Finder 方式启动并保持运行、验证临时签名（ad hoc）、`lipo` 架构为 arm64、启动一份启用 hardened runtime 的副本；两个版本的 `reverbscope doctor` 都报告 `arm64`；终端版经过不含 Qt 的门禁和冒烟测试；macOS / Python 3.12 上的 CI 测试套件。macOS 14 是打包的 NumPy / SciPy wheel 的最低版本（`macosx_14_0`，`LSMinimumSystemVersion` 14.0），尚未在 macOS 14 上实际运行过 |
 | macOS 14+，Intel | 桌面版：`ReverbScope-Desktop-macOS-x86_64.dmg`；终端版：`ReverbScope-Terminal-macOS-x86_64.tar.gz` | `macos-15-intel`（macOS 15）上的发布工作流：同样的检查，架构为 x86_64 |
 | Linux x86_64（CI 运行器的 glibc 或更新版本） | 桌面版：`ReverbScope-Desktop-Linux-x86_64.tar.gz`；终端版：`ReverbScope-Terminal-Linux-x86_64.tar.gz` | `ubuntu-latest` 上的发布工作流及本地构建（`scripts/build_release.py`）：两个版本的安装包门禁和冒烟测试、启动 `reverbscope-gui`；Ubuntu / Python 3.12–3.14 上的 CI 测试 |

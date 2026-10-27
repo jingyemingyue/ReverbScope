@@ -28,14 +28,12 @@ computers without a desktop.
 
 | System | Desktop Edition | Start ReverbScope |
 | --- | --- | --- |
-| Windows 10/11 x64 | `ReverbScope-Desktop-Windows-x64-Setup.exe` (installer) or `ReverbScope-Desktop-Windows-x64.zip` | Start menu → ReverbScope, or `reverbscope-gui.exe` in the zip |
-| macOS 14+, Apple silicon | `ReverbScope-Desktop-macOS-arm64.dmg` | Drag ReverbScope to Applications, then open it |
+| macOS 14+, Apple silicon (primary) | `ReverbScope-Desktop-macOS-arm64.dmg` | Drag ReverbScope to Applications, then open it |
 | macOS 14+, Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | Drag ReverbScope to Applications, then open it |
 | Linux x86_64 | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz && reverbscope/reverbscope-gui` |
 
 | System | Terminal Edition | Start ReverbScope |
 | --- | --- | --- |
-| Windows 10/11 x64 | `ReverbScope-Terminal-Windows-x64.zip` | Extract, double-click `ReverbScope Terminal.cmd`, type `reverbscope.exe demo` |
 | macOS 14+, Apple silicon | `ReverbScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 | macOS 14+, Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 | Linux x86_64 | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |

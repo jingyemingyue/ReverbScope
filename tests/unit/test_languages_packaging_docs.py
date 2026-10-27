@@ -58,10 +58,11 @@ def test_installer_texts_are_localized_messages() -> None:
 
 
 def test_release_workflow_compiles_with_the_chinese_messages() -> None:
+    """Official releases no longer build the installer; a local Windows build still does."""
     workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    assert "scripts/inno_chinese_messages.py --iscc $iscc" in workflow
-    assert '"/DChineseMessages=$zh"' in workflow
-    assert "Simplified Chinese messages unavailable" in workflow
+    assert "inno_chinese_messages.py --iscc" not in workflow
+    assert "name: Windows installer" not in workflow
+    assert "windows-latest" not in workflow
     build = Path("scripts/build_release.py").read_text(encoding="utf-8")
     assert "scripts/inno_chinese_messages.py" in build and "/DChineseMessages=" in build
 

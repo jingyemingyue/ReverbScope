@@ -1,6 +1,8 @@
 # ReverbScope release plan
 
 > Current inventory (2026-10-15): v0.4.1 / v0.5.0b1 are public under RoomScope names; rc1, rc2, b2 and b3 are Draft. Older dated sections below are historical preparation notes, not current download instructions. See [OSS readiness](OSS_READINESS.md) and [public testing](PUBLIC_TESTING.md).
+>
+> **Official binaries (maintainer decision 2026-10-27): macOS-first.** New GitHub Release assets are macOS DMGs (Apple silicon first, Intel retained), Linux archives, the Python wheel and sdist, `SHA256SUMS`, and the SBOM files — **11 files**, not 14. Windows installers and zips are not built or uploaded. Windows source, `packaging/windows/`, and the Windows CI job stay. The next Release workflow run that refreshes an existing **draft** will treat the old Windows asset names as legacy and remove them from that draft. Published Releases are not rewritten. This session does not run that sync.
 
 **English** | [简体中文](RELEASE_PLAN.zh-CN.md)
 
@@ -210,8 +212,8 @@ maintainer's click, which creates the tag. The maintainer's runbook is
 > **How the draft is refreshed** (`scripts/release_draft.py`, tested in
 > `tests/unit/test_release_draft.py`). Each refresh replaces *every* asset,
 > the notes, the tag name and the target commit, so the draft holds exactly
-> the 14 files of one successful run of the commit it targets (nine downloads
-> of the two editions, wheel, sdist, one `SHA256SUMS`, the SBOM and the lock). Files an older
+> the 11 files of one successful run of the commit it targets (six downloads
+> of the two editions on macOS and Linux, wheel, sdist, one `SHA256SUMS`, the SBOM and the lock). Files an older
 > workflow attached under names no longer produced (`ReverbScope.dmg`,
 > `SHA256SUMS-macOS`, ...) are removed. The job stops without changing
 > anything when `v<version>` is already published, when two drafts match,

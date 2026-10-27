@@ -20,11 +20,13 @@ The app with windows, charts and buttons, plus the `reverbscope` command line.
 
 | Your computer | Download | Then |
 | --- | --- | --- |
-| **macOS** 14+, Apple silicon (M1 or later) | `ReverbScope-Desktop-macOS-arm64.dmg` | Open the DMG, drag **ReverbScope** onto **Applications**, open it from Applications |
+| **macOS** 14+, Apple silicon (M1 or later) — primary | `ReverbScope-Desktop-macOS-arm64.dmg` | Open the DMG, drag **ReverbScope** onto **Applications**, open it from Applications |
 | **macOS** 14+, Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | Same as above |
-| **Windows** 10 / 11, 64-bit | `ReverbScope-Desktop-Windows-x64-Setup.exe` (installer) | Run it, then Start menu → **ReverbScope** |
-| | or `ReverbScope-Desktop-Windows-x64.zip` (no installer) | **Extract All…**, open the folder, double-click **`reverbscope-gui.exe`** |
 | **Linux** x86_64 (glibc 2.39+) | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | Extract, run `reverbscope/reverbscope-gui` |
+
+Windows source remains in the repository. New releases do **not** include an
+official Windows installer or zip, so there is no Authenticode-signed file
+and no SmartScreen **Run anyway** step. That is not a claim that Windows works.
 
 #### ⌨️ Terminal Edition — command line only
 
@@ -36,7 +38,6 @@ and analysis, `reverbscope demo`, English and Chinese.
 | --- | --- | --- |
 | **macOS** 14+, Apple silicon | `ReverbScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 | **macOS** 14+, Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | Same as above |
-| **Windows** 10 / 11, 64-bit | `ReverbScope-Terminal-Windows-x64.zip` | **Extract All…**, double-click **`ReverbScope Terminal.cmd`**, type `reverbscope demo` |
 | **Linux** x86_64 (glibc 2.39+) | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 
 Not sure? Take the **Desktop Edition**: it contains the command line too.
@@ -51,8 +52,8 @@ Not sure? Take the **Desktop Edition**: it contains the command line too.
   folder your browser downloaded, run
   `xattr -dr com.apple.quarantine reverbscope-terminal` once in that folder
   (it clears the download mark on these files only).
-* **Windows:** if SmartScreen says *Windows protected your PC*, click
-  **More info → Run anyway**.
+* **Windows:** this release has no official Windows installer or zip, so there
+  is no Authenticode file and no **Run anyway** step.
 
 Full steps, checksums, updating, uninstalling and troubleshooting:
 [Installation guide](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.md)
@@ -73,10 +74,9 @@ Installers do not add it to `PATH`; on a Mac it is
   should not yet be treated as hardware-validated**: use the numbers to
   compare positions and to learn, and do not rely on them for acoustic
   treatment decisions until a validated release.
-* **The builds are unsigned.** macOS: ad hoc signature only, not notarized by
-  Apple. Windows: no Authenticode signature. The first launch shows a
-  warning (see above); Windows 11 with Smart App Control on blocks unsigned
-  apps entirely.
+* **The macOS builds are unsigned.** Ad hoc signature only, not notarized by
+  Apple. The first launch may show a warning (see above). There is no
+  official Windows binary in this release.
 * Levels are **dBFS, not dB SPL**, unless you calibrate.
 * The per-DAW steps are written from each vendor's documentation and have
   not been run in each DAW yet.

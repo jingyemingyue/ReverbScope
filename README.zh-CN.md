@@ -45,16 +45,13 @@ Windows 上通过了自动化测试。**但还没有任何一次测量经过真�
 
 | 平台 | 下载 | 架构 | 说明 |
 | --- | --- | --- | --- |
-| **macOS** 14+ | [`ReverbScope-Desktop-macOS-arm64.dmg`](https://github.com/jingyemingyue/ReverbScope/releases) | Apple 芯片（M1 及更新） | 打开 DMG，把 **ReverbScope** 拖到 **Applications（应用程序）** |
-| **macOS** 14+ | [`ReverbScope-Desktop-macOS-x86_64.dmg`](https://github.com/jingyemingyue/ReverbScope/releases) | Intel | 同上 |
-| **Windows** 10 / 11 | [`ReverbScope-Desktop-Windows-x64-Setup.exe`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | 安装程序；装好后从开始菜单打开 **ReverbScope** |
-| **Windows** 10 / 11 | [`ReverbScope-Desktop-Windows-x64.zip`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | 免安装：解压后双击 **`reverbscope-gui.exe`** |
+| **macOS** 14+ | [`ReverbScope-Desktop-macOS-arm64.dmg`](https://github.com/jingyemingyue/ReverbScope/releases) | Apple 芯片（M1 及更新），优先 | 打开 DMG，把 **ReverbScope** 拖到 **Applications（应用程序）** |
+| **macOS** 14+ | [`ReverbScope-Desktop-macOS-x86_64.dmg`](https://github.com/jingyemingyue/ReverbScope/releases) | Intel，仍会构建 | 同上 |
 | **Linux**（glibc 2.39+） | [`ReverbScope-Desktop-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 | 解压后运行 `reverbscope/reverbscope-gui` |
 
-**第一次打开。** 构建尚未签名（没有经过 Apple 公证，也没有 Windows Authenticode 签名），系统会警告一次：
+**Windows。** 源码仍在仓库里，CI 仍会跑 Windows 测试。新版本**不再提供官方 Windows 安装程序或 zip**（没有 Authenticode 签名的官方安装包），也不把 Windows 图形界面当成已支持的下载。本地构建仍可能生成 `reverbscope-gui.exe`，它不是 Release 资产。自行从源码安装不等于硬件或界面验收。
 
-* **macOS：** 点 **完成**，再到 **系统设置 → 隐私与安全性 → 仍要打开**。不需要关闭 Gatekeeper 或系统完整性保护（SIP）。
-* **Windows：** SmartScreen → **更多信息 → 仍要运行**。
+**第一次打开（macOS）。** 构建未经 Apple 公证，系统可能警告一次：点 **完成**，再到 **系统设置 → 隐私与安全性 → 仍要打开**。不需要关闭 Gatekeeper 或系统完整性保护（SIP）。
 
 不确定是哪种 Mac？苹果菜单 → **关于本机**：显示 *芯片 Apple M…* 的是 Apple 芯片，显示 *处理器 Intel* 的是 Intel。
 
@@ -66,10 +63,9 @@ Windows 上通过了自动化测试。**但还没有任何一次测量经过真�
 | --- | --- | --- | --- |
 | **macOS** 14+ | [`ReverbScope-Terminal-macOS-arm64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | arm64（Apple 芯片） | `reverbscope-terminal/reverbscope demo` |
 | **macOS** 14+ | [`ReverbScope-Terminal-macOS-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64（Intel） | `reverbscope-terminal/reverbscope demo` |
-| **Windows** 10 / 11 | [`ReverbScope-Terminal-Windows-x64.zip`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | 打开 **`ReverbScope Terminal.cmd`**，再输入 `reverbscope.exe demo` |
 | **Linux**（glibc 2.39+） | [`ReverbScope-Terminal-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 | `reverbscope-terminal/reverbscope demo` |
 
-先解压（`tar xzf <文件>`；Windows 上用 **全部解压缩…**）。在 macOS 上，如果系统拒绝运行下载来的 `reverbscope`，
+先解压（`tar xzf <文件>`）。没有官方 Windows 终端版 zip。在 macOS 上，如果系统拒绝运行下载来的 `reverbscope`，
 请运行一次 `xattr -dr com.apple.quarantine reverbscope-terminal`：它只清除这些文件上的下载标记，不会关闭 Gatekeeper。
 
 ### 该选哪个？

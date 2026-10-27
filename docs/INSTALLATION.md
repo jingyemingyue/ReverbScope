@@ -34,7 +34,7 @@ line and `main` is the development line. The builds are
 | --- | --- | --- |
 | Mac with Apple silicon (M1 or later), macOS 14 or later | `ReverbScope-Desktop-macOS-arm64.dmg` | [macOS](#macos) |
 | Mac with an Intel processor, macOS 14 or later | `ReverbScope-Desktop-macOS-x86_64.dmg` | [macOS](#macos) |
-| Windows 10 or 11, 64-bit | `ReverbScope-Desktop-Windows-x64-Setup.exe` (installer) or `ReverbScope-Desktop-Windows-x64.zip` (no installer) | [Windows](#windows) |
+| Windows 10 or 11, 64-bit | No official installer or zip. Source and CI remain; that is not a supported desktop download | [Windows](#windows) |
 | Linux x86_64 (glibc 2.39 or newer, e.g. Ubuntu 24.04+) | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | [Linux](#linux) |
 
 **Terminal Edition** (command line only):
@@ -43,7 +43,7 @@ line and `main` is the development line. The builds are
 | --- | --- | --- |
 | Mac with Apple silicon, macOS 14 or later | `ReverbScope-Terminal-macOS-arm64.tar.gz` | [Terminal Edition](#terminal-edition) |
 | Mac with an Intel processor, macOS 14 or later | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | [Terminal Edition](#terminal-edition) |
-| Windows 10 or 11, 64-bit | `ReverbScope-Terminal-Windows-x64.zip` | [Terminal Edition](#terminal-edition) |
+| Windows 10 or 11, 64-bit | No official terminal zip | [Terminal Edition](#terminal-edition) |
 | Linux x86_64 (glibc 2.39 or newer) | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | [Terminal Edition](#terminal-edition) |
 
 **Python developers** (any system with Python 3.12–3.14):
@@ -129,45 +129,14 @@ The app's executable is also the command-line tool:
 
 ## Windows
 
+**Not an official download (2026-10-27).** New releases do not include a
+Windows installer or zip. Source and CI tests remain. They are not a sign-off
+that the Windows app works. A local source build can still produce
+`reverbscope-gui.exe` next to `reverbscope.exe`; that pair is not a GitHub
+Release asset.
+
 This section is the **Desktop Edition**; the command-line-only download is
 under [Terminal Edition](#terminal-edition).
-
-### Installer (recommended)
-
-1. On the [download page](https://github.com/jingyemingyue/ReverbScope/releases),
-   download `ReverbScope-Desktop-Windows-x64-Setup.exe`.
-2. Run it. If SmartScreen says *Windows protected your PC*, click
-   **More info → Run anyway** (see [warnings](#unsigned-build-warnings)).
-3. If Setup asks whether to install for all users or only for you, choose
-   **only for me** (no administrator rights needed). ReverbScope is then
-   installed in `%LOCALAPPDATA%\Programs\ReverbScope`. Setup is in English or
-   Simplified Chinese, following the Windows display language; you can tick
-   *Create a desktop shortcut*.
-4. Start ReverbScope from the **Start menu → ReverbScope** (or leave *Launch
-   ReverbScope* ticked on the last page). The command-line tool is installed
-   next to it: `reverbscope.exe` in the installation folder.
-
-### ZIP (no installer)
-
-1. Download `ReverbScope-Desktop-Windows-x64.zip`.
-2. Right-click it → **Extract All…** → **Extract**. Do not run anything from
-   inside the ZIP without extracting it: the program needs the `_internal`
-   folder next to it.
-3. Open the extracted folder `ReverbScope-Desktop-Windows-x64`. It contains:
-
-   ```text
-   reverbscope-gui.exe        the desktop app (double-click this)
-   reverbscope.exe            the command-line tool
-   _internal\               libraries (keep next to the .exe files)
-   THIRD_PARTY_LICENSES\    licenses of the bundled components
-   ```
-
-4. Double-click **`reverbscope-gui.exe`**. SmartScreen may warn: **More info →
-   Run anyway**.
-
-You can move the whole folder anywhere (for example into `Documents`), as
-long as `_internal` stays next to the `.exe` files. For the command-line
-tool, open a terminal in that folder and run `.\reverbscope.exe --help`.
 
 ### Microphone access on Windows
 
@@ -245,12 +214,8 @@ builds will not need it. A file downloaded with `curl` has no such mark. The Lin
 Terminal Edition needs `libportaudio2` for measurements
 (`sudo apt install libportaudio2`), not the graphics libraries.
 
-**Windows** (`ReverbScope-Terminal-Windows-x64.zip`): right-click →
-**Extract All…**, open the extracted folder and double-click
-**`ReverbScope Terminal.cmd`**. It opens a Command Prompt in that folder, ready
-for `reverbscope.exe demo` or `reverbscope.exe --help`. (Double-clicking
-`reverbscope.exe` itself closes its window as soon as it has printed.) From
-PowerShell, `.\reverbscope.exe demo` in the folder does the same.
+**Windows:** there is no official terminal zip. A local source build is not
+a Release asset.
 
 **Saving a report from PowerShell.** Sent to a file or to another program,
 the output of every `reverbscope` command is UTF-8. Command Prompt's `>`
@@ -328,7 +293,7 @@ sha256sum ReverbScope-Terminal-Linux-x86_64.tar.gz         # Linux
 ```
 
 ```powershell
-Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell (SHA256)
+Get-FileHash .\ReverbScope-Desktop-macOS-arm64.dmg   # Windows PowerShell (SHA256)
 ```
 
 A match shows the file is the one attached to the release. It does not prove
@@ -345,8 +310,7 @@ tell who published them and warns once:
 | --- | --- | --- |
 | macOS 15 and later | *Apple could not verify “ReverbScope” is free of malware…* | **Done**, then **System Settings → Privacy & Security → Open Anyway** ([details](#first-launch-on-macos)) |
 | macOS 14 | *“ReverbScope” can't be opened because Apple cannot check it for malicious software* (or *…from an unidentified developer*) | Control-click → **Open**, or the Privacy & Security route above |
-| Windows 10 / 11 | *Windows protected your PC* (SmartScreen) | **More info → Run anyway** |
-| Windows 11 with Smart App Control on | The app is blocked without a *Run anyway* option | Unsigned builds cannot run there; use the [Python install](#python-wheel-and-source) until signed builds exist |
+| Windows | No official installer or zip in a new release | There is no SmartScreen **Run anyway** step, because there is no official binary |
 
 The builds come from the public
 [release workflow](https://github.com/jingyemingyue/ReverbScope/actions/workflows/release.yml),
@@ -361,10 +325,8 @@ Download the new file from the same page and:
 * **macOS:** quit ReverbScope, open the new DMG and drag ReverbScope onto
   Applications again; choose **Replace**. The first-launch warning can appear
   once more for the new build.
-* **Windows installer:** run the new `ReverbScope-Desktop-Windows-x64-Setup.exe`;
-  it replaces the installed version.
-* **Windows ZIP / Linux / Terminal Edition:** delete the old folder and
-  extract the new archive.
+* **Windows:** there is no official installer or zip to update.
+* **Linux / Terminal Edition:** delete the old folder and extract the new archive.
 * **Wheel:** `pip install --upgrade "./reverbscope-<new version>-py3-none-any.whl[gui]"`
   in the same virtual environment.
 * **Developer install:** `git pull`, then `pip install -e ".[dev,gui]"` again.

@@ -17,14 +17,14 @@ ReverbScope 有两个版本。**桌面版**就是本指南介绍的应用程序�
 
 | 系统 | 桌面版 | 启动 ReverbScope |
 | --- | --- | --- |
-| Windows 10/11 x64 | `ReverbScope-Desktop-Windows-x64-Setup.exe`（安装程序）或 `ReverbScope-Desktop-Windows-x64.zip` | 开始菜单 → ReverbScope，或运行 zip 中的 `reverbscope-gui.exe` |
+| Windows | 没有官方安装包 | 源码仍在仓库；CI 仍测 Windows。这不是“Windows 已支持” |
 | macOS 14+，Apple 芯片 | `ReverbScope-Desktop-macOS-arm64.dmg` | 把 ReverbScope 拖进“应用程序”文件夹，然后打开 |
 | macOS 14+，Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | 把 ReverbScope 拖进“应用程序”文件夹，然后打开 |
 | Linux x86_64 | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz && reverbscope/reverbscope-gui` |
 
 | 系统 | 终端版 | 启动 ReverbScope |
 | --- | --- | --- |
-| Windows 10/11 x64 | `ReverbScope-Terminal-Windows-x64.zip` | 解压后双击 `ReverbScope Terminal.cmd`，输入 `reverbscope.exe demo` |
+| Windows | 没有官方终端版 zip | 源码仍在；不是已支持的下载 |
 | macOS 14+，Apple 芯片 | `ReverbScope-Terminal-macOS-arm64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |
 | macOS 14+，Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |
 | Linux x86_64 | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |

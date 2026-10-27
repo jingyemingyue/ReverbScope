@@ -34,9 +34,9 @@ room. Synthetic demo data: no real room was measured.</sub>
 * **A truer level warning.** A recording that peaks above 0 dBFS now says how
   far above full scale it is, in English and 简体中文, instead of "within 1 dB".
 
-> ⚠️ **Unsigned builds.** ReverbScope is not notarized by Apple and carries no Windows Authenticode signature. Your system will warn on first launch — this is expected. See [Download](#download) for the manual allow steps. You do NOT need to disable Gatekeeper or SmartScreen.
+> ⚠️ **Unsigned macOS builds.** Current macOS downloads are not notarized by Apple. The system may warn on first launch. See [Download](#download). You do not need to turn off Gatekeeper. There is no official Windows installer or zip.
 
-> ⚠️ **未签名说明**：本应用未经过 Apple 公证，也没有 Windows Authenticode 签名，首次启动时系统会弹出警告，属正常现象。请按 [Download](#download) 一节的步骤手动允许，无需关闭 Gatekeeper 或 SmartScreen。
+> ⚠️ **macOS 未公证**：当前 macOS 下载未经 Apple 公证，首次打开可能出现系统警告。见 [Download](#download)。不必关闭 Gatekeeper。没有官方 Windows 安装程序或 zip。
 ## Download
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
@@ -58,19 +58,19 @@ command line.
 
 | Platform | Download | Architecture | Notes |
 | --- | --- | --- | --- |
-| **macOS** 14+ | [`ReverbScope-Desktop-macOS-arm64.dmg`](https://github.com/jingyemingyue/ReverbScope/releases) | Apple silicon (M1 or later) | Open the DMG, drag **ReverbScope** to **Applications** |
-| **macOS** 14+ | [`ReverbScope-Desktop-macOS-x86_64.dmg`](https://github.com/jingyemingyue/ReverbScope/releases) | Intel | Same as above |
-| **Windows** 10 / 11 | [`ReverbScope-Desktop-Windows-x64-Setup.exe`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | Installer; then Start menu → **ReverbScope** |
-| **Windows** 10 / 11 | [`ReverbScope-Desktop-Windows-x64.zip`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | No installer: extract, double-click **`reverbscope-gui.exe`** |
+| **macOS** 14+ | [`ReverbScope-Desktop-macOS-arm64.dmg`](https://github.com/jingyemingyue/ReverbScope/releases) | Apple silicon (M1 or later), primary | Open the DMG, drag **ReverbScope** to **Applications** |
+| **macOS** 14+ | [`ReverbScope-Desktop-macOS-x86_64.dmg`](https://github.com/jingyemingyue/ReverbScope/releases) | Intel, still built | Same as above |
 | **Linux** (glibc 2.39+) | [`ReverbScope-Desktop-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 | Extract, run `reverbscope/reverbscope-gui` |
 
-**First launch.** The builds are unsigned (not notarized by Apple, no Windows
-Authenticode signature), so the system warns once:
+**Windows.** Source stays in this repository and Windows is still in CI.
+There is **no official Windows installer or zip** for new releases, and
+Windows GUI behaviour is not a supported download. A local build can still
+produce `reverbscope-gui.exe`; that file is not a Release asset. That is not
+a hardware or GUI sign-off.
 
-* **macOS:** click **Done**, then **System Settings → Privacy & Security →
-  Open Anyway**. You do not need to turn off Gatekeeper or System Integrity
-  Protection.
-* **Windows:** SmartScreen → **More info → Run anyway**.
+**First launch (macOS).** Builds are not notarized, so the system may warn once:
+click **Done**, then **System Settings → Privacy & Security → Open Anyway**.
+You do not need to turn off Gatekeeper or System Integrity Protection.
 
 Not sure which Mac you have? Apple menu → **About This Mac**: *Chip: Apple M…*
 means Apple silicon, *Processor: Intel* means Intel.
@@ -84,10 +84,10 @@ measurement and analysis without the window, about half the size.
 | --- | --- | --- | --- |
 | **macOS** 14+ | [`ReverbScope-Terminal-macOS-arm64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | arm64 (Apple silicon) | `reverbscope-terminal/reverbscope demo` |
 | **macOS** 14+ | [`ReverbScope-Terminal-macOS-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 (Intel) | `reverbscope-terminal/reverbscope demo` |
-| **Windows** 10 / 11 | [`ReverbScope-Terminal-Windows-x64.zip`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | Open **`ReverbScope Terminal.cmd`**, then `reverbscope.exe demo` |
 | **Linux** (glibc 2.39+) | [`ReverbScope-Terminal-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 | `reverbscope-terminal/reverbscope demo` |
 
-Extract the archive first (`tar xzf <file>`; on Windows **Extract All…**). On
+Extract the archive first (`tar xzf <file>`). There is no official Windows
+terminal zip. On
 macOS, if a downloaded `reverbscope` is refused, run
 `xattr -dr com.apple.quarantine reverbscope-terminal` once: it clears the
 download mark on those files only and does not turn off Gatekeeper.
