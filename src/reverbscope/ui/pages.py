@@ -714,6 +714,10 @@ class DawModePage(QWidget):
         if self._worker is not None:
             self._worker.wait()
 
+    def is_busy(self) -> bool:
+        """An analysis is still running (mirrors :meth:`StandalonePage.is_busy`)."""
+        return self._busy_flag or (self._worker is not None and self._worker.isRunning())
+
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self._busy_flag = busy
         self.sync_steps()

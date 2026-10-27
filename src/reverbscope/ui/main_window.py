@@ -330,6 +330,10 @@ class MainWindow(QMainWindow):
         standalone_action.triggered.connect(self._show_mode_action("standalone"))
         measure_menu.addAction(daw_action)
         measure_menu.addAction(standalone_action)
+        # Locked with busy_actions: switching mode under a sounding take or a
+        # running analysis can start a second worker (C8 / SPEC §8.3 BUSY).
+        self.measure_mode_actions = (daw_action, standalone_action)
+        self.busy_actions = (*self.busy_actions, *self.measure_mode_actions)
 
         from reverbscope.edition import is_developer
 
@@ -777,13 +781,21 @@ class MainWindow(QMainWindow):
     def _project_failed(self, message: str) -> None:
         QMessageBox.critical(self, _("Cannot open project"), message)
 
+    def _measure_busy(self) -> bool:
+        """A take or analysis on either measure page is still running."""
+        return self.standalone.is_busy() or self.daw.is_busy()
+
     def _measure_position(self, position: str, mode: str) -> None:
         """Measure ``position`` of the open project with ``mode``."""
+        if self._measure_busy():
+            return
         self._prepare_position(position)
         self.show_mode(mode)
 
     def _measure_at(self, position: str) -> None:
         """A position row's menu: measure there with the strip's mode."""
+        if self._measure_busy():
+            return
         self._prepare_position(position)
         self.model.add_position(position)
         self.show_mode(self.strip.current_mode())
@@ -820,6 +832,18 @@ class MainWindow(QMainWindow):
             self.stack.setCurrentWidget(self.standalone)
             self._set_place(_("Standalone Mode"))
             return
+        if mode == "universal_daw" and self.standalone.is_busy():
+            # Leaving Standalone mid-take would leave its worker running while
+            # DAW Analyze could start another.
+            self.stack.setCurrentWidget(self.standalone)
+            self._set_place(_("Standalone Mode"))
+            return
+        if mode in ("demo", "standalone") and self.daw.is_busy():
+            # DAW Analyze still owns the session; exposing Standalone Run would
+            # let a second measurement start under the held analysis.
+            self.stack.setCurrentWidget(self.daw)
+            self._set_place(_("Universal DAW Mode"))
+            return
         self.strip.set_mode(mode)
         self._apply_mode(mode)
         if mode == "universal_daw":
@@ -843,10 +867,12 @@ class MainWindow(QMainWindow):
             self.standalone.refresh_devices()
 
     def _strip_mode(self, mode: str) -> None:
-        if not self.standalone.is_busy():
+        if not self._measure_busy():
             self._apply_mode(mode)
 
     def _strip_start(self, mode: str) -> None:
+        if self._measure_busy():
+            return
         if mode == "universal_daw":
             self.show_mode(mode)
             return
