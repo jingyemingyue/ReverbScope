@@ -328,14 +328,15 @@ class MainWindow(QMainWindow):
         from reverbscope.edition import is_developer
 
         self.developer_menu = None
+        self.device_inspector_action: QAction | None = None
         if is_developer():
             self.developer_menu = self.menuBar().addMenu(_("&Developer"))
-            inspector_action = QAction(_("Audio Device &Inspector..."), self)
-            inspector_action.setShortcut("Ctrl+Shift+D")
-            inspector_action.triggered.connect(self.show_device_inspector)
+            self.device_inspector_action = QAction(_("Audio Device &Inspector..."), self)
+            self.device_inspector_action.setShortcut("Ctrl+Shift+D")
+            self.device_inspector_action.triggered.connect(self.show_device_inspector)
             folder_action = QAction(_("Open &Data Folder"), self)
             folder_action.triggered.connect(self._open_data_folder)
-            for action in (inspector_action, folder_action):
+            for action in (self.device_inspector_action, folder_action):
                 self.developer_menu.addAction(action)
 
         help_menu = self.menuBar().addMenu(_("&Help"))
@@ -355,7 +356,8 @@ class MainWindow(QMainWindow):
         help_menu.addAction(self.report_action)
         #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
         #: Start panel / Getting started / Close Project / Environment Report /
-        #: Compare / About are included: each would interrupt a take or cover Stop.
+        #: Compare / About / Device Inspector are included: each would interrupt
+        #: a take or cover Stop with a modal.
         self.busy_actions = (
             new_action,
             open_action,
@@ -369,6 +371,7 @@ class MainWindow(QMainWindow):
             self.report_action,
             self.about_action,
             *self.measure_mode_actions,
+            *((self.device_inspector_action,) if self.device_inspector_action is not None else ()),
         )
         help_menu.addSeparator()
         help_menu.addAction(self.about_action)
@@ -1212,6 +1215,9 @@ class MainWindow(QMainWindow):
         return "fake" if on_demo else None
 
     def show_device_inspector(self) -> None:
+        # Same modal-over-Stop rule as Environment Report.
+        if self._measure_busy():
+            return
         from reverbscope.ui.dev_tools import DeviceInspector
 
         DeviceInspector(self._tools_backend(), self).exec()

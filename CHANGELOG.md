@@ -75,6 +75,8 @@ All notable changes to ReverbScope are documented here. The format follows
   the only in-memory recording (``unsaved_take`` is still false until success).
 - **Standalone ``is_busy()`` includes ``_busy_flag``**, matching DAW Analyze so
   readiness and busy gates do not treat a flagged page as idle.
+- **Developer ▸ Audio Device Inspector stays locked while measuring**, same
+  modal-over-Stop rule as Environment Report.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

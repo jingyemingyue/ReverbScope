@@ -217,6 +217,42 @@ def test_about_is_blocked_while_a_take_runs(
     window.close()
 
 
+def test_device_inspector_is_blocked_while_a_take_runs(
+    app: QApplication, held_take, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import reverbscope.ui.dev_tools as dev_tools
+
+    opened: list[object] = []
+
+    class _FakeInspector:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            opened.append(self)
+
+        def exec(self) -> int:
+            return 0
+
+    monkeypatch.setattr(dev_tools, "DeviceInspector", _FakeInspector)
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    try:
+        page.run_button.click()
+        assert page.is_busy()
+        if window.device_inspector_action is not None:
+            assert not window.device_inspector_action.isEnabled()
+        window.show_device_inspector()
+        app.processEvents()
+        assert opened == []
+    finally:
+        held_take.set()
+        _settle(app, page._measure_worker)
+        _settle(app, page._analysis_worker)
+    window.close()
+
+
 def test_close_project_is_disabled_while_measure_busy(
     app: QApplication, tmp_path: Path, held_analysis
 ) -> None:
