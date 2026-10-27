@@ -398,6 +398,8 @@ class DawModePage(QWidget):
         self.sample_rate.setCurrentIndex(
             list(SUPPORTED_SAMPLE_RATES).index(state.sweep_settings.sample_rate)
         )
+        self.sample_rate.currentIndexChanged.connect(self._on_sample_rate_changed)
+        self._rate_mismatch_shown = False
         self.duration = QDoubleSpinBox()
         self.duration.setRange(1.0, 60.0)
         self.duration.setValue(state.sweep_settings.duration_s)
@@ -608,6 +610,10 @@ class DawModePage(QWidget):
         self.reference_label.setText(_("Reference: {name}").format(name=path.name))
         self._warn_if_rate_mismatch()
 
+    def _on_sample_rate_changed(self, _index: int = 0) -> None:
+        """Keep the mismatch banner in sync when the Sample rate combo moves."""
+        self._warn_if_rate_mismatch()
+
     def _warn_if_rate_mismatch(self) -> None:
         """Surface a Hz mismatch between the imported take and the sweep.
 
@@ -617,10 +623,17 @@ class DawModePage(QWidget):
         """
         if self._recording is None:
             return
-        sweep_hz = int(self._sweep_settings.sample_rate)
+        # Prefer the combo: the operator may have changed Hz after import.
+        combo_hz = self.sample_rate.currentData()
+        sweep_hz = int(combo_hz if combo_hz is not None else self._sweep_settings.sample_rate)
         take_hz = int(self._recording.sample_rate)
         if take_hz == sweep_hz:
+            if self._rate_mismatch_shown:
+                set_banner_text(self.status, "", "")
+                self.status_changed.emit("", "")
+                self._rate_mismatch_shown = False
             return
+        self._rate_mismatch_shown = True
         set_banner_text(
             self.status,
             _(

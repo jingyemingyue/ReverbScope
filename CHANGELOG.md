@@ -34,6 +34,11 @@ All notable changes to ReverbScope are documented here. The format follows
 - **Measure menu stays locked while busy**, and switching Standalone ↔ DAW
   mid-take or mid-analysis is refused so a second worker cannot start.
   Sidebar “measure at position” is ignored while either page is busy.
+- **Help ▸ Getting started and File ▸ Close Project stay locked while busy**,
+  so they cannot open the Start panel or drop the project under a sounding
+  take or DAW analysis.
+- **DAW Sample rate combo refreshes the Hz-mismatch banner** when the
+  operator changes it after importing a recording.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

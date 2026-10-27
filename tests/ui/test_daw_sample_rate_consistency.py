@@ -104,3 +104,36 @@ def test_a_rate_mismatch_between_take_and_sweep_is_warned(
     assert "44100" in page.status.text() and "48000" in page.status.text()
     assert "differ" in text or page.status.property("banner") == "warn"
     window.close()
+
+
+def test_daw_sample_rate_combo_change_updates_rate_mismatch_warning(
+    app: QApplication, tmp_path: Path
+) -> None:
+    """Changing the Sample rate combo after import must refresh the banner."""
+    window = MainWindow()
+    window.show()
+    window.show_mode("universal_daw")
+    page = window.daw
+    page.sample_rate.setCurrentIndex(page.sample_rate.findData(48000))
+    page.duration.setValue(0.5)
+    page.generate_sweep_to(tmp_path / "sweep.wav")
+    take = synthetic_recording(
+        SweepSettings(sample_rate=44100, duration_s=0.5, level_dbfs=-20.0),
+        make_rir(44100, rt60_s=0.25),
+    )
+    page.set_recording(
+        write_wav(
+            tmp_path / "take44100.wav",
+            np.asarray(take.samples, dtype=np.float64),
+            44100,
+            subtype="FLOAT",
+        )
+    )
+    assert "48000" in page.status.text()
+    page.sample_rate.setCurrentIndex(page.sample_rate.findData(44100))
+    app.processEvents()
+    assert page.status.text() == ""
+    page.sample_rate.setCurrentIndex(page.sample_rate.findData(48000))
+    app.processEvents()
+    assert "44100" in page.status.text() and "48000" in page.status.text()
+    window.close()

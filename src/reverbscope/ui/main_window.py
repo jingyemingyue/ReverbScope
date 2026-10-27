@@ -322,19 +322,6 @@ class MainWindow(QMainWindow):
         # Locked with File/View/Settings: switching mode under a sounding take
         # or a running analysis can start a second worker (C8 / SPEC §8.3 BUSY).
         self.measure_mode_actions = (daw_action, standalone_action)
-        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
-        #: Start panel is included: its Open / New cards would interrupt a take
-        #: even though File ▸ Open is already locked.
-        self.busy_actions = (
-            new_action,
-            open_action,
-            project_action,
-            self.save_action,
-            settings_action,
-            start_action,
-            *self.measure_mode_actions,
-        )
-
         from reverbscope.edition import is_developer
 
         self.developer_menu = None
@@ -352,6 +339,20 @@ class MainWindow(QMainWindow):
         self.getting_started_action = QAction(_("&Getting started"), self)
         self.getting_started_action.triggered.connect(self.show_getting_started)
         help_menu.addAction(self.getting_started_action)
+        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
+        #: Start panel / Getting started / Close Project are included: each
+        #: would interrupt a take even though File ▸ Open is already locked.
+        self.busy_actions = (
+            new_action,
+            open_action,
+            project_action,
+            self.close_project_action,
+            self.save_action,
+            settings_action,
+            start_action,
+            self.getting_started_action,
+            *self.measure_mode_actions,
+        )
         about_action = QAction(_("&About ReverbScope"), self)
         # macOS App menu: About (guidelines §18.1).
         about_action.setMenuRole(QAction.MenuRole.AboutRole)
@@ -775,6 +776,8 @@ class MainWindow(QMainWindow):
         self.show_view("project")
 
     def close_project(self) -> None:
+        if self._measure_busy():
+            return
         self._save_selection()
         self.model.close_project()
 
@@ -1027,6 +1030,8 @@ class MainWindow(QMainWindow):
 
     def show_getting_started(self) -> None:
         """The start panel with the first-measurement card, and the card stays from now on."""
+        if self._measure_busy():
+            return
         import contextlib
         from dataclasses import replace
 
