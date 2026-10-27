@@ -13,16 +13,40 @@ from reverbscope.errors import AudioBackendUnavailableError, AudioDeviceError
 from reverbscope.i18n import _
 
 
+def _is_portaudio_init_error(exc: BaseException) -> bool:
+    """True when ``import sounddevice`` failed because PortAudio could not start.
+
+    ``sounddevice`` defines ``PortAudioError`` in its own module. When
+    ``Pa_Initialize`` fails (for example a PulseAudio client with no server),
+    the import raises that error before the module is usable, so the type
+    cannot be imported ahead of time for an ``except`` clause.
+    """
+    cls = type(exc)
+    module = getattr(cls, "__module__", "") or ""
+    return cls.__name__ == "PortAudioError" and (
+        module == "sounddevice" or module.startswith("sounddevice.")
+    )
+
+
+def _unavailable_message() -> str:
+    return _(
+        "the audio backend (sounddevice / PortAudio) is not available; "
+        "Standalone Mode needs it, Universal DAW Mode does not"
+    )
+
+
 def sounddevice_module() -> Any:
     try:
         import sounddevice
     except (ImportError, OSError) as exc:
-        raise AudioBackendUnavailableError(
-            _(
-                "the audio backend (sounddevice / PortAudio) is not available; "
-                "Standalone Mode needs it, Universal DAW Mode does not"
-            )
-        ) from exc
+        raise AudioBackendUnavailableError(_unavailable_message()) from exc
+    except Exception as exc:
+        # Not a bare ``except Exception`` swallow: only PortAudio's init error
+        # (raised during import) becomes "backend unavailable". Other errors
+        # keep their type so programming mistakes stay visible.
+        if not _is_portaudio_init_error(exc):
+            raise
+        raise AudioBackendUnavailableError(_unavailable_message()) from exc
     return sounddevice
 
 
