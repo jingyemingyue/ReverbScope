@@ -71,6 +71,10 @@ All notable changes to ReverbScope are documented here. The format follows
 - **DAW rate-mismatch warning follows the real sweep**, not the Sample rate
   combo alone; Analyze refuses a take/sweep Hz mismatch.
 - **Chart PNG/SVG export is atomic**: a failed write keeps any previous file.
+- **Closing after a failed Standalone analysis still asks** before discarding
+  the only in-memory recording (``unsaved_take`` is still false until success).
+- **Standalone ``is_busy()`` includes ``_busy_flag``**, matching DAW Analyze so
+  readiness and busy gates do not treat a flagged page as idle.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

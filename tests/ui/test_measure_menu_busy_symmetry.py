@@ -115,6 +115,21 @@ def test_daw_is_busy_matches_busy_flag_and_worker(
     window.close()
 
 
+def test_standalone_is_busy_matches_busy_flag_without_running_worker(
+    app: QApplication,
+) -> None:
+    """``_busy_flag`` alone must count as busy (same contract as DAW Analyze)."""
+    window = MainWindow()
+    window.show()
+    page = window.standalone
+    assert not page.is_busy()
+    page._busy_flag = True
+    assert page.is_busy()
+    page._busy_flag = False
+    assert not page.is_busy()
+    window.close()
+
+
 def test_daw_analyze_blocks_measure_menu_from_starting_a_demo_take(
     app: QApplication, tmp_path: Path, held_analysis, monkeypatch: pytest.MonkeyPatch
 ) -> None:

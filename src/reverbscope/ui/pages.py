@@ -1485,8 +1485,8 @@ class StandalonePage(QWidget):
         )
 
     def is_busy(self) -> bool:
-        """A take or its analysis is still running."""
-        return any(
+        """A take or its analysis is still running (matches :meth:`DawModePage.is_busy`)."""
+        return self._busy_flag or any(
             worker is not None and worker.isRunning()
             for worker in (self._measure_worker, self._analysis_worker)
         )

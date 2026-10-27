@@ -365,6 +365,35 @@ def test_close_while_standalone_post_record_analysis_prompts(
     window.close()
 
 
+def test_close_after_failed_analysis_still_prompts_for_memory_recording(
+    app: QApplication, home: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After analysis fails, the in-memory recording is the only copy and must be asked about."""
+    window = MainWindow()
+    window.show()
+    recording, _result = _take(short_sweep)
+    window.standalone.demo_mode = False
+    window.standalone._take_synthetic = False
+    window.state.recording = recording
+    window.state.recording_path = None
+    window.state.result = None
+    window.state.unsaved_take = False
+    # Failure path clears busy; previously that also cleared the prompt gate.
+    monkeypatch.setattr(window.standalone, "is_busy", lambda: False)
+    asked: list[bool] = []
+    monkeypatch.setattr(
+        window, "_ask_about_unsaved_take", lambda: asked.append(True) or False, raising=True
+    )
+    window.close()
+    assert asked == [True]
+    assert window.isVisible()
+    assert window.state.recording is recording
+    monkeypatch.setattr(window, "_ask_about_unsaved_take", lambda: True)
+    window._discard_take()
+    window.standalone._take_synthetic = True
+    window.close()
+
+
 def test_pending_analysis_dialog_omits_save_without_a_result(
     app: QApplication, home: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
