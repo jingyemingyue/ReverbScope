@@ -31,6 +31,9 @@ All notable changes to ReverbScope are documented here. The format follows
   stuck behind `fftconvolve` on a long demo sweep.
 - **Chart CSV export is atomic**: a failed write keeps any previous file.
 - **DAW Analyze locks busy menus** the same way Standalone takes do.
+- **Measure menu stays locked while busy**, and switching Standalone ↔ DAW
+  mid-take or mid-analysis is refused so a second worker cannot start.
+  Sidebar “measure at position” is ignored while either page is busy.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.
