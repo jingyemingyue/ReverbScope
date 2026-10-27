@@ -66,6 +66,10 @@ All notable changes to ReverbScope are documented here. The format follows
   DAW while busy (C8).
 - **Ctrl+Return has one owner per mode**: Standalone Start or DAW Analyze,
   never both at once (Qt would fire neither).
+- **Strip Start stays off while DAW Analyze runs**, even if ``_sync_start``
+  or a finished project load runs mid-analysis.
+- **DAW rate-mismatch warning follows the real sweep**, not the Sample rate
+  combo alone; Analyze refuses a take/sweep Hz mismatch.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

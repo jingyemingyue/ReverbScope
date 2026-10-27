@@ -135,10 +135,21 @@ def test_clearing_daw_recording_clears_rate_mismatch_banner(
     window.close()
 
 
-def test_daw_sample_rate_combo_change_updates_rate_mismatch_warning(
-    app: QApplication, tmp_path: Path
+def test_combo_alone_cannot_clear_a_real_sweep_rate_mismatch(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Changing the Sample rate combo after import must refresh the banner."""
+    """Changing the Sample rate combo does not retarget the generated sweep.
+
+    The banner and Analyze gate follow ``_sweep_settings``, not the combo.
+    """
+    from reverbscope.ui import pages as pages_mod
+
+    warnings: list[str] = []
+    monkeypatch.setattr(
+        pages_mod.QMessageBox,
+        "warning",
+        lambda *_args, **_kwargs: warnings.append(_args[1] if len(_args) > 1 else "warn") or 0,
+    )
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
@@ -146,6 +157,8 @@ def test_daw_sample_rate_combo_change_updates_rate_mismatch_warning(
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(48000))
     page.duration.setValue(0.5)
     page.generate_sweep_to(tmp_path / "sweep.wav")
+    assert page._sweep_settings is not None
+    assert page._sweep_settings.sample_rate == 48000
     take = synthetic_recording(
         SweepSettings(sample_rate=44100, duration_s=0.5, level_dbfs=-20.0),
         make_rir(44100, rt60_s=0.25),
@@ -158,11 +171,14 @@ def test_daw_sample_rate_combo_change_updates_rate_mismatch_warning(
             subtype="FLOAT",
         )
     )
-    assert "48000" in page.status.text()
+    assert "44100" in page.status.text() and "48000" in page.status.text()
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(44100))
     app.processEvents()
-    assert page.status.text() == ""
-    page.sample_rate.setCurrentIndex(page.sample_rate.findData(48000))
-    app.processEvents()
     assert "44100" in page.status.text() and "48000" in page.status.text()
+    assert page._sweep_settings.sample_rate == 48000
+    page.start_analysis()
+    app.processEvents()
+    assert warnings
+    assert page._worker is None or not page._worker.isRunning()
+    assert not page.is_busy()
     window.close()

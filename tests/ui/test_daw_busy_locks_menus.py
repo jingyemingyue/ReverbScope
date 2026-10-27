@@ -88,6 +88,25 @@ def test_daw_analyze_locks_new_open_and_start_panel(
     window.close()
 
 
+def test_strip_start_stays_off_when_sync_runs_during_daw_analyze(
+    app: QApplication, tmp_path: Path, held_analysis
+) -> None:
+    """``_sync_start`` / project-load finish must not re-light Start mid-Analyze."""
+    window = MainWindow()
+    window.show()
+    page = _start_held_daw(window, tmp_path, app)
+    try:
+        assert not window.strip.start_button.isEnabled()
+        window.strip._sync_start()
+        assert not window.strip.start_button.isEnabled()
+        window._project_loading_changed(False)
+        assert not window.strip.start_button.isEnabled()
+    finally:
+        held_analysis.set()
+        _settle(app, page._worker)
+    window.close()
+
+
 def test_daw_import_and_analysis_controls_lock_while_analyzing(
     app: QApplication, tmp_path: Path, held_analysis
 ) -> None:

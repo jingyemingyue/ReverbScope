@@ -621,15 +621,16 @@ class DawModePage(QWidget):
         must agree for a trustworthy deconvolution. Chart CSV already works;
         this only warns — it does not rewrite schema or DSP.
         """
-        if self._recording is None:
+        if self._recording is None or self._sweep_settings is None:
             if self._rate_mismatch_shown:
                 set_banner_text(self.status, "", "")
                 self.status_changed.emit("", "")
                 self._rate_mismatch_shown = False
             return
-        # Prefer the combo: the operator may have changed Hz after import.
-        combo_hz = self.sample_rate.currentData()
-        sweep_hz = int(combo_hz if combo_hz is not None else self._sweep_settings.sample_rate)
+        # Honesty: Analyze uses ``_sweep_settings`` / ``_reference``, not the
+        # Sample rate combo alone. Changing the combo without regenerating or
+        # reloading the sweep must not clear a real Hz mismatch.
+        sweep_hz = int(self._sweep_settings.sample_rate)
         take_hz = int(self._recording.sample_rate)
         if take_hz == sweep_hz:
             if self._rate_mismatch_shown:
@@ -670,6 +671,22 @@ class DawModePage(QWidget):
                 self,
                 _("No reference"),
                 _("Generate the test signal (Step 1) or choose the sweep file."),
+            )
+            return
+        if self._sweep_settings is not None and int(self._recording.sample_rate) != int(
+            self._sweep_settings.sample_rate
+        ):
+            QMessageBox.warning(
+                self,
+                _("Sample rates differ"),
+                _(
+                    "The recording is {take} Hz and the sweep is {sweep} Hz. "
+                    "Re-export the take at {sweep} Hz, or load the matching "
+                    "reference sweep, before analyzing."
+                ).format(
+                    take=int(self._recording.sample_rate),
+                    sweep=int(self._sweep_settings.sample_rate),
+                ),
             )
             return
         if self.before_take is not None and not self.before_take():

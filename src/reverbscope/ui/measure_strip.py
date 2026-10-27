@@ -316,8 +316,12 @@ class MeasureStrip(QWidget):
 
     def _sync_start(self) -> None:
         """Start is off with the reason beside it while no output is chosen or
-        the level is not acknowledged (OUT-4, SAFE)."""
-        busy = self.standalone.is_busy() or self.stop_button.isEnabled()
+        the level is not acknowledged (OUT-4, SAFE).
+
+        DAW Analyze also counts as busy: otherwise a project-load finish (or
+        any other ``_sync_start`` call) would re-light Start under Analyze.
+        """
+        busy = self.standalone.is_busy() or self.daw.is_busy() or self.stop_button.isEnabled()
         live = self.current_mode() == "standalone"
         allowed = not busy and (not live or self._ready)
         self.start_button.setEnabled(allowed)
