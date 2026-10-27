@@ -254,6 +254,8 @@ if sys.platform == "darwin" and not TERMINAL:
         gui_coll,
         localized,
         name="ReverbScope.app",
+        # No .icns yet: Dock/Finder show the generic app glyph. Adding a
+        # branded icon needs a C7 license audit (guidelines §4); leave None.
         icon=None,
         bundle_identifier="org.reverbscope.ReverbScope",
         info_plist=MACOS_INFO,

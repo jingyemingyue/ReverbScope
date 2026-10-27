@@ -28,12 +28,6 @@ from reverbscope.interpretation.profiles import profile_title
 from reverbscope.settings import load_settings, save_settings
 from reverbscope.ui.widgets import label
 
-#: Shown in both languages: the new language is not active until a restart.
-RESTART_FOR_LANGUAGE = (
-    "语言设置将在重新启动 ReverbScope 后完全生效。\n"
-    "The language change takes full effect after ReverbScope restarts."
-)
-
 
 class SettingsDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -79,7 +73,13 @@ class SettingsDialog(QDialog):
         )
         self.developer_tools.setChecked(self._settings.developer_tools)
         form.addRow(_("Language"), self.language)
-        self.language_hint = label(RESTART_FOR_LANGUAGE, "hint", wrap=True)
+        # One string through _(): the previous bilingual block mixed Chinese
+        # and English on every host (guidelines §9.2 / §16.2).
+        self.language_hint = label(
+            _("The language change takes full effect after ReverbScope restarts."),
+            "hint",
+            wrap=True,
+        )
         form.addRow(self.language_hint)
         form.addRow(_("Default profile"), self.profile)
         form.addRow(_("Audio backend"), self.backend)

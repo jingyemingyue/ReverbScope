@@ -255,14 +255,6 @@ class MainWindow(QMainWindow):
         # macOS App menu: Preferences (guidelines §12.14 / §18.1).
         settings_action.setMenuRole(QAction.MenuRole.PreferencesRole)
         settings_action.triggered.connect(self.show_settings)
-        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
-        self.busy_actions = (
-            new_action,
-            open_action,
-            project_action,
-            self.save_action,
-            settings_action,
-        )
         quit_action = QAction(_("&Quit"), self)
         quit_action.setShortcut("Ctrl+Q")
         quit_action.setMenuRole(QAction.MenuRole.QuitRole)
@@ -300,8 +292,22 @@ class MainWindow(QMainWindow):
         view_menu.addAction(self.navigator_action)
         view_menu.addAction(self.inspector_action)
         start_action = QAction(_("Start panel"), self)
+        start_action.setToolTip(
+            _("Unavailable while a measurement is running."),
+        )
         start_action.triggered.connect(self._show_start)
         view_menu.addAction(start_action)
+        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
+        #: Start panel is included: its Open / New cards would interrupt a take
+        #: even though File ▸ Open is already locked.
+        self.busy_actions = (
+            new_action,
+            open_action,
+            project_action,
+            self.save_action,
+            settings_action,
+            start_action,
+        )
         reset_layout = QAction(_("Reset the layout"), self)
         reset_layout.triggered.connect(self.reset_layout)
         view_menu.addAction(reset_layout)
@@ -657,6 +663,8 @@ class MainWindow(QMainWindow):
         self._show_start()
 
     def _show_start(self) -> None:
+        # View ▸ Start panel is in busy_actions so the menu stays off while a
+        # take runs. New Measurement (_go_home) still calls this after Stop.
         self.home.refresh_recent()
         self.navigator.refresh_recent()
         self.home.show_walkthrough(not load_settings().walkthrough_dismissed)

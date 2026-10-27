@@ -20,6 +20,11 @@ All notable changes to ReverbScope are documented here. The format follows
   mismatch between recording and sweep shows a warning banner.
 - **macOS App menu roles** for Settings, About and Quit; mnemonic `&` is
   stripped on Darwin (guidelines §18.1).
+- **View ▸ Start panel is locked while measuring**, so its Open / New cards
+  cannot interrupt a sounding take.
+- **Settings language hint** is a single `_()` string (no bilingual mix).
+- **Control chrome contrast** (`control` token) meets WCAG AA 4.5:1 on both
+  light and dark surfaces (level-ack checkbox).
 
 ### Changed
 - **macOS DMG post-build checks** also verify `CFBundleIdentifier`, HiDPI,

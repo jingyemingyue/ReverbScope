@@ -18,3 +18,10 @@ def test_text_and_status_colours_clear_wcag_aa() -> None:
             ratio = contrast_ratio(palette[tone], palette[f"{tone}_soft"])
             assert ratio >= 4.5, (name, tone, ratio)
         assert contrast_ratio(palette["accent_text"], palette["accent"]) >= 4.5, name
+        # Control chrome (checkbox indicator, spin arrows) sits on surface;
+        # the level-ack checkbox is a C8 safety control and must stay readable.
+        assert contrast_ratio(palette["control"], palette["surface"]) >= 4.5, (
+            name,
+            "control/surface",
+            contrast_ratio(palette["control"], palette["surface"]),
+        )

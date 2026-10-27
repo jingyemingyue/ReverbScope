@@ -6901,6 +6901,12 @@ msgstr "对应的命令行"
 msgid "Still CLI-only: session CSV export, a zip for a bug report, and an impulse response from another tool (set --band to its sweep's band)."
 msgstr "仍需使用命令行：导出会话 CSV、把会话打成压缩包用于报告问题、分析其他工具得到的脉冲响应（--band 填它扫频覆盖的频带）。"
 
+msgid "The language change takes full effect after ReverbScope restarts."
+msgstr "语言设置将在重新启动 ReverbScope 后完全生效。"
+
+msgid "Unavailable while a measurement is running."
+msgstr "测量进行中时不可用。"
+
 msgid ""
 "Sample rates differ: the recording is {take} Hz and the sweep is {sweep} Hz. "
 "Re-export the take at {sweep} Hz, or load the matching reference sweep, before "
