@@ -622,6 +622,10 @@ class DawModePage(QWidget):
         this only warns — it does not rewrite schema or DSP.
         """
         if self._recording is None:
+            if self._rate_mismatch_shown:
+                set_banner_text(self.status, "", "")
+                self.status_changed.emit("", "")
+                self._rate_mismatch_shown = False
             return
         # Prefer the combo: the operator may have changed Hz after import.
         combo_hz = self.sample_rate.currentData()
@@ -720,6 +724,7 @@ class DawModePage(QWidget):
         self._recording_path = None
         self.recording_label.setText(_("No recording selected."))
         self._reset_channel_lists()
+        self._warn_if_rate_mismatch()
         self.sync_steps()
 
     def shutdown_workers(self) -> None:

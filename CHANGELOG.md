@@ -41,6 +41,9 @@ All notable changes to ReverbScope are documented here. The format follows
   operator changes it after importing a recording.
 - **Strip Start stays off while a project is still loading sessions**, so a
   finished take cannot lose ``current`` to a late loader ``set_current``.
+- **Closing during post-record Standalone analysis asks before discarding**
+  the in-memory recording (Save is offered only once a result exists).
+- **Clearing a DAW recording clears a leftover sample-rate mismatch banner.**
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

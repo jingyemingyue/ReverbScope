@@ -607,14 +607,30 @@ class MainWindow(QMainWindow):
                 return entry.key
         return ""
 
+    def _pending_memory_recording(self) -> bool:
+        """Live Standalone recording in memory before it is listed as unsaved.
+
+        Between ``_on_recorded`` and analysis finishing there is no navigator
+        entry yet; closing then would drop the only copy with no prompt.
+        Demo / fake-backend takes are synthetic and never ask.
+        """
+        if self.standalone.demo_mode or self.standalone._take_synthetic:
+            return False
+        if self.state.recording is None or self.state.recording_path is not None:
+            return False
+        if self._unsaved_take_key():
+            return False
+        return self.standalone.is_busy()
+
     def _leave_take(self) -> bool:
         """True when the window may drop the unsaved take.
 
         A live Standalone take is the only copy of its recording until the
         session is saved; a new take, New Measurement, removing it from the
-        list and closing the window ask first.
+        list and closing the window ask first. An in-flight analysis of a
+        memory recording asks too (no Save until a result exists).
         """
-        if not self._unsaved_take_key():
+        if not self._unsaved_take_key() and not self._pending_memory_recording():
             return True
         return self._ask_about_unsaved_take()
 
@@ -628,14 +644,18 @@ class MainWindow(QMainWindow):
             ),
             parent=self,
         )
-        save = box.addButton(_("Save Session..."), QMessageBox.ButtonRole.AcceptRole)
+        # Save needs a finished result; during post-record analysis offer only
+        # Discard / Cancel so the operator is not sent to an empty Save dialog.
+        save = None
+        if self.state.result is not None:
+            save = box.addButton(_("Save Session..."), QMessageBox.ButtonRole.AcceptRole)
         discard = box.addButton(_("Discard"), QMessageBox.ButtonRole.DestructiveRole)
         cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
-        box.setDefaultButton(save)
+        box.setDefaultButton(save if save is not None else discard)
         box.setEscapeButton(cancel)
         box.exec()
         clicked = box.clickedButton()
-        if clicked is save:
+        if save is not None and clicked is save:
             # The folder chooser may be cancelled or the save may fail: the
             # take is let go only once it is on disk.
             self.save_take()
@@ -650,6 +670,10 @@ class MainWindow(QMainWindow):
         if key:
             self.model.remove(key)
         self.state.unsaved_take = False
+        # Bump generation so a late analysis result cannot revive a discarded
+        # in-memory recording after close or New Measurement.
+        if self.state.recording is not None and self.state.recording_path is None:
+            self.state.reset()
 
     def _before_take(self) -> bool:
         """A new take or analysis is about to replace the take on screen."""

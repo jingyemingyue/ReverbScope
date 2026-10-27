@@ -252,6 +252,73 @@ def test_the_real_dialog_cancel_discard_and_save(
     window.close()
 
 
+def test_close_while_standalone_post_record_analysis_prompts(
+    app: QApplication, home: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Closing during post-record analysis must ask: the recording is only in memory."""
+    window = MainWindow()
+    window.show()
+    recording, _result = _take(short_sweep)
+    window.standalone.demo_mode = False
+    window.standalone._take_synthetic = False
+    window.state.recording = recording
+    window.state.recording_path = None
+    window.state.result = None
+    monkeypatch.setattr(window.standalone, "is_busy", lambda: True)
+    asked: list[bool] = []
+    monkeypatch.setattr(
+        window, "_ask_about_unsaved_take", lambda: asked.append(True) or False, raising=True
+    )
+    window.close()
+    assert asked == [True]
+    assert window.isVisible()
+    # Discard path: generation bump so a late result cannot revive the take.
+    def discard_ok() -> bool:
+        window._discard_take()
+        return True
+
+    monkeypatch.setattr(window, "_ask_about_unsaved_take", discard_ok)
+    gen = window.state.generation
+    assert window._leave_take() is True
+    assert window.state.generation == gen + 1
+    window.state.unsaved_take = False
+    window.standalone._take_synthetic = True
+    monkeypatch.setattr(window.standalone, "is_busy", lambda: False)
+    window.close()
+
+
+def test_pending_analysis_dialog_omits_save_without_a_result(
+    app: QApplication, home: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    window = MainWindow()
+    window.show()
+    recording, _result = _take(short_sweep)
+    window.standalone.demo_mode = False
+    window.standalone._take_synthetic = False
+    window.state.recording = recording
+    window.state.recording_path = None
+    window.state.result = None
+    monkeypatch.setattr(window.standalone, "is_busy", lambda: True)
+    seen: list[str] = []
+
+    from PySide6.QtWidgets import QMessageBox as RealBox
+
+    class SpyBox(RealBox):
+        def exec(self) -> int:
+            labels = [btn.text() for btn in self.buttons()]
+            seen.extend([self.windowTitle(), self.text(), *labels])
+            self.reject()
+            return int(RealBox.DialogCode.Rejected)
+
+    monkeypatch.setattr("reverbscope.ui.main_window.QMessageBox", SpyBox)
+    assert window._ask_about_unsaved_take() is False
+    assert _("Save Session...") not in seen
+    assert _("Discard") in seen and _("Cancel") in seen
+    window.standalone._take_synthetic = True
+    monkeypatch.setattr(window.standalone, "is_busy", lambda: False)
+    window.close()
+
+
 def test_the_dialog_is_in_chinese_in_the_chinese_interface(
     app: QApplication, home: Path, short_sweep: SweepSettings
 ) -> None:
