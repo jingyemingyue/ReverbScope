@@ -302,17 +302,6 @@ class MainWindow(QMainWindow):
         )
         start_action.triggered.connect(self._show_start)
         view_menu.addAction(start_action)
-        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
-        #: Start panel is included: its Open / New cards would interrupt a take
-        #: even though File ▸ Open is already locked.
-        self.busy_actions = (
-            new_action,
-            open_action,
-            project_action,
-            self.save_action,
-            settings_action,
-            start_action,
-        )
         reset_layout = QAction(_("Reset the layout"), self)
         reset_layout.triggered.connect(self.reset_layout)
         view_menu.addAction(reset_layout)
@@ -330,10 +319,21 @@ class MainWindow(QMainWindow):
         standalone_action.triggered.connect(self._show_mode_action("standalone"))
         measure_menu.addAction(daw_action)
         measure_menu.addAction(standalone_action)
-        # Locked with busy_actions: switching mode under a sounding take or a
-        # running analysis can start a second worker (C8 / SPEC §8.3 BUSY).
+        # Locked with File/View/Settings: switching mode under a sounding take
+        # or a running analysis can start a second worker (C8 / SPEC §8.3 BUSY).
         self.measure_mode_actions = (daw_action, standalone_action)
-        self.busy_actions = (*self.busy_actions, *self.measure_mode_actions)
+        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
+        #: Start panel is included: its Open / New cards would interrupt a take
+        #: even though File ▸ Open is already locked.
+        self.busy_actions = (
+            new_action,
+            open_action,
+            project_action,
+            self.save_action,
+            settings_action,
+            start_action,
+            *self.measure_mode_actions,
+        )
 
         from reverbscope.edition import is_developer
 
