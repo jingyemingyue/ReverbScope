@@ -77,6 +77,8 @@ All notable changes to ReverbScope are documented here. The format follows
   readiness and busy gates do not treat a flagged page as idle.
 - **Developer ▸ Audio Device Inspector stays locked while measuring**, same
   modal-over-Stop rule as Environment Report.
+- **Navigator Rename and context-menu Save refuse while measuring**, so a
+  modal cannot steal Esc from Stop.
 - **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
   `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
   not swallowed.

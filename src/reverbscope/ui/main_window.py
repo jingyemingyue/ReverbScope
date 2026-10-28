@@ -1031,6 +1031,10 @@ class MainWindow(QMainWindow):
         return ""
 
     def save_take(self) -> bool:
+        # Context-menu Save can bypass the menu action's busy disable.
+        if self._measure_busy():
+            return False
+
         """Save the take (the measurement made in this window) as a session.
 
         Into the open project, in a folder named after its position, which

@@ -217,6 +217,39 @@ def test_about_is_blocked_while_a_take_runs(
     window.close()
 
 
+def test_navigator_rename_is_blocked_while_a_take_runs(
+    app: QApplication, held_take, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Rename dialog over a sounding take would steal Esc from Stop."""
+    from PySide6.QtWidgets import QInputDialog
+
+    asked: list[str] = []
+
+    def boom(*_args: object, **_kwargs: object) -> tuple[str, bool]:
+        asked.append("rename")
+        return ("x", True)
+
+    monkeypatch.setattr(QInputDialog, "getText", staticmethod(boom))
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    try:
+        page.run_button.click()
+        assert page.is_busy()
+        window.navigator._rename("any-key")
+        app.processEvents()
+        assert asked == []
+        assert window.save_take() is False
+    finally:
+        held_take.set()
+        _settle(app, page._measure_worker)
+        _settle(app, page._analysis_worker)
+    window.close()
+
+
 def test_device_inspector_is_blocked_while_a_take_runs(
     app: QApplication, held_take, monkeypatch: pytest.MonkeyPatch
 ) -> None:
