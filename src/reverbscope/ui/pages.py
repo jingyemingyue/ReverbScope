@@ -398,6 +398,8 @@ class DawModePage(QWidget):
         self.sample_rate.setCurrentIndex(
             list(SUPPORTED_SAMPLE_RATES).index(state.sweep_settings.sample_rate)
         )
+        self.sample_rate.currentIndexChanged.connect(self._on_sample_rate_changed)
+        self._rate_mismatch_shown = False
         self.duration = QDoubleSpinBox()
         self.duration.setRange(1.0, 60.0)
         self.duration.setValue(state.sweep_settings.duration_s)
@@ -576,6 +578,7 @@ class DawModePage(QWidget):
                 channels=recording.n_channels,
             )
         )
+        self._warn_if_rate_mismatch()
         self.sync_steps()
 
     def _choose_reference(self) -> None:
@@ -598,7 +601,54 @@ class DawModePage(QWidget):
         self._sweep_path = path
         if reference.settings is not None:
             self._sweep_settings = reference.settings
+            # Keep the Sample rate combo aligned with the loaded sweep so a
+            # later Generate and the saved session.json use the same Hz.
+            rate = reference.settings.sample_rate
+            row = self.sample_rate.findData(rate)
+            if row >= 0 and self.sample_rate.currentIndex() != row:
+                self.sample_rate.setCurrentIndex(row)
         self.reference_label.setText(_("Reference: {name}").format(name=path.name))
+        self._warn_if_rate_mismatch()
+
+    def _on_sample_rate_changed(self, _index: int = 0) -> None:
+        """Keep the mismatch banner in sync when the Sample rate combo moves."""
+        self._warn_if_rate_mismatch()
+
+    def _warn_if_rate_mismatch(self) -> None:
+        """Surface a Hz mismatch between the imported take and the sweep.
+
+        The Sample rate combo / ``sweep_settings`` and the recording's rate
+        must agree for a trustworthy deconvolution. Chart CSV already works;
+        this only warns — it does not rewrite schema or DSP.
+        """
+        if self._recording is None or self._sweep_settings is None:
+            if self._rate_mismatch_shown:
+                set_banner_text(self.status, "", "")
+                self.status_changed.emit("", "")
+                self._rate_mismatch_shown = False
+            return
+        # Honesty: Analyze uses ``_sweep_settings`` / ``_reference``, not the
+        # Sample rate combo alone. Changing the combo without regenerating or
+        # reloading the sweep must not clear a real Hz mismatch.
+        sweep_hz = int(self._sweep_settings.sample_rate)
+        take_hz = int(self._recording.sample_rate)
+        if take_hz == sweep_hz:
+            if self._rate_mismatch_shown:
+                set_banner_text(self.status, "", "")
+                self.status_changed.emit("", "")
+                self._rate_mismatch_shown = False
+            return
+        self._rate_mismatch_shown = True
+        set_banner_text(
+            self.status,
+            _(
+                "Sample rates differ: the recording is {take} Hz and the sweep "
+                "is {sweep} Hz. Re-export the take at {sweep} Hz, or load the "
+                "matching reference sweep, before you trust the result."
+            ).format(take=take_hz, sweep=sweep_hz),
+            "warn",
+        )
+        self.status_changed.emit(self.status.text(), "warn")
 
     # --- step 4 -----------------------------------------------------------------
     def start_analysis(self, *, blocking: bool = False) -> None:
@@ -606,6 +656,10 @@ class DawModePage(QWidget):
             # Analyze while busy: a second worker would drop the only
             # reference to the running one, and Qt aborts the process when a
             # QThread is destroyed while it runs.
+            return
+        # Project still loading sessions: same race as strip Start (set_current).
+        host_busy = getattr(self.window(), "_workflow_busy", None)
+        if callable(host_busy) and host_busy():
             return
         if self._recording is None:
             QMessageBox.warning(
@@ -617,6 +671,23 @@ class DawModePage(QWidget):
                 self,
                 _("No reference"),
                 _("Generate the test signal (Step 1) or choose the sweep file."),
+            )
+            return
+        if self._sweep_settings is not None and int(self._recording.sample_rate) != int(
+            self._sweep_settings.sample_rate
+        ):
+            # Body reuses the rate-mismatch banner msgid (already in zh_CN).
+            QMessageBox.warning(
+                self,
+                _("Sample rates differ"),
+                _(
+                    "Sample rates differ: the recording is {take} Hz and the sweep "
+                    "is {sweep} Hz. Re-export the take at {sweep} Hz, or load the "
+                    "matching reference sweep, before you trust the result."
+                ).format(
+                    take=int(self._recording.sample_rate),
+                    sweep=int(self._sweep_settings.sample_rate),
+                ),
             )
             return
         if self.before_take is not None and not self.before_take():
@@ -675,6 +746,7 @@ class DawModePage(QWidget):
         self._recording_path = None
         self.recording_label.setText(_("No recording selected."))
         self._reset_channel_lists()
+        self._warn_if_rate_mismatch()
         self.sync_steps()
 
     def shutdown_workers(self) -> None:
@@ -682,12 +754,36 @@ class DawModePage(QWidget):
         if self._worker is not None:
             self._worker.wait()
 
+    def is_busy(self) -> bool:
+        """An analysis is still running (mirrors :meth:`StandalonePage.is_busy`)."""
+        return self._busy_flag or (self._worker is not None and self._worker.isRunning())
+
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self._busy_flag = busy
         self.sync_steps()
         self.analyze_button.setEnabled(not busy)
         # Leaving mid-analysis would let the late result replace another session.
         self.back_button.setEnabled(not busy)
+        # C8: analysis already snapped channel/profile/placement/recording; the
+        # operator must not change them under a running Analyze (Standalone
+        # locks its sweep/device row the same way while a take sounds).
+        for widget in (
+            self.sample_rate,
+            self.duration,
+            self.level,
+            self.save_sweep_button,
+            self.recording_button,
+            self.reference_button,
+            self.channel,
+            self.loopback_channel,
+            self.room,
+            self.position,
+            self.mic,
+            self.placement,
+            self.profile,
+            self.profile_help,
+        ):
+            widget.setEnabled(not busy)
         self.progress.setVisible(busy)
         set_banner_text(self.status, text, tone)
         self.busy_changed.emit(busy)
@@ -1006,13 +1102,14 @@ class StandalonePage(QWidget):
             return
         above = self.level.value() > SAFE_MAX_LEVEL_DBFS
         self.safe_band.setVisible(above)
-        self.acknowledge.setEnabled(above)
+        busy = self._busy_flag or self.is_busy()
+        # C8: a take in progress must not accept a mid-sweep level ack.
+        self.acknowledge.setEnabled(above and not busy)
         missing = not self.output_chosen() and bool(self._devices)
         if bool(self.output_device.property("missing")) != missing:
             self.output_device.setProperty("missing", missing)
             self.output_device.style().unpolish(self.output_device)
             self.output_device.style().polish(self.output_device)
-        busy = self._busy_flag or self.is_busy()
         reason = self.readiness_reason()
         if not busy:
             self.run_button.setEnabled(not reason)
@@ -1389,8 +1486,8 @@ class StandalonePage(QWidget):
         )
 
     def is_busy(self) -> bool:
-        """A take or its analysis is still running."""
-        return any(
+        """A take or its analysis is still running (matches :meth:`DawModePage.is_busy`)."""
+        return self._busy_flag or any(
             worker is not None and worker.isRunning()
             for worker in (self._measure_worker, self._analysis_worker)
         )
@@ -1417,6 +1514,10 @@ class StandalonePage(QWidget):
         from reverbscope.audio.backend import get_backend
 
         if self.is_busy():
+            return
+        # Project still loading sessions: same race as strip Start (set_current).
+        host_busy = getattr(self.window(), "_workflow_busy", None)
+        if callable(host_busy) and host_busy():
             return
         if not self.output_chosen():
             # OUT-4: the strip's Start and Ctrl+Return are off too; this is the
@@ -1571,6 +1672,48 @@ class StandalonePage(QWidget):
             self.back_button.setEnabled(not busy)
         if hasattr(self, "refresh_button"):
             self.refresh_button.setEnabled(not busy)
+        # C8: while measuring, device routing, sweep level/duration, and
+        # session metadata stay fixed. The worker already snapped placement;
+        # room/position/mic are read after the take, so mid-edit would still
+        # change the saved session. Lock them like DAW Analyze does.
+        for name in (
+            "host_api",
+            "input_device",
+            "output_device",
+            "sample_rate",
+            "input_channel",
+            "loopback_channel",
+            "output_channel",
+            "duration",
+            "level",
+            "acknowledge",
+            "profile",
+            "latency",
+            "room",
+            "position",
+            "mic",
+            "placement",
+            "profile_help",
+        ):
+            widget = getattr(self, name, None)
+            if widget is not None:
+                widget.setEnabled(not busy)
+        if hasattr(self, "wasapi_exclusive"):
+            if busy:
+                self.wasapi_exclusive.setEnabled(False)
+                self.coreaudio_set_rate.setEnabled(False)
+            else:
+                api = self.host_api.currentData() if self.host_api.count() else None
+                kind = next(
+                    (
+                        a.kind
+                        for a in (self._inventory.host_apis if self._inventory else ())
+                        if a.name == api
+                    ),
+                    "",
+                )
+                self.wasapi_exclusive.setEnabled(kind == "wasapi")
+                self.coreaudio_set_rate.setEnabled(kind == "coreaudio")
         self.progress.setVisible(busy)
         if not busy and hasattr(self, "progress") and self.progress.maximum() == 100:
             self.progress.setValue(0)

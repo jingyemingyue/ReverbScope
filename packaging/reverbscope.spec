@@ -125,7 +125,9 @@ a = Analysis(
         (str(ROOT / "src" / "reverbscope" / "locale"), "reverbscope/locale"),
         (str(BUILD_INFO_FILE), "reverbscope"),
     ],
-    hiddenimports=["reverbscope.cli.main"] if TERMINAL else ["reverbscope.cli.main", "reverbscope.ui.app"],
+    hiddenimports=["reverbscope.cli.main"]
+    if TERMINAL
+    else ["reverbscope.cli.main", "reverbscope.ui.app"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -254,6 +256,8 @@ if sys.platform == "darwin" and not TERMINAL:
         gui_coll,
         localized,
         name="ReverbScope.app",
+        # No .icns yet: Dock/Finder show the generic app glyph. Adding a
+        # branded icon needs a C7 license audit (guidelines §4); leave None.
         icon=None,
         bundle_identifier="org.reverbscope.ReverbScope",
         info_plist=MACOS_INFO,

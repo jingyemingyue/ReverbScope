@@ -11,7 +11,7 @@
 #
 # Prints the keychain path; delete it afterwards with
 #   security delete-keychain "$KEYCHAIN"
-set -eu
+set -euo pipefail
 : "${MACOS_CERTIFICATE_P12_BASE64:?}" "${MACOS_CERTIFICATE_PASSWORD:?}" "${RUNNER_TEMP:?}"
 
 KEYCHAIN="$RUNNER_TEMP/reverbscope-signing.keychain-db"

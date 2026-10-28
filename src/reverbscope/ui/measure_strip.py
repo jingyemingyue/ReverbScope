@@ -316,8 +316,12 @@ class MeasureStrip(QWidget):
 
     def _sync_start(self) -> None:
         """Start is off with the reason beside it while no output is chosen or
-        the level is not acknowledged (OUT-4, SAFE)."""
-        busy = self.standalone.is_busy() or self.stop_button.isEnabled()
+        the level is not acknowledged (OUT-4, SAFE).
+
+        DAW Analyze also counts as busy: otherwise a project-load finish (or
+        any other ``_sync_start`` call) would re-light Start under Analyze.
+        """
+        busy = self.standalone.is_busy() or self.daw.is_busy() or self.stop_button.isEnabled()
         live = self.current_mode() == "standalone"
         allowed = not busy and (not live or self._ready)
         self.start_button.setEnabled(allowed)
@@ -373,10 +377,11 @@ class MeasureStrip(QWidget):
         self.advanced_button.setVisible(live)
         self.advanced_bar.setVisible(live and self.advanced_button.isChecked())
         self.start_button.setText(_("Start") if live else _("Import recording..."))
-        # In DAW mode Ctrl+Return belongs to the DAW page's Analyze: two
-        # visible buttons with one shortcut would make Qt fire neither.
-        shortcut = QKeySequence("Ctrl+Return") if live else QKeySequence()
-        self.start_button.setShortcut(shortcut)
+        # Exactly one owner of Ctrl+Return: Standalone Start vs DAW Analyze.
+        # Both used WindowShortcut, so Qt could fire neither when both were set.
+        enter = QKeySequence("Ctrl+Return")
+        self.start_button.setShortcut(enter if live else QKeySequence())
+        self.daw.analyze_button.setShortcut(QKeySequence() if live else enter)
         native = native_shortcut("Ctrl+Return") if live else ""
         self.start_button.setToolTip(
             _("Play the sweep and record it ({shortcut}).").format(shortcut=native)
@@ -423,6 +428,10 @@ class MeasureStrip(QWidget):
         )
         self.mode.setEnabled(not busy)
         self.position.setEnabled(not busy)
+        # C8: device and channel controls must not change while a take runs.
+        # The strip mirrors the page; locking both keeps the bar honest.
+        for widget in self.device_widgets:
+            widget.setEnabled(not busy)
         # The page's Stop is on exactly while the sweep plays (the worker may
         # not have started yet when the busy signal arrives).
         running = busy and self.standalone.stop_button.isEnabled()

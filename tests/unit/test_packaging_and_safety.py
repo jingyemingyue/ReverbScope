@@ -195,6 +195,69 @@ def test_the_mac_app_declares_its_chinese_localization(tmp_path: Path) -> None:
     module.check_localizations(app, info)
 
 
+def test_macos_sign_and_dmg_scripts_wire_entitlements_and_arch() -> None:
+    """The release scripts must keep pointing at both entitlement files and
+    stamp the DMG name with the build machine's arch (arm64 / x86_64)."""
+    sign = Path("packaging/macos/sign_app.sh").read_text(encoding="utf-8")
+    assert "entitlements-adhoc.plist" in sign
+    assert "entitlements.plist" in sign
+    assert "--options runtime" in sign
+    # Nested ``find | while codesign`` must not swallow a failed codesign.
+    assert "pipefail" in sign
+    dmg = Path("packaging/macos/make_dmg.sh").read_text(encoding="utf-8")
+    assert "uname -m" in dmg
+    assert "ReverbScope-Desktop-macOS-" in dmg
+    assert "hdiutil create" in dmg
+    assert "pipefail" in dmg
+    for name in ("notarize_dmg.sh", "import_certificate.sh"):
+        body = Path("packaging/macos", name).read_text(encoding="utf-8")
+        assert "pipefail" in body, name
+
+
+def test_macos_entitlements_cover_adhoc_and_developer_id() -> None:
+    """CI rehearsal (``sign_app.sh --runtime``) needs the adhoc entitlements;
+    notarization needs the Developer ID file without library-validation off."""
+    import plistlib
+
+    macos = Path("packaging/macos")
+    adhoc = plistlib.loads((macos / "entitlements-adhoc.plist").read_bytes())
+    release = plistlib.loads((macos / "entitlements.plist").read_bytes())
+    audio = "com.apple.security.device.audio-input"
+    unsigned = "com.apple.security.cs.allow-unsigned-executable-memory"
+    disable = "com.apple.security.cs.disable-library-validation"
+    assert adhoc.get(audio) is True and release.get(audio) is True
+    assert adhoc.get(unsigned) is True and release.get(unsigned) is True
+    assert adhoc.get(disable) is True
+    assert disable not in release
+
+
+def test_macos_dmg_check_rejects_identity_and_arch_mismatches(tmp_path: Path) -> None:
+    """A wrong CFBundleIdentifier or an arm64 DMG that only contains x86_64
+    must fail the post-build check before the Release assets are uploaded."""
+    import plistlib
+    import tomllib
+
+    module = _load("check_macos_dmg", Path("scripts") / "check_macos_dmg.py")
+    version = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"][
+        "version"
+    ]
+    info = plistlib.loads((Path("packaging/macos") / "Info.plist").read_bytes())
+    info["CFBundleShortVersionString"] = version
+    info["CFBundleVersion"] = version
+    module.check_bundle_identity(info, version)
+
+    broken = dict(info)
+    broken["CFBundleIdentifier"] = "org.example.Wrong"
+    with pytest.raises(AssertionError):
+        module.check_bundle_identity(broken, version)
+
+    module.check_dmg_arch_name(tmp_path / "ReverbScope-Desktop-macOS-arm64.dmg", "arm64")
+    with pytest.raises(AssertionError, match="arm64"):
+        module.check_dmg_arch_name(tmp_path / "ReverbScope-Desktop-macOS-arm64.dmg", "x86_64")
+    with pytest.raises(AssertionError, match="x86_64"):
+        module.check_dmg_arch_name(tmp_path / "ReverbScope-Desktop-macOS-x86_64.dmg", "arm64")
+
+
 def test_smoke_bundle_finds_explicit_binary(tmp_path: Path) -> None:
     module = _load("smoke_bundle", Path("scripts") / "smoke_bundle.py")
     fake = tmp_path / "reverbscope"

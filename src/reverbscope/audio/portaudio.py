@@ -252,9 +252,18 @@ class PortAudioBackend:
                     now = time.monotonic()
                     if cancel is not None and cancel.is_set():
                         # The next callback stops the stream; if the device
-                        # has stalled and no callback comes, stop waiting.
+                        # has stalled and no callback comes, abort so close()
+                        # on a hung CoreAudio/WASAPI device cannot pin the
+                        # GUI thread inside shutdown_workers().wait().
                         cancelled_at = now if cancelled_at is None else cancelled_at
                         if now - cancelled_at > CANCEL_GRACE_S:
+                            try:
+                                stream.abort()
+                            except Exception:
+                                log.warning(
+                                    "stream.abort() after cancel grace failed",
+                                    exc_info=True,
+                                )
                             raise MeasurementCancelledError(_("measurement stopped"))
                     if now > deadline:
                         raise AudioDeviceError(_("playback/recording timed out"))

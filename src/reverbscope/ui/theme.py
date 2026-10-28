@@ -49,7 +49,8 @@ LIGHT_TOKENS: dict[str, str] = {
     "hover": "#e8e5df",
     "sel_sidebar": "#ddeaea",
     "sep": "#e5e2db",
-    "control": "#8a857b",
+    # Checkbox/spin borders on white must clear WCAG AA 4.5:1 (C8 level ack).
+    "control": "#757068",
     "text3": "#68645d",
     "disabled": "#a9a49b",
     "accent_ink": "#136c76",
@@ -82,7 +83,8 @@ DARK_TOKENS: dict[str, str] = {
     "hover": "#34322f",
     "sel_sidebar": "#21393b",
     "sep": "#3a3834",
-    "control": "#7d786f",
+    # Checkbox/spin borders on dark surfaces must clear WCAG AA 4.5:1.
+    "control": "#a9a49b",
     "text3": "#9c978e",
     "disabled": "#6a665f",
     "accent_ink": "#5cc0cc",

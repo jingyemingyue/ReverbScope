@@ -473,12 +473,22 @@ class Navigator(QWidget):
                 )
                 base.triggered.connect(lambda _checked=False, k=key: self.model.set_baseline(k))
                 menu.addAction(base)
+        busy_fn = getattr(self.window(), "_measure_busy", None)
+        measure_busy = bool(callable(busy_fn) and busy_fn())
         rename = QAction(_("Rename..."), menu)
-        rename.setToolTip(_("A display name for this list. The session file is not changed."))
+        rename.setToolTip(
+            _("Measuring · available after Stop or when it ends")
+            if measure_busy
+            else _("A display name for this list. The session file is not changed.")
+        )
+        rename.setEnabled(not measure_busy)
         rename.triggered.connect(lambda _checked=False, k=key: self._rename(k))
         menu.addAction(rename)
         if entry.unsaved:
             save = QAction(_("Save Session..."), menu)
+            if measure_busy:
+                save.setEnabled(False)
+                save.setToolTip(_("Measuring · available after Stop or when it ends"))
             save.triggered.connect(lambda _checked=False, k=key: self.save_requested.emit(k))
             menu.addAction(save)
         if entry.directory is not None:
@@ -501,6 +511,10 @@ class Navigator(QWidget):
         return menu
 
     def _rename(self, key: str) -> None:
+        # A rename dialog over a sounding take steals Esc from Stop (C8).
+        busy_fn = getattr(self.window(), "_measure_busy", None)
+        if callable(busy_fn) and busy_fn():
+            return
         from PySide6.QtWidgets import QInputDialog
 
         entry = self.model.entry(key)

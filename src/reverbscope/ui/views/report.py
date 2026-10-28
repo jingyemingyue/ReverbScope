@@ -118,9 +118,12 @@ class ReportView(AnalysisView):
         return "\n".join(cli_commands(self.session_folder()))
 
     def _commands_hint(self) -> str:
+        # Chart panels already export Curves as CSV (plotkit Export menu).
+        # Session-wide CSV, a bug-report zip and analyze-ir still need the CLI
+        # (guidelines §8.11); do not claim chart CSV is missing.
         hint = _(
-            "Not in the desktop yet: CSV export, a zip for a bug report, an impulse "
-            "response from another tool (set --band to its sweep's band), the demo."
+            "Still CLI-only: session CSV export, a zip for a bug report, and an "
+            "impulse response from another tool (set --band to its sweep's band)."
         )
         if self.session_folder() is None:
             hint += " " + _("Save the session first: {placeholder} stands for its folder.").format(

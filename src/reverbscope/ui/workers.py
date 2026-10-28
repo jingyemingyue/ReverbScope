@@ -157,6 +157,11 @@ class MeasureWorker(QThread):
             self.stopped.emit()
         except ReverbScopeError as exc:
             self.failed.emit(localize(str(exc)))
+        except MemoryError:
+            # Same wording as AnalysisWorker: a long take is the user's to
+            # shorten, not a ReverbScope bug (test_gui_edge_cases).
+            log.exception("measurement ran out of memory")
+            self.failed.emit(out_of_memory_text())
         except Exception:
             log.exception("measurement failed unexpectedly")
             self.failed.emit(unexpected_error_text())

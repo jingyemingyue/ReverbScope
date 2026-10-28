@@ -7,6 +7,87 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- **Device and sweep controls stay locked while a take is sounding** (C8):
+  host API, input/output, sample rate, channels, duration and level on the
+  Standalone page and the measure strip can no longer be edited mid-sweep.
+- **Stop on a stalled PortAudio device aborts the stream** after the cancel
+  grace period, so closing the window cannot hang inside `close()` on a
+  stuck CoreAudio or WASAPI device. Hardware mute latency remains untested.
+- **Report page no longer claims chart CSV is missing**: the hint lists only
+  the still-CLI-only items (session CSV, bug-report zip, analyze-ir).
+- **Loading a DAW reference sweep syncs the Sample rate combo**, and a Hz
+  mismatch between recording and sweep shows a warning banner.
+- **macOS App menu roles** for Settings, About and Quit; mnemonic `&` is
+  stripped on Darwin (guidelines §18.1).
+- **View ▸ Start panel is locked while measuring**, so its Open / New cards
+  cannot interrupt a sounding take.
+- **Settings language hint** is a single `_()` string (no bilingual mix).
+- **Control chrome contrast** (`control` token) meets WCAG AA 4.5:1 on both
+  light and dark surfaces (level-ack checkbox).
+- **MeasureWorker reports out-of-memory** with the same non-bug wording as
+  analysis (no longer “This is a bug in ReverbScope”).
+- **Fake backend honours Stop before room convolution**, so Esc/Stop is not
+  stuck behind `fftconvolve` on a long demo sweep.
+- **Chart CSV export is atomic**: a failed write keeps any previous file.
+- **DAW Analyze locks busy menus** the same way Standalone takes do.
+- **Measure menu stays locked while busy**, and switching Standalone ↔ DAW
+  mid-take or mid-analysis is refused so a second worker cannot start.
+  Sidebar “measure at position” is ignored while either page is busy.
+- **Help ▸ Getting started and File ▸ Close Project stay locked while busy**,
+  so they cannot open the Start panel or drop the project under a sounding
+  take or DAW analysis.
+- **DAW Sample rate combo refreshes the Hz-mismatch banner** when the
+  operator changes it after importing a recording.
+- **Strip Start, Standalone Run and DAW Analyze stay off while a project is
+  still loading sessions**, so a finished take cannot lose ``current`` to a
+  late loader ``set_current``.
+- **Closing during a sounding Standalone sweep or post-record analysis asks
+  before discarding** the in-memory recording (Save is offered only once a
+  result exists).
+- **Clearing a DAW recording clears a leftover sample-rate mismatch banner.**
+- **View ▸ Start panel and Help ▸ Getting started ask before leaving an
+  unsaved live take**, matching New Measurement.
+- **DAW Analyze locks sweep / import / channel / profile controls** while
+  analysis runs (C8), matching Standalone's mid-take device lock.
+- **Open Session and the sidebar recent list refuse while measuring**, so
+  they cannot bypass File ▸ Open's busy lock or switch the view mid-take.
+- **Environment Report, Settings, and sidebar Help stay locked while
+  measuring**, so a modal cannot cover Stop or steal Esc from a sounding take.
+- **Standalone room / position / mic / placement stay locked while a take
+  sounds** (C8), matching DAW Analyze so mid-take metadata edits cannot
+  rewrite the session after Stop.
+- **File ▸ Compare Sessions stays locked while measuring.**
+- **View ▸ Compare / Ctrl+0 also refuse while measuring**, matching File ▸
+  Compare so the analysis bar cannot leave a sounding take.
+- **Help ▸ About stays locked while measuring**, same modal-over-Stop rule
+  as Environment Report and Settings.
+- **Profile help button locks with the profile combo** on Standalone and
+  DAW while busy (C8).
+- **Ctrl+Return has one owner per mode**: Standalone Start or DAW Analyze,
+  never both at once (Qt would fire neither).
+- **Strip Start stays off while DAW Analyze runs**, even if ``_sync_start``
+  or a finished project load runs mid-analysis.
+- **DAW rate-mismatch warning follows the real sweep**, not the Sample rate
+  combo alone; Analyze refuses a take/sweep Hz mismatch.
+- **Chart PNG/SVG export is atomic**: a failed write keeps any previous file.
+- **Closing after a failed Standalone analysis still asks** before discarding
+  the only in-memory recording (``unsaved_take`` is still false until success).
+- **Standalone ``is_busy()`` includes ``_busy_flag``**, matching DAW Analyze so
+  readiness and busy gates do not treat a flagged page as idle.
+- **Developer ▸ Audio Device Inspector stays locked while measuring**, same
+  modal-over-Stop rule as Environment Report.
+- **Navigator Rename and context-menu Save refuse while measuring**, so a
+  modal cannot steal Esc from Stop.
+- **macOS packaging scripts use `pipefail`** (`sign_app`, `make_dmg`,
+  `notarize_dmg`, `import_certificate`) so a failed stage in a pipeline is
+  not swallowed.
+
+### Changed
+- **macOS DMG post-build checks** also verify `CFBundleIdentifier`, HiDPI,
+  and that the DMG file name's arch matches `lipo`. Ad-hoc and Developer ID
+  entitlements are covered by a static unit test.
+
 ## [0.5.0b6] - 2026-10-21
 
 Software beta 6, the development line on `main`: the light sidebar desktop

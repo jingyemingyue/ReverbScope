@@ -6898,8 +6898,31 @@ msgstr "把这些命令行复制到剪贴板。"
 msgid "Command-line equivalents"
 msgstr "对应的命令行"
 
-msgid "Not in the desktop yet: CSV export, a zip for a bug report, an impulse response from another tool (set --band to its sweep's band), the demo."
-msgstr "桌面界面还没有这些功能：导出 CSV、把会话打成压缩包用于报告问题、分析其他工具得到的脉冲响应（--band 填它扫频覆盖的频带）、合成演示。"
+msgid "Still CLI-only: session CSV export, a zip for a bug report, and an impulse response from another tool (set --band to its sweep's band)."
+msgstr "仍需使用命令行：导出会话 CSV、把会话打成压缩包用于报告问题、分析其他工具得到的脉冲响应（--band 填它扫频覆盖的频带）。"
+
+msgid "The language change takes full effect after ReverbScope restarts."
+msgstr "语言设置将在重新启动 ReverbScope 后完全生效。"
+
+msgid "Unavailable while a measurement is running."
+msgstr "测量进行中时不可用。"
+
+msgid "Cannot export"
+msgstr "无法导出"
+
+msgid "Could not write {path}: {error}"
+msgstr "无法写入 {path}：{error}"
+
+msgid "Sample rates differ"
+msgstr "采样率不一致"
+
+msgid ""
+"Sample rates differ: the recording is {take} Hz and the sweep is {sweep} Hz. "
+"Re-export the take at {sweep} Hz, or load the matching reference sweep, before "
+"you trust the result."
+msgstr ""
+"采样率不一致：录音是 {take} Hz，扫频是 {sweep} Hz。"
+"请把录音重新导出为 {sweep} Hz，或加载匹配的参考扫频，再采信结果。"
 
 msgid "Save the session first: {placeholder} stands for its folder."
 msgstr "请先保存会话：{placeholder} 代表会话文件夹。"

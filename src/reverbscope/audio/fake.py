@@ -160,6 +160,17 @@ class FakeBackend:
             )
         supported_sample_rate(sample_rate)
         signal = prepare_playback(playback, sample_rate, level_dbfs, extra_record_s)
+
+        def _raise_if_cancelled() -> None:
+            if cancel is not None and cancel.is_set():
+                self.last_output_block = np.zeros(CALLBACK_BLOCK, dtype=np.float64)
+                self.cancelled = True
+                raise MeasurementCancelledError(_("measurement stopped"))
+
+        # Stop/Esc must win before the expensive room convolution: otherwise a
+        # demo take looks busy while the worker ignores cancel until fftconvolve
+        # finishes (often hundreds of ms on a long sweep).
+        _raise_if_cancelled()
         room = (
             self.rir
             if self.rir is not None
@@ -170,9 +181,11 @@ class FakeBackend:
                 start_delay_s=self.loopback_delay_s + self.acoustic_delay_s,
             )
         )
+        _raise_if_cancelled()
         mic = np.asarray(
             fftconvolve(signal, room, mode="full")[: signal.shape[0]], dtype=np.float64
         )
+        _raise_if_cancelled()
         if self.noise_rms > 0.0:
             rng = np.random.default_rng(self.seed + 1)
             mic = mic + rng.normal(0.0, self.noise_rms, mic.shape[0])
@@ -186,6 +199,7 @@ class FakeBackend:
                 dtype=np.float64,
             )
         )
+        _raise_if_cancelled()
         loop[delay:] = delayed[: delayed.shape[0] - delay] if delay else delayed
 
         n_ch = len(input_channels)

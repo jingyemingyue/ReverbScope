@@ -314,7 +314,9 @@ def test_both_editions_leave_the_developer_tools_out() -> None:
     ]
     for module in ("setuptools", "pytest", "pygments", "yaml", "readline"):
         assert f'"{module}"' in dev, module
-    desktop = spec[spec.index("    else [") :]
+    # Desktop excludes (not hiddenimports): the else-list that unpacks DEV_ONLY.
+    marker = "else [\n        *DEV_ONLY_EXCLUDES"
+    desktop = spec[spec.index(marker) :]
     assert desktop.split("]", 1)[0].count("*DEV_ONLY_EXCLUDES") == 1
 
 

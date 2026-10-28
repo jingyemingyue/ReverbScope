@@ -155,9 +155,16 @@ def test_a_running_take_locks_what_would_interrupt_it(app: QApplication) -> None
     for button in (window.navigator.new_button, window.navigator.settings_button):
         assert not button.isEnabled()
     assert window.navigator.tree.isEnabled()
-    assert all(action.isEnabled() for action in window.view_actions.values())
+    # Compare is locked with File ▸ Compare while busy; other views stay browsable.
+    assert not window.view_actions["compare"].isEnabled()
+    assert all(
+        action.isEnabled()
+        for view_id, action in window.view_actions.items()
+        if view_id != "compare"
+    )
     window.standalone.busy_changed.emit(False)
     assert all(action.isEnabled() for action in window.busy_actions)
+    assert window.view_actions["compare"].isEnabled()
     assert window.navigator.new_button.isEnabled()
     window.close()
 

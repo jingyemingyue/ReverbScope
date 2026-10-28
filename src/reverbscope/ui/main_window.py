@@ -182,6 +182,11 @@ class MainWindow(QMainWindow):
         self.standalone.busy_changed.connect(
             self._weak(lambda window, busy: window._busy_changed(busy, "standalone"))
         )
+        # DAW Analyze also locks New/Open/Save/Settings/Start panel; without
+        # this the strip could start a Standalone take over a running analysis.
+        self.daw.busy_changed.connect(
+            self._weak(lambda window, busy: window._busy_changed(busy, "universal_daw"))
+        )
         self.inspector.compare_requested.connect(self.show_compare)
         self.inspector.same_gain.toggled.connect(self.compare.same_gain.setChecked)
         self.compare.same_gain.toggled.connect(self.inspector.same_gain.setChecked)
@@ -198,6 +203,9 @@ class MainWindow(QMainWindow):
         self.strip.mode_changed.connect(self._strip_mode)
         self.strip.setup_requested.connect(self.show_mode)
         self.strip.start_requested.connect(self._strip_start)
+        # A project still reading sessions must not start a take that races
+        # set_current with the loader (workflow reliability).
+        self.model.loading_changed.connect(self._project_loading_changed)
         self.workspace.view_chosen.connect(self.show_view)
         self.inspector.locate_requested.connect(self.show_view)
         from reverbscope.ui.views.overview import OverviewView
@@ -247,28 +255,23 @@ class MainWindow(QMainWindow):
         self.save_action = QAction(_("&Save Session..."), self)
         self.save_action.setShortcut("Ctrl+S")
         self.save_action.triggered.connect(self.save_take)
-        compare_action = QAction(_("&Compare Sessions..."), self)
-        compare_action.setShortcut("Ctrl+Shift+C")
-        compare_action.triggered.connect(self.show_compare)
+        self.compare_action = QAction(_("&Compare Sessions..."), self)
+        self.compare_action.setShortcut("Ctrl+Shift+C")
+        self.compare_action.triggered.connect(self.show_compare)
         settings_action = QAction(_("&Settings..."), self)
         settings_action.setShortcut("Ctrl+,")
+        # macOS App menu: Preferences (guidelines §12.14 / §18.1).
+        settings_action.setMenuRole(QAction.MenuRole.PreferencesRole)
         settings_action.triggered.connect(self.show_settings)
-        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
-        self.busy_actions = (
-            new_action,
-            open_action,
-            project_action,
-            self.save_action,
-            settings_action,
-        )
         quit_action = QAction(_("&Quit"), self)
         quit_action.setShortcut("Ctrl+Q")
+        quit_action.setMenuRole(QAction.MenuRole.QuitRole)
         quit_action.triggered.connect(self.close)
         for action in (new_action, open_action, project_action, self.close_project_action):
             file_menu.addAction(action)
         file_menu.addSeparator()
         file_menu.addAction(self.save_action)
-        file_menu.addAction(compare_action)
+        file_menu.addAction(self.compare_action)
         file_menu.addSeparator()
         file_menu.addAction(settings_action)
         file_menu.addSeparator()
@@ -297,7 +300,10 @@ class MainWindow(QMainWindow):
         view_menu.addAction(self.navigator_action)
         view_menu.addAction(self.inspector_action)
         start_action = QAction(_("Start panel"), self)
-        start_action.triggered.connect(self._show_start)
+        start_action.setToolTip(
+            _("Unavailable while a measurement is running."),
+        )
+        start_action.triggered.connect(self.show_start_panel)
         view_menu.addAction(start_action)
         reset_layout = QAction(_("Reset the layout"), self)
         reset_layout.triggered.connect(self.reset_layout)
@@ -316,34 +322,67 @@ class MainWindow(QMainWindow):
         standalone_action.triggered.connect(self._show_mode_action("standalone"))
         measure_menu.addAction(daw_action)
         measure_menu.addAction(standalone_action)
-
+        # Locked with File/View/Settings: switching mode under a sounding take
+        # or a running analysis can start a second worker (C8 / SPEC §8.3 BUSY).
+        self.measure_mode_actions = (daw_action, standalone_action)
         from reverbscope.edition import is_developer
 
         self.developer_menu = None
+        self.device_inspector_action: QAction | None = None
         if is_developer():
             self.developer_menu = self.menuBar().addMenu(_("&Developer"))
-            inspector_action = QAction(_("Audio Device &Inspector..."), self)
-            inspector_action.setShortcut("Ctrl+Shift+D")
-            inspector_action.triggered.connect(self.show_device_inspector)
+            self.device_inspector_action = QAction(_("Audio Device &Inspector..."), self)
+            self.device_inspector_action.setShortcut("Ctrl+Shift+D")
+            self.device_inspector_action.triggered.connect(self.show_device_inspector)
             folder_action = QAction(_("Open &Data Folder"), self)
             folder_action.triggered.connect(self._open_data_folder)
-            for action in (inspector_action, folder_action):
+            for action in (self.device_inspector_action, folder_action):
                 self.developer_menu.addAction(action)
 
         help_menu = self.menuBar().addMenu(_("&Help"))
         self.getting_started_action = QAction(_("&Getting started"), self)
         self.getting_started_action.triggered.connect(self.show_getting_started)
         help_menu.addAction(self.getting_started_action)
-        about_action = QAction(_("&About ReverbScope"), self)
-        about_action.triggered.connect(self._about)
+        self.about_action = QAction(_("&About ReverbScope"), self)
+        # macOS App menu: About (guidelines §18.1).
+        self.about_action.setMenuRole(QAction.MenuRole.AboutRole)
+        self.about_action.triggered.connect(self._about)
         licenses_action = QAction(_("&Third-party licenses..."), self)
+        licenses_action.setMenuRole(QAction.MenuRole.NoRole)
         licenses_action.triggered.connect(self._open_licenses)
         self.report_action = QAction(_("&Environment Report for Bug Reports..."), self)
+        self.report_action.setMenuRole(QAction.MenuRole.NoRole)
         self.report_action.triggered.connect(self.show_environment_report)
         help_menu.addAction(self.report_action)
+        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
+        #: Start panel / Getting started / Close Project / Environment Report /
+        #: Compare / About / Device Inspector are included: each would interrupt
+        #: a take or cover Stop with a modal.
+        self.busy_actions = (
+            new_action,
+            open_action,
+            project_action,
+            self.close_project_action,
+            self.save_action,
+            self.compare_action,
+            settings_action,
+            start_action,
+            self.getting_started_action,
+            self.report_action,
+            self.about_action,
+            *self.measure_mode_actions,
+            *((self.device_inspector_action,) if self.device_inspector_action is not None else ()),
+        )
         help_menu.addSeparator()
-        help_menu.addAction(about_action)
+        help_menu.addAction(self.about_action)
         help_menu.addAction(licenses_action)
+
+        # §18.1: mnemonic ampersands are for Windows/Linux menu bars only.
+        if sys.platform == "darwin":
+            for action in self.findChildren(QAction):
+                title = action.text()
+                if "&" in title:
+                    action.setText(title.replace("&", ""))
 
     def _weak(self, call: Callable[..., Any], default: Any = None) -> Callable[..., Any]:
         """``call(window, *args)`` holding the window by a weak reference only.
@@ -549,11 +588,17 @@ class MainWindow(QMainWindow):
         for action in self.busy_actions:
             action.setEnabled(not busy)
             action.setToolTip(reason if busy else action.text().replace("&", ""))
+        compare_view = self.view_actions.get("compare")
+        if compare_view is not None:
+            compare_view.setEnabled(not busy)
+            compare_view.setToolTip(reason if busy else compare_view.text().replace("&", ""))
         for button in (
             self.navigator.new_button,
             self.navigator.open_project_button,
             self.navigator.open_session_button,
             self.navigator.settings_button,
+            self.navigator.help_button,
+            self.navigator.report_button,
             self.workspace.save_button,
         ):
             button.setEnabled(not busy)
@@ -562,6 +607,17 @@ class MainWindow(QMainWindow):
                 button.setToolTip(reason)
             elif button.property("idle_tip"):
                 button.setToolTip(str(button.property("idle_tip")))
+        # Recent list also opens sessions: File ▸ Open is locked while busy, so
+        # double-click must not bypass that gate (sidebar recent / start panel).
+        recent = self.navigator.recent
+        if busy:
+            recent.setProperty("idle_tip", recent.property("idle_tip") or recent.toolTip())
+            recent.setEnabled(False)
+            recent.setToolTip(reason)
+        else:
+            recent.setEnabled(True)
+            if recent.property("idle_tip"):
+                recent.setToolTip(str(recent.property("idle_tip")))
         self.navigator.new_button.setIcon(
             icons.icon("lock" if busy else "plus", 16, tone="" if busy else "accent")
         )
@@ -574,14 +630,37 @@ class MainWindow(QMainWindow):
                 return entry.key
         return ""
 
+    def _pending_memory_recording(self) -> bool:
+        """Live Standalone take in flight before it is listed as unsaved.
+
+        Covers the sounding sweep (``recording`` still None), post-record
+        analysis before ``add_take``, and a failed analysis that left the
+        only copy in memory with ``unsaved_take`` still false. Closing any
+        of those without a prompt would drop it. Demo / fake-backend takes
+        are synthetic and never ask.
+        """
+        if self.standalone.demo_mode or self.standalone._take_synthetic:
+            return False
+        if self.state.recording_path is not None:
+            return False
+        if self._unsaved_take_key():
+            return False
+        # Pathless recording with no result yet: mid-analysis or a failed
+        # analysis. A finished take is either unsaved (key above) or already
+        # saved (result set, unsaved_take cleared) and must not re-prompt.
+        if self.state.recording is not None and self.state.result is None:
+            return True
+        return self.standalone.is_busy()
+
     def _leave_take(self) -> bool:
         """True when the window may drop the unsaved take.
 
         A live Standalone take is the only copy of its recording until the
         session is saved; a new take, New Measurement, removing it from the
-        list and closing the window ask first.
+        list and closing the window ask first. An in-flight analysis of a
+        memory recording asks too (no Save until a result exists).
         """
-        if not self._unsaved_take_key():
+        if not self._unsaved_take_key() and not self._pending_memory_recording():
             return True
         return self._ask_about_unsaved_take()
 
@@ -595,14 +674,18 @@ class MainWindow(QMainWindow):
             ),
             parent=self,
         )
-        save = box.addButton(_("Save Session..."), QMessageBox.ButtonRole.AcceptRole)
+        # Save needs a finished result; during post-record analysis offer only
+        # Discard / Cancel so the operator is not sent to an empty Save dialog.
+        save = None
+        if self.state.result is not None:
+            save = box.addButton(_("Save Session..."), QMessageBox.ButtonRole.AcceptRole)
         discard = box.addButton(_("Discard"), QMessageBox.ButtonRole.DestructiveRole)
         cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
-        box.setDefaultButton(save)
+        box.setDefaultButton(save if save is not None else discard)
         box.setEscapeButton(cancel)
         box.exec()
         clicked = box.clickedButton()
-        if clicked is save:
+        if save is not None and clicked is save:
             # The folder chooser may be cancelled or the save may fail: the
             # take is let go only once it is on disk.
             self.save_take()
@@ -617,6 +700,10 @@ class MainWindow(QMainWindow):
         if key:
             self.model.remove(key)
         self.state.unsaved_take = False
+        # Bump generation so a late analysis result cannot revive a discarded
+        # in-memory recording after close or New Measurement.
+        if self.state.recording is not None and self.state.recording_path is None:
+            self.state.reset()
 
     def _before_take(self) -> bool:
         """A new take or analysis is about to replace the take on screen."""
@@ -642,7 +729,17 @@ class MainWindow(QMainWindow):
         self.daw.clear_recording()
         self._show_start()
 
+    def show_start_panel(self) -> None:
+        """View ▸ Start panel: ask before abandoning an unsaved live take."""
+        if self._measure_busy():
+            return
+        if not self._leave_take():
+            return
+        self._show_start()
+
     def _show_start(self) -> None:
+        # Low-level: New Measurement (_go_home) calls this after _leave_take.
+        # View ▸ Start panel goes through show_start_panel so it asks first.
         self.home.refresh_recent()
         self.navigator.refresh_recent()
         self.home.show_walkthrough(not load_settings().walkthrough_dismissed)
@@ -652,6 +749,10 @@ class MainWindow(QMainWindow):
     # --- views ---------------------------------------------------------------------------
 
     def show_view(self, view_id: str) -> None:
+        # Ctrl+0 / analysis-bar Compare must not leave a sounding take; File ▸
+        # Compare already goes through show_compare's busy gate.
+        if view_id == "compare" and self._measure_busy():
+            return
         view = self.workspace.show_view(view_id)
         self._preferred_view = view_id
         self._set_place(view.title())
@@ -674,6 +775,8 @@ class MainWindow(QMainWindow):
     # --- opening ---------------------------------------------------------------------------
 
     def choose_session(self) -> None:
+        if self._measure_busy():
+            return
         path, _filter = QFileDialog.getOpenFileName(
             self,
             _("Open session"),
@@ -686,8 +789,12 @@ class MainWindow(QMainWindow):
     def open_session_path(self, path: str | Path) -> bool:
         """Open a saved session into the list and make it current.
 
-        It is added, not swapped in: the take and everything else open stay.
+        It is added, not swapped in: a finished unsaved take stays in the list.
+        While a take or analysis is running, refuse (same gate as File ▸ Open):
+        recent / start-panel shortcuts must not switch the view mid-measure.
         """
+        if self._measure_busy():
+            return False
         try:
             loaded = load_measurement(path)
         except ReverbScopeError as exc:
@@ -711,6 +818,8 @@ class MainWindow(QMainWindow):
 
     def _show_session(self, path: str) -> None:
         """A row of the project view: select it, or open it when it is not in the list."""
+        if self._measure_busy():
+            return
         key = folder_key(path)
         if self.model.entry(key) is not None:
             self.model.set_current(key)
@@ -720,6 +829,8 @@ class MainWindow(QMainWindow):
 
     def _open_pair(self, baseline: str, candidate: str) -> None:
         """Two sessions picked in Compare: open both, compare them."""
+        if self._measure_busy():
+            return
         if not (self.open_session_path(baseline) and self.open_session_path(candidate)):
             return
         self.model.set_baseline(folder_key(baseline))
@@ -727,6 +838,8 @@ class MainWindow(QMainWindow):
         self.show_view("compare")
 
     def choose_project(self) -> None:
+        if self._measure_busy():
+            return
         directory = QFileDialog.getExistingDirectory(self, _("Open project folder"))
         if directory:
             self.show_project(Path(directory))
@@ -734,6 +847,8 @@ class MainWindow(QMainWindow):
     def show_project(self, path: str | Path | None = None) -> None:
         """The project view: for ``path`` (opened, or offered to be made), or
         the project already open, read again."""
+        if path is not None and self._measure_busy():
+            return
         if path is not None:
             self._save_selection()
             if not self.project.open_path(Path(path)):
@@ -744,19 +859,51 @@ class MainWindow(QMainWindow):
         self.show_view("project")
 
     def close_project(self) -> None:
+        if self._measure_busy():
+            return
         self._save_selection()
         self.model.close_project()
 
     def _project_failed(self, message: str) -> None:
         QMessageBox.critical(self, _("Cannot open project"), message)
 
+    def _measure_busy(self) -> bool:
+        """A take or analysis on either measure page is still running."""
+        return self.standalone.is_busy() or self.daw.is_busy()
+
+    def _workflow_busy(self) -> bool:
+        """Measuring, analysing, or still reading an opened project's sessions."""
+        return self._measure_busy() or self.model.loading
+
+    def _project_loading_changed(self, loading: bool) -> None:
+        """Disable Start / Run / Analyze while sessions load (set_current race)."""
+        tip = _("Reading the project's sessions...")
+        if loading:
+            self.strip.start_button.setEnabled(False)
+            self.strip.start_button.setToolTip(tip)
+            self.standalone.run_button.setEnabled(False)
+            self.standalone.run_button.setToolTip(tip)
+            self.daw.analyze_button.setEnabled(False)
+            self.daw.analyze_button.setToolTip(tip)
+            return
+        self.strip._sync_start()
+        self.standalone._sync_readiness()
+        self.standalone.run_button.setToolTip("")
+        if not self.daw.is_busy():
+            self.daw.analyze_button.setEnabled(True)
+            self.daw.analyze_button.setToolTip("")
+
     def _measure_position(self, position: str, mode: str) -> None:
         """Measure ``position`` of the open project with ``mode``."""
+        if self._workflow_busy():
+            return
         self._prepare_position(position)
         self.show_mode(mode)
 
     def _measure_at(self, position: str) -> None:
         """A position row's menu: measure there with the strip's mode."""
+        if self._workflow_busy():
+            return
         self._prepare_position(position)
         self.model.add_position(position)
         self.show_mode(self.strip.current_mode())
@@ -777,6 +924,8 @@ class MainWindow(QMainWindow):
         self.show_compare()
 
     def show_compare(self) -> None:
+        if self._measure_busy():
+            return
         selected = self.home.browser.selected_pair()
         if selected is not None:
             self.compare.set_paths(*selected)
@@ -792,6 +941,18 @@ class MainWindow(QMainWindow):
             # the reverse). The page is shown as it is.
             self.stack.setCurrentWidget(self.standalone)
             self._set_place(_("Standalone Mode"))
+            return
+        if mode == "universal_daw" and self.standalone.is_busy():
+            # Leaving Standalone mid-take would leave its worker running while
+            # DAW Analyze could start another.
+            self.stack.setCurrentWidget(self.standalone)
+            self._set_place(_("Standalone Mode"))
+            return
+        if mode in ("demo", "standalone") and self.daw.is_busy():
+            # DAW Analyze still owns the session; exposing Standalone Run would
+            # let a second measurement start under the held analysis.
+            self.stack.setCurrentWidget(self.daw)
+            self._set_place(_("Universal DAW Mode"))
             return
         self.strip.set_mode(mode)
         self._apply_mode(mode)
@@ -816,10 +977,12 @@ class MainWindow(QMainWindow):
             self.standalone.refresh_devices()
 
     def _strip_mode(self, mode: str) -> None:
-        if not self.standalone.is_busy():
+        if not self._workflow_busy():
             self._apply_mode(mode)
 
     def _strip_start(self, mode: str) -> None:
+        if self._workflow_busy():
+            return
         if mode == "universal_daw":
             self.show_mode(mode)
             return
@@ -868,6 +1031,10 @@ class MainWindow(QMainWindow):
         return ""
 
     def save_take(self) -> bool:
+        # Context-menu Save can bypass the menu action's busy disable.
+        if self._measure_busy():
+            return False
+
         """Save the take (the measurement made in this window) as a session.
 
         Into the open project, in a folder named after its position, which
@@ -974,6 +1141,10 @@ class MainWindow(QMainWindow):
 
     def show_getting_started(self) -> None:
         """The start panel with the first-measurement card, and the card stays from now on."""
+        if self._measure_busy():
+            return
+        if not self._leave_take():
+            return
         import contextlib
         from dataclasses import replace
 
@@ -985,6 +1156,10 @@ class MainWindow(QMainWindow):
         self.home.restore_walkthrough()
 
     def show_settings(self) -> None:
+        # busy_actions disables the menu item; still refuse if PreferencesRole
+        # or a signal reaches here while a take is sounding.
+        if self._measure_busy():
+            return
         from reverbscope.ui.settings_dialog import SettingsDialog
 
         before = load_settings()
@@ -1047,11 +1222,17 @@ class MainWindow(QMainWindow):
         return "fake" if on_demo else None
 
     def show_device_inspector(self) -> None:
+        # Same modal-over-Stop rule as Environment Report.
+        if self._measure_busy():
+            return
         from reverbscope.ui.dev_tools import DeviceInspector
 
         DeviceInspector(self._tools_backend(), self).exec()
 
     def show_environment_report(self) -> None:
+        # A modal over a sounding take steals Esc from Stop; lock with busy.
+        if self._measure_busy():
+            return
         from reverbscope.ui.dev_tools import EnvironmentReport
 
         EnvironmentReport(self._tools_backend(), self).exec()
@@ -1074,6 +1255,8 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(home)))
 
     def _about(self) -> None:
+        if self._measure_busy():
+            return
         about_box(self).exec()
 
     def _open_licenses(self) -> None:

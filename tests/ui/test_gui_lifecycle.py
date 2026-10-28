@@ -111,26 +111,31 @@ def _daw_ready(app: QApplication, tmp_path: Path, short_sweep: SweepSettings) ->
 def test_a_visit_to_compare_does_not_discard_a_running_analysis(
     app: QApplication, tmp_path: Path, short_sweep: SweepSettings, held_analysis
 ) -> None:
-    """Ctrl+Shift+C during an analysis hid the page, and the result that
-    arrived meanwhile was thrown away as "late" although nothing had
-    replaced it; the user had to run the analysis again."""
+    """Compare is refused while Analyze runs (File ▸ Compare busy lock).
+
+    Staying on the DAW page also avoids the old race where hiding the page
+    marked a late result as discarded. After Analyze finishes, Compare opens
+    and the take is current with its result.
+    """
     window = _daw_ready(app, tmp_path, short_sweep)
     page = window.daw
     try:
         page.start_analysis()
+        assert page.is_busy()
+        before = window.stack.currentWidget()
         window.show_compare()
-        assert window.stack.currentWidget() is window.compare
+        window.show_view("compare")
+        assert window.stack.currentWidget() is before
     finally:
         held_analysis.set()
         _settle(app, page._worker)
     assert window.state.result is not None
-    # The take joins the list as the current measurement; the window stays on
-    # the view the user chose (Compare now shows the take against the baseline).
     current = window.model.current()
     assert current is not None and current.result is window.state.result
-    assert window.stack.currentWidget() is window.compare
     assert "discarded" not in page.status.text()
     assert page.analyze_button.isEnabled()
+    window.show_compare()
+    assert window.stack.currentWidget() is window.compare
     window.close()
 
 
