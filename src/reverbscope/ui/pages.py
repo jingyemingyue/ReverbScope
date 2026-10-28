@@ -676,13 +676,14 @@ class DawModePage(QWidget):
         if self._sweep_settings is not None and int(self._recording.sample_rate) != int(
             self._sweep_settings.sample_rate
         ):
+            # Body reuses the rate-mismatch banner msgid (already in zh_CN).
             QMessageBox.warning(
                 self,
                 _("Sample rates differ"),
                 _(
-                    "The recording is {take} Hz and the sweep is {sweep} Hz. "
-                    "Re-export the take at {sweep} Hz, or load the matching "
-                    "reference sweep, before analyzing."
+                    "Sample rates differ: the recording is {take} Hz and the sweep "
+                    "is {sweep} Hz. Re-export the take at {sweep} Hz, or load the "
+                    "matching reference sweep, before you trust the result."
                 ).format(
                     take=int(self._recording.sample_rate),
                     sweep=int(self._sweep_settings.sample_rate),

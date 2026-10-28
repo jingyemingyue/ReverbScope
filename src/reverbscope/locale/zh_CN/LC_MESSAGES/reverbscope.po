@@ -6913,6 +6913,9 @@ msgstr "无法导出"
 msgid "Could not write {path}: {error}"
 msgstr "无法写入 {path}：{error}"
 
+msgid "Sample rates differ"
+msgstr "采样率不一致"
+
 msgid ""
 "Sample rates differ: the recording is {take} Hz and the sweep is {sweep} Hz. "
 "Re-export the take at {sweep} Hz, or load the matching reference sweep, before "

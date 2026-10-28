@@ -167,6 +167,12 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
     # The start panel has no mode cards any more (by design), so no shortcut
     # badges to check against the Measure menu: the menu carries the keys.
     assert "Start" in window.statusBar().currentMessage()
+    # Default mode is Standalone: Start owns Ctrl+Return; Analyze is empty.
+    # Switching to DAW flips ownership (see test_ctrl_return_shortcut_ownership).
+    assert window.strip.start_button.shortcut().toString() == "Ctrl+Return"
+    assert window.daw.analyze_button.shortcut().toString() == ""
+    window.show_mode("universal_daw")
+    assert window.strip.start_button.shortcut().toString() == ""
     assert window.daw.analyze_button.shortcut().toString() == "Ctrl+Return"
     # Stop and Esc live on the measure strip now, not on the Standalone page.
     assert window.strip.stop_shortcut.key().toString() == "Esc"
