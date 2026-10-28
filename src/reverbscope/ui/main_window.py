@@ -645,7 +645,10 @@ class MainWindow(QMainWindow):
             return False
         if self._unsaved_take_key():
             return False
-        if self.state.recording is not None:
+        # Pathless recording with no result yet: mid-analysis or a failed
+        # analysis. A finished take is either unsaved (key above) or already
+        # saved (result set, unsaved_take cleared) and must not re-prompt.
+        if self.state.recording is not None and self.state.result is None:
             return True
         return self.standalone.is_busy()
 
