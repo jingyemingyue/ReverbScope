@@ -473,8 +473,8 @@ class Navigator(QWidget):
                 )
                 base.triggered.connect(lambda _checked=False, k=key: self.model.set_baseline(k))
                 menu.addAction(base)
-        host = self.window()
-        measure_busy = bool(callable(getattr(host, "_measure_busy", None)) and host._measure_busy())
+        busy_fn = getattr(self.window(), "_measure_busy", None)
+        measure_busy = bool(callable(busy_fn) and busy_fn())
         rename = QAction(_("Rename..."), menu)
         rename.setToolTip(
             _("Measuring · available after Stop or when it ends")
@@ -512,8 +512,8 @@ class Navigator(QWidget):
 
     def _rename(self, key: str) -> None:
         # A rename dialog over a sounding take steals Esc from Stop (C8).
-        host = self.window()
-        if callable(getattr(host, "_measure_busy", None)) and host._measure_busy():
+        busy_fn = getattr(self.window(), "_measure_busy", None)
+        if callable(busy_fn) and busy_fn():
             return
         from PySide6.QtWidgets import QInputDialog
 
