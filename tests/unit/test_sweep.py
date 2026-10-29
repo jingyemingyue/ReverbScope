@@ -302,3 +302,77 @@ def test_silence_of_a_quiet_dithered_reference_is_measured_from_its_noise_floor(
     assert reference_silence_threshold_db(signal, sr) == -60.0
     only = generate_ess(sweep)
     assert reference_silence_threshold_db(np.round(only * 32768) / 32768, sr) == -60.0
+
+
+def test_active_region_rejects_empty_or_multichannel() -> None:
+    with pytest.raises(ConfigurationError, match="non-empty mono"):
+        active_region(np.zeros(0))
+    with pytest.raises(ConfigurationError, match="non-empty mono"):
+        active_region(np.zeros((8, 2)))
+
+
+def test_estimate_reference_band_rejects_short_or_silent() -> None:
+    with pytest.raises(ConfigurationError, match="at least 16"):
+        estimate_reference_band_hz(np.ones(8), 48000)
+    with pytest.raises(ConfigurationError, match="silent"):
+        estimate_reference_band_hz(np.zeros(1000), 48000)
+
+
+def test_spectral_inverse_rejects_non_finite_samples() -> None:
+    with pytest.raises(ConfigurationError, match="NaN or infinite"):
+        design_spectral_inverse(np.full(1000, np.nan), 48000)
+
+
+def test_reference_silence_threshold_falls_back_without_usable_edges() -> None:
+    from reverbscope.core.sweep import REFERENCE_SILENCE_THRESHOLD_DB
+
+    assert reference_silence_threshold_db(np.zeros(0), 48000) == REFERENCE_SILENCE_THRESHOLD_DB
+    assert reference_silence_threshold_db(np.zeros((4, 2)), 48000) == REFERENCE_SILENCE_THRESHOLD_DB
+    assert reference_silence_threshold_db(np.ones(10), 48000) == REFERENCE_SILENCE_THRESHOLD_DB
+    assert (
+        reference_silence_threshold_db(np.full(20_000, np.nan), 48000)
+        == REFERENCE_SILENCE_THRESHOLD_DB
+    )
+
+
+def test_flat_band_keeps_nominal_when_level_or_edges_collapse() -> None:
+    from reverbscope.core.sweep import _flat_band, _IdealLoopback
+
+    freqs = np.linspace(0.0, 1000.0, 101)
+    zero = _IdealLoopback(
+        freqs=freqs,
+        reference=np.zeros_like(freqs),
+        inverse=np.ones_like(freqs),
+        inverse_samples=np.zeros(8),
+    )
+    assert _flat_band(zero, (100.0, 900.0)) == (100.0, 900.0)
+
+    mag = np.exp(np.random.default_rng(0).normal(0.0, 5.0, freqs.shape))
+    wild = _IdealLoopback(
+        freqs=freqs,
+        reference=mag,
+        inverse=np.ones_like(freqs),
+        inverse_samples=np.zeros(8),
+    )
+    assert _flat_band(wild, (100.0, 900.0)) == (100.0, 900.0)
+
+
+def test_inband_gain_uses_nearest_bin_or_rejects_empty_energy() -> None:
+    from reverbscope.core.sweep import _inband_gain
+
+    freqs = np.array([0.0, 1000.0, 2000.0, 3000.0])
+    ones = np.ones(4, dtype=np.complex128)
+    assert _inband_gain(freqs, ones, ones, (1500.0, 1600.0)) == pytest.approx(1.0)
+    with pytest.raises(ConfigurationError, match="normalisation failed"):
+        _inband_gain(freqs, np.zeros(4, dtype=np.complex128), ones, (500.0, 2500.0))
+
+
+def test_reference_band_from_single_bin_peak_uses_that_bin() -> None:
+    from reverbscope.core.sweep import _reference_band_from_power
+
+    freqs = np.geomspace(20.0, 20_000.0, 50)
+    power = np.zeros_like(freqs)
+    power[25] = 1.0
+    band = _reference_band_from_power(freqs, power)
+    assert band.low_hz == pytest.approx(float(freqs[25]))
+    assert band.high_hz == pytest.approx(float(freqs[25]))
