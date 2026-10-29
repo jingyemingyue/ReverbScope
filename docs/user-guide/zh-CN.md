@@ -17,24 +17,24 @@ ReverbScope 有两个版本。**桌面版**就是本指南介绍的应用程序�
 
 | 系统 | 桌面版 | 启动 ReverbScope |
 | --- | --- | --- |
-| Windows | 没有官方安装包 | 源码仍在仓库；CI 仍测 Windows。这不是“Windows 已支持” |
-| macOS 14+，Apple 芯片 | `ReverbScope-Desktop-macOS-arm64.dmg` | 把 ReverbScope 拖进“应用程序”文件夹，然后打开 |
+| macOS 14+，Apple 芯片（主平台） | `ReverbScope-Desktop-macOS-arm64.dmg` | 把 ReverbScope 拖进“应用程序”文件夹，然后打开 |
 | macOS 14+，Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | 把 ReverbScope 拖进“应用程序”文件夹，然后打开 |
 | Linux x86_64 | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz && reverbscope/reverbscope-gui` |
+| Windows 10/11 x64 | 没有官方安装程序或 zip | 作者暂时不维护 Windows 版本，源代码在仓库里，可以自行构建 — [在 Windows 上从源代码构建](../INSTALLATION.zh-CN.md#在-windows-上从源代码构建) |
 
 | 系统 | 终端版 | 启动 ReverbScope |
 | --- | --- | --- |
-| Windows | 没有官方终端版 zip | 源码仍在；不是已支持的下载 |
 | macOS 14+，Apple 芯片 | `ReverbScope-Terminal-macOS-arm64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |
 | macOS 14+，Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |
 | Linux x86_64 | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |
+| Windows 10/11 x64 | 没有官方终端版 zip | [在 Windows 上从源代码构建](../INSTALLATION.zh-CN.md#在-windows-上从源代码构建) |
 
-Windows 和 Linux 的桌面版安装包含两个程序：桌面程序 `reverbscope-gui` 和命令行工具 `reverbscope`（在终端运行 `reverbscope --help`）。在 macOS 上，应用的可执行文件带参数运行时就是命令行工具：`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope --help`。
+Linux 桌面版安装包包含两个程序：桌面程序 `reverbscope-gui` 和命令行工具 `reverbscope`（在终端运行 `reverbscope --help`）。在 macOS 上，应用的可执行文件带参数运行时就是命令行工具：`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope --help`。
 
-在维护者取得签名证书之前，**这些安装包都没有用于分发的签名**（macOS 应用只有临时签名（ad hoc），未经公证；Windows 文件没有 Authenticode 签名），因此首次打开时操作系统会发出警告：
+在维护者取得签名证书之前，**官方安装包都没有用于分发的签名**（macOS 应用只有临时签名（ad hoc），未经公证），因此首次打开时操作系统会发出警告：
 
 * **macOS：** 先打开一次应用；macOS 提示无法验证时选“完成”，然后进入“系统设置 → 隐私与安全性”，点“仍要打开”（该按钮在第一次尝试打开之后才会出现）并确认。从 macOS 15 Sequoia 起，右键 → “打开”不再能绕过这一检查；在 macOS 14 上仍然可用（[Apple](https://developer.apple.com/news/?id=saqachfa)）。系统询问时请允许麦克风访问（安装包的 Info.plist 中声明了 `NSMicrophoneUsageDescription`）。打包的 NumPy 和 SciPy 需要 macOS 14 或更新版本；DMG 只在 macOS 15（Intel）和 macOS 26（Apple 芯片）的 CI 运行器上构建和启动过。
-* **Windows：** SmartScreen 可能发出警告，请选“更多信息”→“仍要运行”。安装程序只为当前用户安装，不需要管理员权限；可在“设置 → 应用”中卸载。
+* **Windows：** 新 Release 没有官方安装程序或 zip，因此没有 SmartScreen「仍要运行」下载步骤。源代码仍在；见[在 Windows 上从源代码构建](../INSTALLATION.zh-CN.md#在-windows-上从源代码构建)。
 * **Linux：** tar 包需要系统自带的 PortAudio、OpenGL/EGL 和 XCB 库（Debian / Ubuntu：`sudo apt install libportaudio2 libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0`）；图表中要显示中文，还需要中文字体，例如 `fonts-noto-cjk`。`packaging/linux/reverbscope.desktop` 是一个可以按需修改的桌面启动项。
 
 **用 Python 安装。** ReverbScope 还没有发布到 PyPI。使用 Python 3.12 或更新版本，把 Release 附带的 wheel 安装到虚拟环境中：
@@ -86,7 +86,7 @@ reverbscope-env/bin/reverbscope gui
 
 `reverbscope devices` 在“主机 API”一列显示每个设备所属的音频系统；桌面应用把设备显示为 `[序号] 名称 (主机 API)`。
 
-* **Windows。** 每个音频接口会按每种主机 API 各列一次。优先选主机 API 为 Windows WASAPI（或 Windows WDM-KS）的条目；避免 MME 和 Windows DirectSound，它们要经过 Windows 混音器。共享模式下 WASAPI 只能以设备的共享模式格式运行（[Microsoft：Device formats](https://learn.microsoft.com/en-us/windows/win32/coreaudio/device-formats)）：请在“声音”控制面板中把它设为测量采样率（控制面板 ▸ 硬件和声音 ▸ 声音 ▸ 该设备 ▸ 属性 ▸ 高级 ▸ *默认格式*），并把*音频增强*设为关闭（设置 ▸ 声音 ▸ 该设备）（[Microsoft 支持](https://support.microsoft.com/en-us/windows/fix-sound-or-audio-problems-in-windows-73025246-b61c-40fb-671a-2535c7cd56c8)）。允许桌面应用使用麦克风（设置 ▸ 隐私和安全性 ▸ 麦克风）。安装包不含 ASIO 支持（ASIO DLL 用 Steinberg 的专有 SDK 构建，已被移除，见 DEPENDENCIES.md §3）；只能通过 ASIO 工作的音频接口请用通用 DAW 模式测量。
+* **Windows**（仅限本地源码构建；没有官方 Windows 下载）。每个音频接口会按每种主机 API 各列一次。优先选主机 API 为 Windows WASAPI（或 Windows WDM-KS）的条目；避免 MME 和 Windows DirectSound，它们要经过 Windows 混音器。共享模式下 WASAPI 只能以设备的共享模式格式运行（[Microsoft：Device formats](https://learn.microsoft.com/en-us/windows/win32/coreaudio/device-formats)）：请在“声音”控制面板中把它设为测量采样率（控制面板 ▸ 硬件和声音 ▸ 声音 ▸ 该设备 ▸ 属性 ▸ 高级 ▸ *默认格式*），并把*音频增强*设为关闭（设置 ▸ 声音 ▸ 该设备）（[Microsoft 支持](https://support.microsoft.com/en-us/windows/fix-sound-or-audio-problems-in-windows-73025246-b61c-40fb-671a-2535c7cd56c8)）。允许桌面应用使用麦克风（设置 ▸ 隐私和安全性 ▸ 麦克风）。安装包不含 ASIO 支持（ASIO DLL 用 Steinberg 的专有 SDK 构建，已被移除，见 DEPENDENCIES.md §3）；只能通过 ASIO 工作的音频接口请用通用 DAW 模式测量。
 * **macOS。** Core Audio。在“系统设置 ▸ 隐私与安全性 ▸ 麦克风”中允许 ReverbScope；没有该权限时录音是静音，ReverbScope 会报告 *“recording is silent”*。在“音频 MIDI 设置”中设定音频接口的采样率；输入和输出是不同设备时，可在那里把它们合成一个聚合设备。
 * **Linux。** 通过系统的 PortAudio（`libportaudio2`）使用 ALSA。`hw:` 设备使用音频接口自身支持的采样率；`pipewire`、`pulse` 或 `default` 经过声音服务器，可能被重采样：ReverbScope 在测量前会把设备采样率显示在请求的采样率旁边。你的用户可能需要加入 `audio` 组。
 

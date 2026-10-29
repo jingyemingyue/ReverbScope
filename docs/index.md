@@ -53,7 +53,7 @@ English summary of it.
 
 ## For users
 
-- **[Download and install](INSTALLATION.md)** · [下载与安装](INSTALLATION.zh-CN.md)
+- **[Download and install](INSTALLATION.md)** · [下载与安装](INSTALLATION.zh-CN.md) (macOS primary; Windows temporarily unmaintained — [build from source](INSTALLATION.md#build-on-windows-from-source))
 - [User guide (English)](user-guide/en.md)
 - [用户指南（中文）](user-guide/zh-CN.md)
 - [Measuring through your DAW](user-guide/daw-setup.md) · [用 DAW 测量](user-guide/daw-setup.zh-CN.md)

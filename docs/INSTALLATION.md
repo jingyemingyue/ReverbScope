@@ -34,7 +34,7 @@ line and `main` is the development line. The builds are
 | --- | --- | --- |
 | Mac with Apple silicon (M1 or later), macOS 14 or later | `ReverbScope-Desktop-macOS-arm64.dmg` | [macOS](#macos) |
 | Mac with an Intel processor, macOS 14 or later | `ReverbScope-Desktop-macOS-x86_64.dmg` | [macOS](#macos) |
-| Windows 10 or 11, 64-bit | No official installer or zip. Source and CI remain; that is not a supported desktop download | [Windows](#windows) |
+| Windows 10 or 11, 64-bit | No official installer or zip. The author does not maintain Windows for now; [build from source](#build-on-windows-from-source) | [Windows](#windows) |
 | Linux x86_64 (glibc 2.39 or newer, e.g. Ubuntu 24.04+) | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | [Linux](#linux) |
 
 **Terminal Edition** (command line only):
@@ -43,7 +43,7 @@ line and `main` is the development line. The builds are
 | --- | --- | --- |
 | Mac with Apple silicon, macOS 14 or later | `ReverbScope-Terminal-macOS-arm64.tar.gz` | [Terminal Edition](#terminal-edition) |
 | Mac with an Intel processor, macOS 14 or later | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | [Terminal Edition](#terminal-edition) |
-| Windows 10 or 11, 64-bit | No official terminal zip | [Terminal Edition](#terminal-edition) |
+| Windows 10 or 11, 64-bit | No official terminal zip; [build from source](#build-on-windows-from-source) | [Windows](#windows) |
 | Linux x86_64 (glibc 2.39 or newer) | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | [Terminal Edition](#terminal-edition) |
 
 **Python developers** (any system with Python 3.12–3.14):
@@ -61,7 +61,7 @@ inside the builds).
 | System | Status |
 | --- | --- |
 | macOS 14 Sonoma or later, Apple silicon or Intel | Supported. The DMGs are built, mounted, installed and started, and the Terminal Edition built and run, on GitHub's macOS 26 (Apple silicon) and macOS 15 (Intel) runners. macOS 14 is the minimum of the bundled NumPy / SciPy; it has not been run yet. macOS 13 and older are not supported. |
-| Windows 10 / 11, x64 | Supported. The installer is built, installed silently, started and uninstalled, and the Terminal Edition built and run, on GitHub's Windows runner. No test on a personal Windows PC has been recorded yet. Windows on ARM and 32-bit Windows are not tested. |
+| Windows 10 / 11, x64 | **The author does not maintain a Windows edition for now.** Source stays in the repository and you can [build on Windows from source](#build-on-windows-from-source). CI still runs the Windows test job. That is not a supported desktop download, and it is not a hardware or GUI sign-off. Windows on ARM and 32-bit Windows are not tested. |
 | Linux x86_64 | Supported with glibc 2.39 or newer. Both editions built and smoke-tested on GitHub's Ubuntu runner. |
 | Python | 3.12, 3.13, 3.14 (CI runs all three on Ubuntu, 3.12 on macOS and Windows). |
 
@@ -129,20 +129,35 @@ The app's executable is also the command-line tool:
 
 ## Windows
 
-**Not an official download (2026-10-27).** New releases do not include a
-Windows installer or zip. Source and CI tests remain. They are not a sign-off
-that the Windows app works. A local source build can still produce
-`reverbscope-gui.exe` next to `reverbscope.exe`; that pair is not a GitHub
-Release asset.
-
-This section is the **Desktop Edition**; the command-line-only download is
-under [Terminal Edition](#terminal-edition).
+**The author does not maintain a Windows edition for now.** New releases do
+not include a Windows installer or zip. Source, `packaging/windows/`, and the
+Windows CI test job remain. They are not a sign-off that the Windows app
+works. See [Build on Windows from source](#build-on-windows-from-source).
 
 ### Microphone access on Windows
 
-If no input device appears or the recording is silent, check **Settings →
-Privacy & security → Microphone**: *Microphone access* and *Let desktop apps
-access your microphone* must be on.
+If you run a local build and no input device appears or the recording is
+silent, check **Settings → Privacy & security → Microphone**: *Microphone
+access* and *Let desktop apps access your microphone* must be on.
+
+### Build on Windows from source
+
+Use a clone (or the release source archive) with Python 3.12 or newer:
+
+```powershell
+git clone https://github.com/jingyemingyue/ReverbScope.git
+cd ReverbScope
+py -3.12 -m venv .venv
+.\.venv\Scripts\activate
+pip install -e ".[dev,gui]"
+reverbscope --help
+reverbscope gui
+```
+
+A local frozen build with `scripts/build_release.py` can still produce
+`reverbscope-gui.exe` next to `reverbscope.exe` (and, with Inno Setup, an
+installer under `packaging/windows/`). Those files are **not** GitHub Release
+assets. Building from source is not a hardware or GUI acceptance result.
 
 ## Linux
 
@@ -214,8 +229,9 @@ builds will not need it. A file downloaded with `curl` has no such mark. The Lin
 Terminal Edition needs `libportaudio2` for measurements
 (`sudo apt install libportaudio2`), not the graphics libraries.
 
-**Windows:** there is no official terminal zip. A local source build is not
-a Release asset.
+**Windows:** the author does not maintain a Windows edition for now; there is
+no official terminal zip. [Build from source](#build-on-windows-from-source);
+a local build is not a Release asset.
 
 **Saving a report from PowerShell.** Sent to a file or to another program,
 the output of every `reverbscope` command is UTF-8. Command Prompt's `>`
@@ -301,10 +317,10 @@ who built it; that is what code signing will add.
 
 ## Unsigned-build warnings
 
-**Current builds are unsigned development/pre-release builds.** The macOS
-app carries only an ad hoc signature and is not notarized by Apple; the
-Windows files carry no Authenticode signature. Your system therefore cannot
-tell who published them and warns once:
+**Current official builds are unsigned development/pre-release builds.** The
+macOS app carries only an ad hoc signature and is not notarized by Apple.
+There is no official Windows binary in new releases. Your system therefore
+cannot tell who published a download and may warn once:
 
 | System | What you see | What to do |
 | --- | --- | --- |
@@ -325,7 +341,8 @@ Download the new file from the same page and:
 * **macOS:** quit ReverbScope, open the new DMG and drag ReverbScope onto
   Applications again; choose **Replace**. The first-launch warning can appear
   once more for the new build.
-* **Windows:** there is no official installer or zip to update.
+* **Windows:** there is no official installer or zip to update. For a local
+  source install, pull and reinstall ([build from source](#build-on-windows-from-source)).
 * **Linux / Terminal Edition:** delete the old folder and extract the new archive.
 * **Wheel:** `pip install --upgrade "./reverbscope-<new version>-py3-none-any.whl[gui]"`
   in the same virtual environment.
@@ -338,9 +355,11 @@ and your saved session folders are never touched.
 
 * **macOS:** quit ReverbScope and drag **ReverbScope** from Applications to the
   Trash.
-* **Windows installer:** **Settings → Apps → Installed apps → ReverbScope →
-  Uninstall**, or Start menu → *Uninstall ReverbScope*.
-* **Windows ZIP / Linux / Terminal Edition:** delete the extracted folder.
+* **Windows (local source or a self-built folder):** delete the virtual
+  environment or the extracted build folder. If you once installed an older
+  official Setup from a past release, use **Settings → Apps → Installed apps →
+  ReverbScope → Uninstall**.
+* **Linux / Terminal Edition:** delete the extracted folder.
 * **Python:** `pip uninstall reverbscope`, or delete the virtual environment
   folder.
 
@@ -358,14 +377,13 @@ saved them.
 | macOS: *“ReverbScope” is damaged and can't be opened* | The download is incomplete or was changed. Delete it, download it again and [check the checksum](#check-the-download). Do not work around this message. |
 | macOS: *not supported on this type of Mac*, or it does not start on macOS 13 or older | Use the DMG that matches your Mac; macOS 14 or later is required. |
 | macOS / Windows: no microphone input | Allow microphone access ([macOS](#microphone-access), [Windows](#microphone-access-on-windows)), then **Help → Environment Report for Bug Reports** lists what ReverbScope sees. |
-| Windows: nothing happens, or a missing-DLL error | Extract the whole ZIP first (**Extract All…**) and keep `_internal` next to `reverbscope-gui.exe`. |
-| Windows: no *Run anyway* button | Smart App Control or a company policy blocks unsigned apps; see the [table above](#unsigned-build-warnings). |
+| Windows: nothing happens, or a missing-DLL error (self-built freeze) | Keep `_internal` next to `reverbscope-gui.exe`. There is no official Windows zip in new releases; see [build from source](#build-on-windows-from-source). |
 | Linux: `libEGL.so.1`, `libportaudio` or *xcb* plugin errors | Install the [system libraries](#linux). |
 | Linux: Chinese chart labels show empty boxes | `sudo apt install fonts-noto-cjk` |
 | `reverbscope gui` says *This is the Terminal Edition* | The Terminal Edition has no GUI; download the Desktop Edition (the command line works in both). |
 | macOS: *“reverbscope” cannot be opened because the developer cannot be verified* (Terminal Edition) | Clear the download mark once: `xattr -dr com.apple.quarantine reverbscope-terminal` ([Terminal Edition](#terminal-edition)). |
 | Windows PowerShell: Chinese text is garbled in a file or after a pipe (`> report.txt`, `\| Select-String`) | Run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()` first ([Saving a report from PowerShell](#terminal-edition)). |
-| Windows: `reverbscope.exe` opens and closes at once | It is a command-line program: a double-click opens a window that closes when the command ends. Open **Command Prompt** or **PowerShell** in the folder that holds it (Desktop Edition: the install folder) and run `reverbscope.exe --help`. Only the Terminal Edition has `ReverbScope Terminal.cmd` for a double-click. |
+| Windows: `reverbscope.exe` opens and closes at once | It is a command-line program: a double-click opens a window that closes when the command ends. Open **Command Prompt** or **PowerShell** in the folder that holds it and run `reverbscope.exe --help` (or use an activated venv and `reverbscope --help`). |
 | `reverbscope gui` says PySide6 could not be loaded | Install the GUI extra: `pip install "PySide6_Essentials>=6.6,<6.12"` (or reinstall the wheel with `[gui]`). |
 | `pip install reverbscope` finds nothing, or something else | ReverbScope is not on PyPI yet; use the [wheel](#wheel-from-a-release). |
 | Anything else | Open a [bug report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug.yml) and paste **Help → Environment Report for Bug Reports** (or `reverbscope doctor`). Nothing is sent automatically. |

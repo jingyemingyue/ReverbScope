@@ -13,6 +13,12 @@ All notable changes to ReverbScope are documented here. The format follows
   build; the Intel Mac DMG and the Linux archives stay, as do the Python
   wheel and sdist. Windows source and the Windows CI job remain; that is
   not a promise that the Windows GUI is supported.
+- **Docs: Windows is temporarily unmaintained.** User-facing install tables,
+  guides and matrices say the author does not maintain a Windows edition for
+  now, and point to building from source
+  (`docs/INSTALLATION.md#build-on-windows-from-source` /
+  `docs/INSTALLATION.zh-CN.md#在-windows-上从源代码构建`). WASAPI, microphone
+  and PowerShell notes stay as technical reference.
 
 ## [0.5.0b6] - 2026-10-21
 
