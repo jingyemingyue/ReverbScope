@@ -537,3 +537,108 @@ def test_the_channel_chosen_beside_a_loopback_is_numbered_from_one(
     assert (channel, reported) == (2, 0) and warning is not None
     assert "channel 3 of 3 (highest RMS excluding loopback channel 1)" in warning
     assert "--channel 2, counted from 0" in warning
+
+
+def test_loopback_helpers_return_none_or_zero_on_short_or_empty_records() -> None:
+    from reverbscope.core.loopback import loopback_fir, noise_power
+
+    rate = 48000
+    short = np.zeros(1000)
+    short[100] = 1.0
+    assert noise_power(short, 100, rate, end_index=120) == 0.0
+    assert energy_settling_ms(short, 100, rate, end_index=120) is None
+    noisy = np.random.default_rng(0).normal(0.0, 1e-2, 20_000)
+    assert energy_settling_ms(noisy, 100, rate) is None
+    assert late_peak_drop_db(short, 100, rate) is None
+    assert late_peak_drop_db(np.zeros(10_000), 100, rate) is None
+    tiny = np.zeros(10)
+    tiny[5] = 1.0
+    fir, origin = loopback_fir(tiny, 5, rate)
+    assert fir.shape[0] == 10 and origin == 5
+
+
+def test_assess_loopback_rejects_medium_low_confidence_and_short_tails() -> None:
+    from reverbscope.core.deconvolution import LocatedImpulseResponse
+
+    rate = 48000
+    h = np.zeros(20_000)
+    peak = 5000
+    h[peak] = 1.0
+
+    def located(margin: float, valid: int) -> LocatedImpulseResponse:
+        return LocatedImpulseResponse(
+            samples=h[peak : peak + 100],
+            direct_index=0,
+            pre_delay_samples=0,
+            peak_index=peak,
+            peak_value=1.0,
+            valid_length_samples=valid,
+            sweep_start_index_in_recording=0,
+            sweep_start_raw_index=0,
+            pre_peak_margin_db=margin,
+            truncated_by_max_length=False,
+        )
+
+    medium = assess_loopback(located(15.0, 50), h, rate, clipped=False)
+    assert medium.accepted is False and medium.reason is not None
+    assert "confidence medium" in medium.reason
+    low = assess_loopback(located(6.0, 50), h, rate, clipped=False)
+    assert low.accepted is False and low.reason is not None
+    assert "confidence low" in low.reason
+    short = assess_loopback(located(40.0, 100), h, rate, clipped=False)
+    assert short.accepted is False and short.reason is not None
+    assert "too short after the peak" in short.reason
+
+
+def test_two_sided_frame_rejects_out_of_range_peak_index() -> None:
+    from reverbscope.core.loopback import _two_sided_frame
+
+    with pytest.raises(ValueError, match="fir_peak_index"):
+        _two_sided_frame(np.ones(8), 8, 16)
+
+
+def test_compensate_handles_degenerate_regularisation_band() -> None:
+    from reverbscope.core.loopback import compensate
+    from reverbscope.models.result import ExcitationBand
+
+    fir = np.zeros(64)
+    fir[32] = 1.0
+    band = ExcitationBand(low_hz=10_000.0, high_hz=10_000.1, source="settings")
+    out = compensate(np.zeros(1000), fir, 48000, band, fir_peak_index=32)
+    assert out.shape == (1000,)
+    assert np.all(np.isfinite(out))
+
+
+def test_make_loopback_result_omits_bound_when_microphone_leads() -> None:
+    from reverbscope.core.deconvolution import LocatedImpulseResponse
+    from reverbscope.core.loopback import make_loopback_result
+
+    rate = 48000
+    h = np.zeros(20_000)
+    peak = 5000
+    h[peak] = 1.0
+    located = LocatedImpulseResponse(
+        samples=h[peak : peak + 100],
+        direct_index=0,
+        pre_delay_samples=0,
+        peak_index=peak,
+        peak_value=1.0,
+        valid_length_samples=50,
+        sweep_start_index_in_recording=0,
+        sweep_start_raw_index=0,
+        pre_peak_margin_db=15.0,
+        truncated_by_max_length=False,
+    )
+    assessment = assess_loopback(located, h, rate, clipped=False)
+    result = make_loopback_result(
+        channel=0,
+        assessment=assessment,
+        sample_rate=rate,
+        reference_length=rate,
+        mic_peak_index=peak - 1000,
+        temperature_c=20.0,
+        compensation_applied=False,
+    )
+    assert result.path_delay_ms is not None and result.path_delay_ms < 0.0
+    assert result.distance_upper_bound_m is None
+    assert any("precedes the loopback peak" in note for note in result.notes)
