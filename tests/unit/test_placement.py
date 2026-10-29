@@ -9,6 +9,7 @@ import pytest
 from reverbscope.core.placement import (
     DEFAULT_TEMPERATURE_C,
     LOWER_PLANE,
+    MAX_HYPOTHESIS_CANDIDATES,
     UPPER_PLANE,
     boundary_product_m2,
     estimate_placement,
@@ -74,6 +75,45 @@ def test_speed_of_sound_matches_the_iso_form() -> None:
     for t in (-10.0, 0.0, 20.0, 35.0):
         iso = 343.2 * math.sqrt((t + 273.15) / 293.15)
         assert speed_of_sound_m_s(t) == pytest.approx(iso, rel=1e-4)
+
+
+def test_speed_of_sound_rejects_absolute_zero_and_below() -> None:
+    with pytest.raises(ValueError, match="absolute zero"):
+        speed_of_sound_m_s(-273.15)
+    with pytest.raises(ValueError, match="absolute zero"):
+        speed_of_sound_m_s(-300.0)
+
+
+def test_unknown_direct_sound_confidence_still_refuses_geometry() -> None:
+    result = estimate_placement(
+        _reflections([(4.0, -10.0)], confidence="unrecognized"),
+        distance_m=1.5,
+        mic_height_m=1.2,
+        temperature_c=20.0,
+    )
+    assert result.tier == 0
+    assert result.source_height_m.validity is Validity.NOT_COMPUTED
+    assert "unrecognized" in (result.source_height_m.reason or "")
+
+
+def test_only_the_earliest_candidates_are_tried_as_plane_hypotheses() -> None:
+    distance_m = 1.5
+    mic_height_m = 1.2
+    arrivals = [
+        (3.0 + index * 2.0, _lossy(distance_m, 3.0 + index * 2.0, 2.0))
+        for index in range(MAX_HYPOTHESIS_CANDIDATES + 3)
+    ]
+    result = estimate_placement(
+        _reflections(arrivals),
+        distance_m=distance_m,
+        mic_height_m=mic_height_m,
+        temperature_c=20.0,
+    )
+    assert result.tier == 2
+    assert len(result.candidates) == MAX_HYPOTHESIS_CANDIDATES + 3
+    # Past the hypothesis cap the candidates are carried through unscreened.
+    for candidate in result.candidates[MAX_HYPOTHESIS_CANDIDATES:]:
+        assert candidate.interpretable_as_plane is None
 
 
 def test_boundary_product_equals_the_product_of_perpendicular_distances() -> None:
