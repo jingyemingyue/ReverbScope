@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 from scipy.signal import fftconvolve, hilbert
 
 from reverbscope.core.sweep import (
+    REFERENCE_SILENCE_THRESHOLD_DB,
     active_region,
     design_spectral_inverse,
     estimate_reference_band_hz,
@@ -302,3 +305,57 @@ def test_silence_of_a_quiet_dithered_reference_is_measured_from_its_noise_floor(
     assert reference_silence_threshold_db(signal, sr) == -60.0
     only = generate_ess(sweep)
     assert reference_silence_threshold_db(np.round(only * 32768) / 32768, sr) == -60.0
+
+
+def test_generate_ess_rejects_a_non_positive_sweep_rate() -> None:
+    """``SweepSettings`` already forbids an empty frequency range; the rate
+    guard still has to fire if a caller builds a settings-like object whose
+    ``L`` underflows or is NaN."""
+    bad = SimpleNamespace(
+        sample_rate=48000,
+        start_hz=20.0,
+        end_hz=20000.0,
+        duration_s=1.0,
+        fade_in_s=0.01,
+        fade_out_s=0.01,
+        amplitude=0.25,
+        sweep_rate=0.0,
+        sweep_samples=48000,
+    )
+    with pytest.raises(ConfigurationError, match="sweep rate is not positive"):
+        generate_ess(bad)  # type: ignore[arg-type]
+
+
+def test_active_region_rejects_empty_stereo_or_silent_signals() -> None:
+    with pytest.raises(ConfigurationError, match="non-empty mono"):
+        active_region(np.zeros((10, 2)))
+    with pytest.raises(ConfigurationError, match="non-empty mono"):
+        active_region(np.array([]))
+    with pytest.raises(ConfigurationError, match="silent"):
+        active_region(np.zeros(100))
+
+
+def test_reference_silence_threshold_falls_back_for_empty_or_short_signals() -> None:
+    assert reference_silence_threshold_db(np.array([]), 48000) == REFERENCE_SILENCE_THRESHOLD_DB
+    assert reference_silence_threshold_db(np.zeros(10), 48000) == REFERENCE_SILENCE_THRESHOLD_DB
+
+
+def test_estimate_reference_band_rejects_short_or_silent_arrays() -> None:
+    with pytest.raises(ConfigurationError, match="at least 16 samples"):
+        estimate_reference_band_hz(np.zeros(10), 48000)
+    with pytest.raises(ConfigurationError, match="silent"):
+        estimate_reference_band_hz(np.zeros(100), 48000)
+
+
+def test_design_spectral_inverse_rejects_non_finite_samples() -> None:
+    reference = np.ones(100)
+    reference[50] = np.nan
+    with pytest.raises(ConfigurationError, match="NaN or infinite"):
+        design_spectral_inverse(reference, 48000)
+
+
+def test_normalisation_band_rejects_an_empty_or_reversed_range() -> None:
+    with pytest.raises(ConfigurationError, match="invalid excitation band"):
+        normalisation_band_hz(0.0, 100.0)
+    with pytest.raises(ConfigurationError, match="invalid excitation band"):
+        normalisation_band_hz(200.0, 100.0)
