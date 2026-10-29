@@ -70,8 +70,8 @@ def about_html() -> str:
         "Luke Campagnola).<br><br>"
         "A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the "
         "executable (and inside <code>ReverbScope.app</code> on macOS). From a source checkout "
-        "see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; "
-        "ReverbScope never reports dB SPL."
+        "see the dependency notes in the documentation. Levels are digital (dBFS) unless a "
+        "calibration is provided; ReverbScope never reports dB SPL."
     ).format(version=__version__)
 
 
@@ -1084,7 +1084,7 @@ class MainWindow(QMainWindow):
                 _("Third-party licenses"),
                 _(
                     "No THIRD_PARTY_LICENSES directory was found next to this "
-                    "executable. See docs/DEPENDENCIES.md in the source tree."
+                    "executable. See the dependency notes in the source tree."
                 ),
             )
             return

@@ -22,17 +22,14 @@ from PySide6.QtWidgets import (
 )
 
 from reverbscope.errors import ReverbScopeError
-from reverbscope.i18n import LANGUAGE_NAMES, _, available_locales, localize
+from reverbscope.i18n import LANGUAGE_NAMES, N_, _, available_locales, localize
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.profiles import profile_title
 from reverbscope.settings import load_settings, save_settings
 from reverbscope.ui.widgets import label
 
-#: Shown in both languages: the new language is not active until a restart.
-RESTART_FOR_LANGUAGE = (
-    "语言设置将在重新启动 ReverbScope 后完全生效。\n"
-    "The language change takes full effect after ReverbScope restarts."
-)
+#: The new language is not active until a restart (one language via gettext).
+RESTART_FOR_LANGUAGE = N_("The language change takes full effect after ReverbScope restarts.")
 
 
 class SettingsDialog(QDialog):
@@ -79,7 +76,7 @@ class SettingsDialog(QDialog):
         )
         self.developer_tools.setChecked(self._settings.developer_tools)
         form.addRow(_("Language"), self.language)
-        self.language_hint = label(RESTART_FOR_LANGUAGE, "hint", wrap=True)
+        self.language_hint = label(_(RESTART_FOR_LANGUAGE), "hint", wrap=True)
         form.addRow(self.language_hint)
         form.addRow(_("Default profile"), self.profile)
         form.addRow(_("Audio backend"), self.backend)

@@ -472,8 +472,8 @@ class FindingCard(QFrame):
         row = QHBoxLayout(self)
         row.setContentsMargins(6, 4, 6, 4)
         row.setSpacing(6)
-        chip = Chip((severity_label or severity).upper(), tone)
-        # A fixed width cut "NOT COMPARABLE" short; the column stays aligned
+        chip = Chip(severity_label or severity, tone)
+        # A fixed width cut long labels short; the column stays aligned
         # for the usual one-word labels.
         chip.setMinimumWidth(48)
         row.addWidget(chip, 0, Qt.AlignmentFlag.AlignTop)

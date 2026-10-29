@@ -101,7 +101,7 @@ class Navigator(QWidget):
         self.open_session_button = self._row_button(
             "folder",
             _("Open Session..."),
-            _("Add a saved session to the list (session.json or its folder)."),
+            _("Add a saved measurement to the list (a session file or its folder)."),
         )
         self.open_session_button.clicked.connect(self.open_session_requested.emit)
         layout.addWidget(self.open_session_button)

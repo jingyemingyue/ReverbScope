@@ -57,7 +57,7 @@ class ReportView(AnalysisView):
         row = QHBoxLayout()
         row.addWidget(
             label(
-                _("The same report that reverbscope analyze prints; warnings are at the end."),
+                _("The same full text report as the command line; warnings are at the end."),
                 "hint",
                 wrap=True,
             ),
@@ -120,7 +120,8 @@ class ReportView(AnalysisView):
     def _commands_hint(self) -> str:
         hint = _(
             "Not in the desktop yet: CSV export, a zip for a bug report, an impulse "
-            "response from another tool (set --band to its sweep's band), the demo."
+            "response from another tool (set the analysis band to its sweep's band), "
+            "the demo."
         )
         if self.session_folder() is None:
             hint += " " + _("Save the session first: {placeholder} stands for its folder.").format(

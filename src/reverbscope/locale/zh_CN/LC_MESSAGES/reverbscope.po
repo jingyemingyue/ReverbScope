@@ -125,11 +125,11 @@ msgstr "20 dB 衰减"
 msgid "; {lang} has no translation, so English is used"
 msgstr "；{lang} 没有译文，因此使用英文"
 
-msgid "<b>ReverbScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses. Charts are drawn with pyqtgraph (MIT License, © 2012 University of North Carolina at Chapel Hill, Luke Campagnola).<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>ReverbScope.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; ReverbScope never reports dB SPL."
-msgstr "<b>ReverbScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br><br>采用 Apache 许可证 2.0。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按其各自的许可证使用。图表由 pyqtgraph 绘制（MIT 许可证，© 2012 University of North Carolina at Chapel Hill, Luke Campagnola）。<br><br>桌面安装包在可执行文件旁边附带 <code>THIRD_PARTY_LICENSES/</code> 目录（在 macOS 上则位于 <code>ReverbScope.app</code> 内）。从源码目录查看 docs/DEPENDENCIES.md。电平是数字电平（dBFS），除非提供了校准；ReverbScope 从不报告 dB SPL。"
+msgid "<b>ReverbScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses. Charts are drawn with pyqtgraph (MIT License, © 2012 University of North Carolina at Chapel Hill, Luke Campagnola).<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>ReverbScope.app</code> on macOS). From a source checkout see the dependency notes in the documentation. Levels are digital (dBFS) unless a calibration is provided; ReverbScope never reports dB SPL."
+msgstr "<b>ReverbScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br><br>采用 Apache 许可证 2.0。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按其各自的许可证使用。图表由 pyqtgraph 绘制（MIT 许可证，© 2012 University of North Carolina at Chapel Hill, Luke Campagnola）。<br><br>桌面安装包在可执行文件旁边附带 <code>THIRD_PARTY_LICENSES/</code> 目录（在 macOS 上则位于 <code>ReverbScope.app</code> 内）。从源码目录查看文档中的依赖说明。电平是数字电平（dBFS），除非提供了校准；ReverbScope 从不报告 dB SPL。"
 
-msgid "<b>ReverbScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses.<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>ReverbScope.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; ReverbScope never reports dB SPL."
-msgstr "<b>ReverbScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br><br>采用 Apache 许可证 2.0。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按其各自的许可证使用。<br><br>桌面安装包在可执行文件旁边附带 <code>THIRD_PARTY_LICENSES/</code> 目录（在 macOS 上则位于 <code>ReverbScope.app</code> 内）。从源码目录查看 docs/DEPENDENCIES.md。电平是数字电平（dBFS），除非提供了校准；ReverbScope 从不报告 dB SPL。"
+msgid "<b>ReverbScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses.<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>ReverbScope.app</code> on macOS). From a source checkout see the dependency notes in the documentation. Levels are digital (dBFS) unless a calibration is provided; ReverbScope never reports dB SPL."
+msgstr "<b>ReverbScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br><br>采用 Apache 许可证 2.0。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按其各自的许可证使用。<br><br>桌面安装包在可执行文件旁边附带 <code>THIRD_PARTY_LICENSES/</code> 目录（在 macOS 上则位于 <code>ReverbScope.app</code> 内）。从源码目录查看文档中的依赖说明。电平是数字电平（dBFS），除非提供了校准；ReverbScope 从不报告 dB SPL。"
 
 msgid "<file>"
 msgstr "<文件>"
@@ -215,8 +215,9 @@ msgstr "声学路径延迟"
 msgid "Add Session..."
 msgstr "加入会话..."
 
-msgid "Add a saved session to the list (session.json or its folder)."
-msgstr "把已保存的会话加入列表（session.json 或其所在文件夹）。"
+msgid "Add a saved measurement to the list (a session file or its folder)."
+msgstr "把已保存的测量加入列表（会话文件或其所在文件夹）。"
+
 
 msgid "Add a saved session to the project"
 msgstr "把已保存的会话加入项目"
@@ -881,8 +882,9 @@ msgstr "早期声没有明显压过后面的房间声（C50 {value:.1f} dB，低
 msgid "Edition"
 msgstr "版本类型"
 
-msgid "Energy decay curves"
-msgstr "能量衰减曲线"
+msgid "Decay curves"
+msgstr "衰减曲线"
+
 
 msgid "Energy decay curves (Lundeby-truncated)"
 msgstr "能量衰减曲线（Lundeby 截断）"
@@ -908,8 +910,9 @@ msgstr "所有命令行功能在这里都可以使用：运行 reverbscope --hel
 msgid "Every difference carries a validity: ReverbScope says when two takes cannot be compared rather than printing a delta."
 msgstr "每个差值都带有有效性：两次测量无法对比时，ReverbScope 会明确说明，而不是给出一个差值。"
 
-msgid "Every host API and device PortAudio reports. Probing asks each device which sample rates it accepts for one channel; nothing is played. See docs/AUDIO_DEVICES.md for what each host API does to the signal."
-msgstr "PortAudio 报告的所有主机 API 和设备。探测会询问每个设备在单声道下接受哪些采样率，不会播放任何声音。各主机 API 对信号的影响见 docs/AUDIO_DEVICES.md。"
+msgid "Every host API and device PortAudio reports. Probing asks each device which sample rates it accepts for one channel; nothing is played. Each host API can change how the signal is delivered."
+msgstr "PortAudio 报告的所有主机 API 和设备。探测会询问每个设备在单声道下接受哪些采样率，不会播放任何声音。不同主机 API 可能改变信号的传递方式。"
+
 
 msgid "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
 msgstr "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
@@ -1460,8 +1463,9 @@ msgstr "下一步：把 WAV 导入 DAW，经监听播放，用测量话筒录音
 msgid "Next: {step}"
 msgstr "下一步：{step}"
 
-msgid "No THIRD_PARTY_LICENSES directory was found next to this executable. See docs/DEPENDENCIES.md in the source tree."
-msgstr "可执行文件旁没有 THIRD_PARTY_LICENSES 目录。源码树中见 docs/DEPENDENCIES.md。"
+msgid "No THIRD_PARTY_LICENSES directory was found next to this executable. See the dependency notes in the source tree."
+msgstr "可执行文件旁没有 THIRD_PARTY_LICENSES 目录。见源码树中的依赖说明。"
+
 
 msgid "No audio device found."
 msgstr "未找到音频设备。"
@@ -1547,8 +1551,9 @@ msgstr "不打总分，不编造数字"
 msgid "No session to average yet."
 msgstr "还没有可平均的会话。"
 
-msgid "No session.json files under {root}"
-msgstr "{root} 下没有 session.json"
+msgid "No saved measurements under {name}"
+msgstr "{name} 下没有已保存的测量"
+
 
 msgid "No sessions in this project"
 msgstr "此项目中没有会话"
@@ -1679,8 +1684,9 @@ msgstr "打开项目或会话，或用窗口底部的测量栏测量。测量会
 msgid "Open a project or a session, or measure with the strip below."
 msgstr "打开项目或会话，或用下方的测量栏测量。"
 
-msgid "Open a session.json or a folder that contains one."
-msgstr "打开 session.json，或包含它的文件夹。"
+msgid "Open a saved measurement or a folder that contains one."
+msgstr "打开已保存的测量，或包含测量的文件夹。"
+
 
 msgid "Open or make a project first."
 msgstr "请先打开或新建一个项目。"
@@ -2198,8 +2204,9 @@ msgstr "保存对比"
 msgid "Save comparison.json"
 msgstr "保存 comparison.json"
 
-msgid "Save comparison.json..."
-msgstr "保存 comparison.json…"
+msgid "Save comparison..."
+msgstr "保存对比…"
+
 
 msgid "Save into the project"
 msgstr "保存到项目中"
@@ -2222,8 +2229,9 @@ msgstr "已保存，但未加入项目"
 msgid "Schroeder decay (dB)"
 msgstr "Schroeder 衰减（dB）"
 
-msgid "Schroeder integral, Lundeby-truncated"
-msgstr "Schroeder 积分，按 Lundeby 截断"
+msgid "Decay integral, truncated at the noise floor"
+msgstr "衰减积分，在本底噪声处截断"
+
 
 msgid "See every delta between the two positions:"
 msgstr "查看两个位置之间的全部差值："
@@ -2624,7 +2632,7 @@ msgstr "命令以退出码 {code} 结束。"
 msgid "The decay range is too small for a reliable reverberation time. A longer sweep, a slightly higher playback level or a quieter room increases it."
 msgstr "衰减范围太小，混响时间不可靠。加长扫频、略提高播放电平或换一个更安静的房间可以改善。"
 
-msgid "The desktop GUI cannot start because PySide6 could not be loaded ({error}). Install it in this Python environment with: pip install \"PySide6_Essentials>=6.6,<6.12\". On Linux the OpenGL/EGL and XCB system libraries are also needed; see docs/INSTALLATION.md. The command-line tool works without it."
+msgid "The desktop GUI cannot start because PySide6 could not be loaded ({error}). Install it in this Python environment with: pip install \"PySide6_Essentials>=6.6,<6.12\". On Linux the OpenGL/EGL and XCB system libraries are also needed; see the installation guide in the source tree. The command-line tool works without it."
 msgstr "无法启动桌面界面：无法加载 PySide6（{error}）。请在当前 Python 环境中安装：pip install \"PySide6_Essentials>=6.6,<6.12\"。在 Linux 上还需要系统的 OpenGL/EGL 和 XCB 库，见 docs/INSTALLATION.zh-CN.md。命令行工具不需要它也能使用。"
 
 msgid "The desktop app needs a graphical display, and this session has none (DISPLAY and WAYLAND_DISPLAY are not set). Start it from a desktop session; the command-line tool works without one."
@@ -2750,8 +2758,9 @@ msgstr "上升段（{rise_ms:g} ms）不能小于 0 ms，且与渐变段（{fall
 msgid "The same from the command line:"
 msgstr "等价的命令行："
 
-msgid "The same report that reverbscope analyze prints; warnings are at the end."
-msgstr "与 reverbscope analyze 输出的报告相同；警告列在末尾。"
+msgid "The same full text report as the command line; warnings are at the end."
+msgstr "与命令行输出的完整文本报告相同；警告列在末尾。"
+
 
 msgid "The sample rate must be above 0 Hz, not {sample_rate} Hz."
 msgstr "采样率必须高于 0 Hz，而不是 {sample_rate} Hz。"
@@ -2861,8 +2870,9 @@ msgstr "本次运行的测量"
 msgid "Thresholds are engineering choices for one kind of recording, not a grade; docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
 msgstr "阈值是针对一类录音的工程取舍，不是评分；docs/MEASUREMENT_METHODOLOGY.md §8 列出了每个配置的阈值。"
 
-msgid "Thresholds are engineering choices for this kind of recording, not a grade; docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
-msgstr "阈值是针对这类录音的工程取舍，不是评分；docs/MEASUREMENT_METHODOLOGY.md §8 列出了每个配置的阈值。"
+msgid "Thresholds are engineering choices for this kind of recording, not a grade. Learn more in the user guide."
+msgstr "阈值是针对这类录音的工程取舍，不是评分。详见用户指南。"
+
 
 msgid "Time"
 msgstr "时间"
@@ -2963,11 +2973,13 @@ msgstr "已请求 WASAPI 独占模式，但 {device} 是 {api} 设备；请选�
 msgid "WAV files (*.wav)"
 msgstr "WAV 文件 (*.wav)"
 
-msgid "WHAT IT DOES NOT JUDGE"
-msgstr "它不判断什么"
+msgid "What it does not judge"
+msgstr "它不评判什么"
 
-msgid "WHAT IT WATCHES FOR"
+
+msgid "What it watches for"
 msgstr "它关注什么"
+
 
 msgid "Waiting for both measurements to load."
 msgstr "正在等待两条测量加载完成。"
@@ -3170,8 +3182,9 @@ msgctxt "argument value"
 msgid "'{text}'"
 msgstr "“{text}”"
 
-msgid "as computed by reverbscope compare"
-msgstr "与 reverbscope compare 的计算相同"
+msgid "as computed for this comparison"
+msgstr "按本次对比计算"
+
 
 msgid "as stored"
 msgstr "按存储值"
@@ -6898,11 +6911,19 @@ msgstr "把这些命令行复制到剪贴板。"
 msgid "Command-line equivalents"
 msgstr "对应的命令行"
 
-msgid "Not in the desktop yet: CSV export, a zip for a bug report, an impulse response from another tool (set --band to its sweep's band), the demo."
-msgstr "桌面界面还没有这些功能：导出 CSV、把会话打成压缩包用于报告问题、分析其他工具得到的脉冲响应（--band 填它扫频覆盖的频带）、合成演示。"
+msgid "Not in the desktop yet: CSV export, a zip for a bug report, an impulse response from another tool (set the analysis band to its sweep's band), the demo."
+msgstr "桌面版尚未提供：CSV 导出、缺陷报告压缩包、来自其他工具的脉冲响应（将分析频带设为该扫频的频带）、演示。"
+
 
 msgid "Save the session first: {placeholder} stands for its folder."
 msgstr "请先保存会话：{placeholder} 代表会话文件夹。"
 
 msgid "Commands copied to the clipboard."
 msgstr "命令已复制到剪贴板。"
+
+msgid "The language change takes full effect after ReverbScope restarts."
+msgstr "语言设置将在重新启动 ReverbScope 后完全生效。"
+
+msgid "No session.json files under {root}"
+msgstr "{root} 下没有 session.json 文件"
+

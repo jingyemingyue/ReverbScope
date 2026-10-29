@@ -22,18 +22,18 @@ class ProfileDialog(QDialog):
         layout.setSpacing(8)
         layout.addWidget(label(self.item.title, "title"))
         layout.addWidget(label(self.item.description, "subtitle", wrap=True))
-        layout.addWidget(label(_("WHAT IT WATCHES FOR"), "section"))
+        layout.addWidget(label(_("What it watches for"), "section"))
         for line in self.item.wants:
             layout.addWidget(label(f"•  {line}", wrap=True))
         if self.item.skips:
-            layout.addWidget(label(_("WHAT IT DOES NOT JUDGE"), "section"))
+            layout.addWidget(label(_("What it does not judge"), "section"))
             for line in self.item.skips:
                 layout.addWidget(label(f"•  {line}", wrap=True))
         layout.addWidget(
             label(
                 _(
                     "Thresholds are engineering choices for this kind of recording, not a "
-                    "grade; docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
+                    "grade. Learn more in the user guide."
                 ),
                 "hint",
                 wrap=True,

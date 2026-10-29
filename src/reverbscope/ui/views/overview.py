@@ -286,7 +286,7 @@ class _Overview(QWidget):
             if widget is not None:
                 widget.deleteLater()
         self.findings_title.setText(
-            _("INTERPRETATION ({profile} PROFILE)").format(profile=profile_title(profile).upper())
+            _("Interpretation ({profile} profile)").format(profile=profile_title(profile))
         )
         for finding in findings:
             self.findings.addWidget(
@@ -318,7 +318,7 @@ class _Overview(QWidget):
         """The measurement-health card: the overall status, the checks that
         are not good with what to do, and the names of those that are."""
         report = assess(result)
-        self.health_chip.setText(status_word(report.overall).upper())
+        self.health_chip.setText(status_word(report.overall))
         self.health_chip.set_tone(HEALTH_TONE[report.overall])
         summary = _("{good} of {total} checks good.").format(
             good=len(report.good), total=len(report.checks)

@@ -124,7 +124,7 @@ class ComparePage(AnalysisView):
         )
         self.same_gain.toggled.connect(self.refresh)
         top.addWidget(self.same_gain)
-        save = QPushButton(_("Save comparison.json..."))
+        save = QPushButton(_("Save comparison..."))
         save.clicked.connect(self._save)
         top.addWidget(save)
         copy = QPushButton(_("Copy report"))
@@ -460,7 +460,7 @@ class ComparePage(AnalysisView):
             fr.difference_db,
             color=candidate.color if candidate is not None else t["accent"],
             width=1.6,
-            processing=_("as computed by reverbscope compare"),
+            processing=_("as computed for this comparison"),
             readout=True,
         )
         chart.add_hline(0.0, color=t["muted"])
@@ -490,7 +490,7 @@ class ComparePage(AnalysisView):
     def _show_verdict(self, verdict: ComparisonVerdict) -> None:
         """The verdict card: the headline, one row per aspect, the conditions."""
         self.verdict_title.setText(
-            _("VERDICT ({profile} PROFILE)").format(profile=profile_title(verdict.profile).upper())
+            _("Verdict ({profile} profile)").format(profile=profile_title(verdict.profile))
         )
         self.verdict_headline.setText(verdict.headline())
         while self.verdict_rows.count():
@@ -517,7 +517,7 @@ class ComparePage(AnalysisView):
             )
             return
         target = ask_save_path(
-            self, _("Save comparison.json"), "comparison.json", _("JSON files (*.json)")
+            self, _("Save comparison"), "comparison.json", _("JSON files (*.json)")
         )
         if target is None:
             return

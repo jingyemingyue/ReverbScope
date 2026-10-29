@@ -132,7 +132,7 @@ class WalkthroughCard(Card):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.body.addWidget(label(_("Your first measurement").upper(), "section"))
+        self.body.addWidget(label(_("Your first measurement"), "section"))
         self.body.addWidget(
             label(
                 _(

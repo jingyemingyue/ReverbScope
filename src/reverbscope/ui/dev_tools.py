@@ -78,7 +78,7 @@ class DeviceInspector(QDialog):
                 _(
                     "Every host API and device PortAudio reports. Probing asks each device "
                     "which sample rates it accepts for one channel; nothing is played. "
-                    "See docs/AUDIO_DEVICES.md for what each host API does to the signal."
+                    "Each host API can change how the signal is delivered."
                 ),
                 "hint",
                 wrap=True,
