@@ -173,3 +173,24 @@ def test_smoothing_keeps_levels_far_below_the_running_total() -> None:
         window = (freqs >= f / half) & (freqs <= f * half)
         direct = 10.0 * np.log10(np.mean(10.0 ** (magnitude[window] / 10.0)))
         assert smoothed[int(f) - 1] == pytest.approx(direct, abs=1e-6), f
+
+
+def test_exact_mid_band_rejects_non_positive_fraction() -> None:
+    with pytest.raises(ConfigurationError, match="fraction must be positive"):
+        exact_mid_band_hz(0, 0)
+
+
+def test_settling_samples_returns_zero_when_impulse_response_is_silent() -> None:
+    from unittest import mock
+
+    from reverbscope.core import filters as filters_mod
+
+    sos = bandpass_sos(fractional_octave_band(1000.0), 48_000)
+    filters_mod._SETTLING.clear()
+
+    def silent_sosfilt(sos_arg, block, zi=None):  # type: ignore[no-untyped-def]
+        y = np.zeros_like(block, dtype=np.float64)
+        return y, zi
+
+    with mock.patch.object(filters_mod, "sosfilt", silent_sosfilt):
+        assert settling_samples(sos, 48_000) == 0
