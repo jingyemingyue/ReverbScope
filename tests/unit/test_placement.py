@@ -9,7 +9,10 @@ import pytest
 from reverbscope.core.placement import (
     DEFAULT_TEMPERATURE_C,
     LOWER_PLANE,
+    MAX_HYPOTHESIS_CANDIDATES,
+    MAX_SURFACE_ATTENUATION_DB,
     UPPER_PLANE,
+    _propagate,
     boundary_product_m2,
     estimate_placement,
     mirror_path_m,
@@ -588,3 +591,247 @@ def test_speed_for_result_uses_the_entered_temperature(analysed_result: Analysis
     # A non-finite stored temperature falls back to the assumed one.
     broken = replace(result, placement=replace(placement, temperature_c=float("nan")))
     assert speed_for_result(broken)[1:] == (DEFAULT_TEMPERATURE_C, True)
+
+
+# --------------------------------------------------------------------------
+# Edges that the happy-path suite never walks (coverage fallthrough)
+# --------------------------------------------------------------------------
+
+
+def test_speed_of_sound_rejects_absolute_zero_and_below() -> None:
+    with pytest.raises(ValueError, match="absolute zero"):
+        speed_of_sound_m_s(-273.15)
+    with pytest.raises(ValueError, match="absolute zero"):
+        speed_of_sound_m_s(-300.0)
+
+
+def test_propagate_returns_none_when_the_model_or_jacobian_raises() -> None:
+    def boom(**_: float) -> float:
+        raise ValueError("nope")
+
+    assert _propagate(boom, {"a": 1.0}, {"a": 0.1}) is None
+
+    def zero_div(**_: float) -> float:
+        return 1.0 / 0.0
+
+    assert _propagate(zero_div, {"a": 1.0}, {"a": 0.1}) is None
+
+    def shift_raises(*, a: float) -> float:
+        if a > 1.0:
+            raise ValueError("shifted")
+        return a * 2.0
+
+    assert _propagate(shift_raises, {"a": 1.0}, {"a": 0.1}) is None
+
+    def nan_on_shift(*, a: float) -> float:
+        return float("nan") if a != 1.0 else 1.0
+
+    assert _propagate(nan_on_shift, {"a": 1.0}, {"a": 0.1}) is None
+
+
+def test_a_candidate_far_below_the_specular_ceiling_is_excluded() -> None:
+    distance, delay = 1.5, 4.0
+    too_quiet = specular_ceiling_db(distance, mirror_path_m(distance, delay, C20)) - (
+        MAX_SURFACE_ATTENUATION_DB + 5.0
+    )
+    result = estimate_placement(
+        _reflections([(delay, too_quiet)]),
+        distance_m=distance,
+        mic_height_m=1.2,
+        temperature_c=20.0,
+    )
+    candidate = result.candidates[0]
+    assert candidate.interpretable_as_plane is False
+    reason = candidate.excluded_reason or ""
+    assert "below that ceiling" in reason
+    assert f"{MAX_SURFACE_ATTENUATION_DB:.0f} dB" in reason
+
+
+def test_unknown_direct_sound_confidence_is_named_in_the_refusal() -> None:
+    result = estimate_placement(
+        _reflections([(4.0, -10.0)], confidence="unknown"),
+        distance_m=1.5,
+        mic_height_m=1.2,
+        temperature_c=20.0,
+    )
+    assert result.tier == 0
+    assert result.candidates == ()
+    assert "confidence is unknown" in (result.source_height_m.reason or "")
+
+
+def test_candidates_past_the_hypothesis_cap_are_kept_but_not_attributed() -> None:
+    """Only the earliest N arrivals are plane hypotheses; later ones stay unnamed."""
+    source_height, mic_height, horizontal = 1.20, 0.40, 1.44
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    pads = [
+        (
+            1.0 + 0.2 * i,
+            specular_ceiling_db(distance, mirror_path_m(distance, 1.0 + 0.2 * i, C20)) + 6.0,
+        )
+        for i in range(MAX_HYPOTHESIS_CANDIDATES)
+    ]
+    arrivals = [*pads, (lower_ms, _lossy(distance, lower_ms))]
+    result = estimate_placement(
+        _reflections(arrivals),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert len(result.candidates) == MAX_HYPOTHESIS_CANDIDATES + 1
+    assert result.source_height_m.metres is None
+    assert all(c.surface is None for c in result.candidates)
+
+
+def _delay_for_product(distance_m: float, product_m2: float) -> float:
+    excess = -distance_m + math.sqrt(distance_m * distance_m + 4.0 * product_m2)
+    return excess / C20 * 1000.0
+
+
+def test_a_vertical_separation_the_tape_cannot_contain_is_refused() -> None:
+    mic_height, source_height, distance = 0.5, 2.5, 1.5
+    delay = _delay_for_product(distance, source_height * mic_height)
+    result = estimate_placement(
+        _reflections([(delay, _lossy(distance, delay))]),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=20.0,
+    )
+    reason = result.source_height_m.reason or ""
+    assert "vertical separation" in reason
+    assert "cannot contain" in reason
+
+
+def test_a_near_vertical_stack_is_refused_as_no_horizontal_separation() -> None:
+    mic_height, source_height, distance = 1.0, 1.5, 0.50
+    delay = _delay_for_product(distance, source_height * mic_height)
+    result = estimate_placement(
+        _reflections([(delay, _lossy(distance, delay))]),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=20.0,
+    )
+    assert "vertically above the microphone" in (result.source_height_m.reason or "")
+
+
+def test_an_upper_plane_that_clears_the_devices_by_too_little_is_rejected() -> None:
+    source_height, mic_height, horizontal = 2.0, 1.9, 1.5
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    # Target an upper plane only 5 cm above the taller device (clearance needs 30 cm).
+    target_upper = 2.05
+    u_z = source_height + mic_height
+    v_z = source_height - mic_height
+    mirror = math.sqrt((2.0 * target_upper - u_z) ** 2 + distance * distance - v_z * v_z)
+    upper_ms = (mirror - distance) / C20 * 1000.0
+    result = estimate_placement(
+        _reflections(
+            [
+                (lower_ms, _lossy(distance, lower_ms)),
+                (upper_ms, _lossy(distance, upper_ms)),
+            ]
+        ),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    reason = result.ceiling_height_m.reason or ""
+    assert "less than" in reason and "above the higher of the two devices" in reason
+
+
+def test_a_window_too_short_for_any_upper_plane_says_so() -> None:
+    source_height, mic_height, horizontal = 1.2, 0.4, 3.0
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    window = (0.8, 1.2)
+    result = estimate_placement(
+        _reflections(
+            [(lower_ms, _lossy(distance, lower_ms))],
+            window_ms=window,
+            analysed_ms=window,
+        ),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert result.source_height_m.validity is Validity.VALID
+    reason = result.ceiling_height_m.reason or ""
+    assert "beyond the" in reason and "window that could be searched" in reason
+    assert "not evidence of absence" in reason
+
+
+def test_a_rejected_upper_candidate_and_a_short_window_are_both_named() -> None:
+    source_height, mic_height, horizontal = 1.2, 0.4, 3.0
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    too_high = 7.0
+    upper_ms = _plane_arrival(distance, too_high - source_height, too_high - mic_height, horizontal)
+    window = (0.8, 1.2)
+    result = estimate_placement(
+        _reflections(
+            [
+                (lower_ms, _lossy(distance, lower_ms)),
+                (upper_ms, _lossy(distance, upper_ms)),
+            ],
+            window_ms=window,
+            analysed_ms=window,
+        ),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    reason = result.ceiling_height_m.reason or ""
+    assert "1.8-6.0 m is treated as plausible" in reason
+    assert "beyond the" in reason and "not evidence of absence" in reason
+
+
+def test_statistical_and_too_short_caveats_are_inherited() -> None:
+    notes = (
+        "peaks are statistical under the threshold",
+        "recording too short for late arrivals",
+        "only the 20 strongest reflections are listed",
+    )
+    result = estimate_placement(
+        _reflections([(4.0, -10.0)], notes=notes),
+        distance_m=1.5,
+        mic_height_m=None,
+        temperature_c=20.0,
+    )
+    inherited = [n for n in result.notes if n.startswith("inherited from the reflection search:")]
+    assert len(inherited) == 3
+    for note in notes:
+        assert any(note in n for n in inherited)
+
+
+def test_unrelated_notes_are_not_inherited_and_a_missing_window_skips_beyond_check() -> None:
+    """Notes without the search keywords stay local; no analysed window means no
+    'beyond the window' claim even when every upper candidate is rejected."""
+    source_height, mic_height, horizontal = 1.2, 0.4, 1.5
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    too_high = 7.0
+    upper_ms = _plane_arrival(distance, too_high - source_height, too_high - mic_height, horizontal)
+    reflections = ReflectionsResult(
+        direct_sound_time_s=0.0,
+        direct_sound_confidence="high",
+        window_ms=(0.8, 80.0),
+        threshold_db=-20.0,
+        reflections=(
+            Reflection(delay_ms=lower_ms, relative_db=_lossy(distance, lower_ms)),
+            Reflection(delay_ms=upper_ms, relative_db=_lossy(distance, upper_ms)),
+        ),
+        notes=("unrelated note that should not be inherited",),
+        analysed_window_ms=None,
+        window_truncated=False,
+    )
+    result = estimate_placement(
+        reflections,
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert not any("inherited from the reflection search" in n for n in result.notes)
+    assert result.source_height_m.validity is Validity.VALID
+    reason = result.ceiling_height_m.reason or ""
+    assert "1.8-6.0 m is treated as plausible" in reason
+    assert "beyond the" not in reason
