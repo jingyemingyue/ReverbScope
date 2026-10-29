@@ -50,6 +50,15 @@ def test_recording_shorter_than_sweep_rejected(short_sweep: SweepSettings) -> No
         analyze(sig, Reference.from_settings(short_sweep))
 
 
+def test_deconvolve_rejects_non_mono_arrays(short_sweep: SweepSettings) -> None:
+    inv = inverse_filter(short_sweep)
+    stereo = np.ones((inv.shape[0] + 100, 2), dtype=np.float64)
+    with pytest.raises(InvalidAudioError, match="mono"):
+        deconvolve(stereo, inv)
+    with pytest.raises(InvalidAudioError, match="mono"):
+        deconvolve(np.ones(inv.shape[0] + 100), np.ones((inv.shape[0], 2)))
+
+
 def test_silent_recording_rejected(short_sweep: SweepSettings) -> None:
     sr = short_sweep.sample_rate
     sig = AudioSignal(np.zeros(short_sweep.total_samples), sr)
@@ -110,6 +119,8 @@ def test_confidence_labels() -> None:
     assert confidence_label(25.0) == "high"
     assert confidence_label(15.0) == "medium"
     assert confidence_label(5.0) == "low"
+    assert confidence_label(None) == "low"
+    assert confidence_label(float("nan")) == "low"
 
 
 def test_clipping_is_warned(short_sweep: SweepSettings) -> None:
