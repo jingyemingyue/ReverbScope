@@ -33,30 +33,34 @@ def recent_store_path() -> Path:
 
 def remember_session(directory: str | Path) -> None:
     """Put ``directory`` at the front of the recent list."""
-    path = Path(directory).resolve()
-    if path.is_file() and path.name == "session.json":
-        path = path.parent
-    entries = [str(path)]
-    for existing in _read_paths():
-        if existing != path:
-            entries.append(str(existing))
     store = recent_store_path()
     try:
+        path = Path(directory).resolve()
+        if path.is_file() and path.name == "session.json":
+            path = path.parent
+        entries = [str(path)]
+        for existing in _read_paths():
+            if existing != path:
+                entries.append(str(existing))
         store.parent.mkdir(parents=True, exist_ok=True)
         write_text_atomic(
             store,
             json.dumps({"sessions": entries[:RECENT_LIMIT]}, indent=2),
             follow_symlinks=True,
         )
-    except OSError as exc:
+    except (OSError, SessionError) as exc:
         # The list is a convenience: the session itself was saved already.
         log.warning("cannot update the recent-sessions list %s: %s", store, exc)
 
 
 def recent_session_paths(*, limit: int = RECENT_LIMIT) -> list[Path]:
     """Existing session directories, newest first."""
+    try:
+        paths = _read_paths()
+    except (OSError, SessionError):
+        return []
     found: list[Path] = []
-    for path in _read_paths():
+    for path in paths:
         if _looks_like_session(path):
             found.append(path)
         if len(found) >= limit:
@@ -70,7 +74,11 @@ def _read_paths() -> list[Path]:
         return []
     try:
         payload = read_json_object(store, kind="recent sessions")
-    except SessionError:
+    except SessionError as exc:
+        # An unreadable history is not an empty one: updating it must leave
+        # the old list intact. Malformed JSON keeps the existing fallback.
+        if isinstance(exc.__cause__, OSError):
+            raise
         return []
     raw = payload.get("sessions")
     if not isinstance(raw, list):
@@ -79,6 +87,10 @@ def _read_paths() -> list[Path]:
 
 
 def _looks_like_session(path: Path) -> bool:
-    if path.is_dir():
-        return (path / "session.json").is_file()
-    return path.is_file() and path.name == "session.json"
+    try:
+        if path.is_dir():
+            return (path / "session.json").is_file()
+        return path.is_file() and path.name == "session.json"
+    except OSError:
+        # One inaccessible history entry must not hide the readable ones.
+        return False
