@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 GUI_UNAVAILABLE = N_(
     "The desktop GUI cannot start because PySide6 could not be loaded ({error}). "
     'Install it in this Python environment with: pip install "PySide6_Essentials>=6.6,<6.12". '
-    "On Linux the OpenGL/EGL and XCB system libraries are also needed; see "
-    "docs/INSTALLATION.md. The command-line tool works without it."
+    "On Linux the OpenGL/EGL and XCB system libraries are also needed; see the "
+    "installation guide in the source tree. The command-line tool works without it."
 )
 
 

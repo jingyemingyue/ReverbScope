@@ -55,7 +55,7 @@ def test_the_results_page_shows_the_health_card(
     take = synthetic_recording(short_sweep, make_rir(rate, rt60_s=0.3), noise_rms=1e-5)
     window = _analyse_file(app, tmp_path, short_sweep, take.samples)
     overview = window.views["overview"].overview
-    assert overview.health_chip.text() == "GOOD"
+    assert overview.health_chip.text() == "good"
     assert "10 of 10 checks good" in overview.health_summary.text()
     assert overview.health_rows.count() == 0
     window.show_view("report")
@@ -67,7 +67,7 @@ def test_the_results_page_shows_the_health_card(
     clipped = np.clip(take.samples * 4.0, -0.3, 0.3)
     window = _analyse_file(app, tmp_path, short_sweep, clipped)
     overview = window.views["overview"].overview
-    assert overview.health_chip.text() == "INVALID"
+    assert overview.health_chip.text() == "invalid"
     assert overview.health_rows.count() >= 1
     from reverbscope.ui.widgets import FindingCard
 

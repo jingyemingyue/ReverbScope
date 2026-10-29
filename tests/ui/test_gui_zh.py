@@ -97,11 +97,11 @@ def _texts(root: QWidget) -> list[str]:
 
 def _data_values() -> tuple[str, ...]:
     from reverbscope.audio.backend import get_backend
-    from reverbscope.ui.settings_dialog import LANGUAGE_NAMES, RESTART_FOR_LANGUAGE
+    from reverbscope.ui.settings_dialog import LANGUAGE_NAMES
 
     devices = tuple(device.name for device in get_backend("fake").list_devices())
     # Language names are written in their own language on purpose.
-    return (*devices, *RESTART_FOR_LANGUAGE.splitlines(), *LANGUAGE_NAMES.values())
+    return (*devices, *LANGUAGE_NAMES.values())
 
 
 def _check(texts: list[str], where: str) -> None:

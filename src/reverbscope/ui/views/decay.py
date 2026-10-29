@@ -67,7 +67,7 @@ class DecayView(AnalysisView):
             X_TIME_S,
             x_label=_("Time (s)"),
             y_label=_("Schroeder decay (dB)"),
-            title=_("Energy decay curves"),
+            title=_("Decay curves"),
         )
         self.chart.export_name = "decay"
         self.bands_chart = ChartPanel(
@@ -166,7 +166,7 @@ class DecayView(AnalysisView):
                 width=curve_width(current=is_current, baseline=is_baseline),
                 style=DASHES[entry.color_index % len(DASHES)],
                 key=entry.key,
-                processing=_("Schroeder integral, Lundeby-truncated"),
+                processing=_("Decay integral, truncated at the noise floor"),
                 readout=is_current,
                 z=10 if is_current else 0,
             )
@@ -235,7 +235,7 @@ class DecayView(AnalysisView):
                 color=entry.color,
                 width=2.4,
                 key=f"{entry.key}#broadband",
-                processing=_("Schroeder integral, Lundeby-truncated"),
+                processing=_("Decay integral, truncated at the noise floor"),
                 readout=True,
                 z=10,
             )
@@ -259,7 +259,7 @@ class DecayView(AnalysisView):
                 width=1.0,
                 dash=BAND_DASHES[index % len(BAND_DASHES)],
                 key=f"{entry.key}#{band.band_label}",
-                processing=_("Schroeder integral, Lundeby-truncated"),
+                processing=_("Decay integral, truncated at the noise floor"),
             )
         notes.append(
             _("All bands of {name}; overlays are not drawn in this mode.").format(

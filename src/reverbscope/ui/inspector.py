@@ -87,7 +87,7 @@ class _Section(QWidget):
         self.outer = layout
         layout.setContentsMargins(0, 4, 0, 4)
         layout.setSpacing(4)
-        self.title = label(title.upper(), "section")
+        self.title = label(title, "section")
         layout.addWidget(self.title)
         self.body = QWidget()
         layout.addWidget(self.body)

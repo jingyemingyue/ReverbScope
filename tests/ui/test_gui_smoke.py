@@ -435,12 +435,12 @@ def test_help_licenses_and_report_heading(app: QApplication) -> None:
         for action in menu.actions()
     ]
     assert any("license" in text.lower() or "许可" in text for text in texts)
-    # Diagnostics are shown in the interface language now; the heading names
-    # the CLI command that prints the same report (the Full report view now).
+    # Full report view: same text as the command line, without naming the CLI.
     from PySide6.QtWidgets import QLabel
 
     headings = [child.text() for child in window.views["report"].findChildren(QLabel)]
-    assert any("reverbscope analyze" in text for text in headings), headings
+    assert any("command line" in text.lower() or "命令行" in text for text in headings), headings
+    assert not any("reverbscope analyze" in text for text in headings), headings
     window.close()
 
 

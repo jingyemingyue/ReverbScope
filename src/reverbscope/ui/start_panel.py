@@ -91,7 +91,7 @@ class StartPanel(QWidget):
         header.addWidget(label(_("Saved sessions"), "section"))
         header.addStretch(1)
         open_button = QPushButton(_("Open Session..."))
-        open_button.setToolTip(_("Open a session.json or a folder that contains one."))
+        open_button.setToolTip(_("Open a saved measurement or a folder that contains one."))
         open_button.clicked.connect(self.open_session.emit)
         project_button = QPushButton(_("Open Project..."))
         project_button.setToolTip(

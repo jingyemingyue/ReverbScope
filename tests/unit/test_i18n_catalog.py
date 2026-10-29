@@ -55,6 +55,8 @@ DYNAMIC_CALLS = {
     ("ui/dev_tools.py", "_(column)"),
     ("ui/pages.py", "_(SAFETY_MESSAGE)"),
     ("ui/pages.py", "_(DAW_INSTRUCTIONS)"),
+    # Settings restart hint, extracted with N_() in settings_dialog.py.
+    ("ui/settings_dialog.py", "_(RESTART_FOR_LANGUAGE)"),
     # The "GUI cannot start" sentence, extracted with N_() in ui/app.py.
     ("cli/main.py", "_(GUI_UNAVAILABLE)"),
     ("ui/app.py", "_(GUI_UNAVAILABLE)"),

@@ -162,7 +162,7 @@ class SessionBrowser(QWidget):
             item.setData(Qt.ItemDataRole.UserRole, str(listing.path))
             self.list.addItem(item)
         if self.list.count() == 0:
-            empty = QListWidgetItem(_("No session.json files under {root}").format(root=root))
+            empty = QListWidgetItem(_("No saved measurements under {name}").format(name=root.name))
             empty.setFlags(Qt.ItemFlag.NoItemFlags)
             self.list.addItem(empty)
 
