@@ -259,3 +259,67 @@ def test_project_average_shows_the_count_of_each_value(
     assert "0.91 s（1）" in text
     note = "n 为该行参与平均的会话数；数值后带（k）表示只平均了其中 k 个会话"
     assert "".join(note.split()) in "".join(text.split())
+
+
+def test_average_decay_rejects_empty_results_and_non_positive_counts(
+    short_sweep: SweepSettings,
+) -> None:
+    result = analyze(
+        synthetic_recording(
+            short_sweep,
+            make_rir(short_sweep.sample_rate, rt60_s=0.4, diffuse_level=0.02),
+            noise_rms=1e-5,
+        ),
+        Reference.from_settings(short_sweep),
+    )
+    with pytest.raises(ConfigurationError, match="at least one"):
+        average_decay([])
+    with pytest.raises(ConfigurationError, match="must be >= 1"):
+        average_decay([result], n_source_positions=0)
+    with pytest.raises(ConfigurationError, match="must be >= 1"):
+        average_decay([result], n_microphone_positions=0)
+
+
+def test_average_decay_reports_not_computed_when_no_valid_t_values(
+    short_sweep: SweepSettings,
+) -> None:
+    from reverbscope.core.averaging import _average_metric, _band, _session_rt60
+
+    result = analyze(
+        synthetic_recording(
+            short_sweep,
+            make_rir(short_sweep.sample_rate, rt60_s=0.4, diffuse_level=0.02),
+            noise_rms=1e-5,
+        ),
+        Reference.from_settings(short_sweep),
+    )
+
+    def invalidate(band):  # type: ignore[no-untyped-def]
+        return replace(
+            band,
+            edt=replace(band.edt, validity=Validity.NOT_COMPUTED, seconds=None),
+            t20=replace(band.t20, validity=Validity.NOT_COMPUTED, seconds=None),
+            t30=replace(band.t30, validity=Validity.NOT_COMPUTED, seconds=None),
+            rt60_estimate_s=None,
+            rt60_basis=None,
+        )
+
+    decay = replace(
+        result.decay,
+        broadband=invalidate(result.decay.broadband),
+        bands=tuple(invalidate(band) for band in result.decay.bands),
+    )
+    blank = replace(result, decay=decay)
+    averaged = average_decay([blank], session_labels=["a"])
+    broadband = next(
+        band for band in averaged.bands if band.band_label == blank.decay.broadband.band_label
+    )
+    assert broadband.t30.validity is Validity.NOT_COMPUTED
+    assert broadband.t30.reason is not None
+    assert "no VALID values" in broadband.t30.reason
+    assert broadband.rt60_basis is None
+    assert _session_rt60(blank.decay.broadband) == (None, None)
+    assert _band(result, "no-such-band") is None
+    missing = _average_metric([result], ["a"], "no-such-band", "t20")
+    assert missing.validity is Validity.NOT_COMPUTED
+    assert missing.count == 0
