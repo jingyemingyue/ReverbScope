@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve, firwin
 
-from reverbscope.core.reflections import detect_early_reflections
+from reverbscope.core.reflections import MAX_REPORTED_REFLECTIONS, detect_early_reflections
 from tests.conftest import make_rir
 
 
@@ -185,3 +185,57 @@ def test_peaks_outside_the_window_are_not_reported(sample_rate: int) -> None:
 def test_default_window_keeps_arrivals_on_both_bounds(sample_rate: int) -> None:
     res = _detect(_impulses(sample_rate, (0.8, 80.0)), sample_rate, 0)
     assert [r.delay_ms for r in res.reflections] == pytest.approx([0.8, 80.0], abs=0.2)
+
+
+def test_an_ir_too_short_after_the_direct_sound_refuses_analysis(sample_rate: int) -> None:
+    """When fewer than three samples remain in the search window, detection
+    stops with an explicit note rather than returning an empty candidate list
+    that looks like 'no reflections'."""
+    direct = 10
+    ir = np.zeros(direct + 5)
+    ir[direct] = 1.0
+    res = detect_early_reflections(
+        ir,
+        sample_rate,
+        direct,
+        min_delay_ms=0.8,
+        max_delay_ms=80.0,
+        threshold_db=-20.0,
+        prominence_db=6.0,
+        direct_sound_confidence="high",
+    )
+    assert res.reflections == ()
+    assert res.window_truncated
+    assert any("too short after the direct sound" in n for n in res.notes)
+    assert any("only that part" in n for n in res.notes)
+
+
+def test_only_the_strongest_reflections_are_listed_when_many_are_found(
+    sample_rate: int,
+) -> None:
+    direct = 100
+    max_delay_ms = 80.0
+    count = MAX_REPORTED_REFLECTIONS + 5
+    ir = np.zeros(direct + int(max_delay_ms * sample_rate / 1000.0) + sample_rate // 10)
+    ir[direct] = 1.0
+    for i in range(count):
+        delay_ms = 2.0 + i * 2.5
+        idx = direct + round(delay_ms * sample_rate / 1000.0)
+        ir[idx] = 0.5 * (0.95**i)
+    res = detect_early_reflections(
+        ir,
+        sample_rate,
+        direct,
+        min_delay_ms=0.8,
+        max_delay_ms=max_delay_ms,
+        threshold_db=-40.0,
+        prominence_db=3.0,
+        direct_sound_confidence="high",
+    )
+    assert len(res.reflections) == MAX_REPORTED_REFLECTIONS
+    assert any(
+        f"only the {MAX_REPORTED_REFLECTIONS} strongest reflections are listed" in n
+        for n in res.notes
+    )
+    delays = [r.delay_ms for r in res.reflections]
+    assert delays == sorted(delays)
