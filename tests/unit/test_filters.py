@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 
 from reverbscope.core.filters import (
+    _SETTLING,
+    _SETTLING_CACHE_SIZE,
     apply_bandpass,
     band_fits,
     band_level_samples,
@@ -16,6 +18,26 @@ from reverbscope.core.filters import (
     settling_samples,
 )
 from reverbscope.errors import ConfigurationError
+
+
+def test_exact_mid_band_rejects_a_non_positive_fraction() -> None:
+    with pytest.raises(ConfigurationError, match="fraction must be positive"):
+        exact_mid_band_hz(0, 0)
+    with pytest.raises(ConfigurationError, match="fraction must be positive"):
+        exact_mid_band_hz(0, -3)
+
+
+def test_settling_cache_clears_when_full(sample_rate: int) -> None:
+    """The settling cache is bounded; filling it must not prevent later lookups."""
+    _SETTLING.clear()
+    sos = bandpass_sos(fractional_octave_band(1000.0), sample_rate)
+    # Fabricate distinct keys until the cache is full, then compute a real value.
+    for index in range(_SETTLING_CACHE_SIZE):
+        _SETTLING[(bytes([index % 256]), index, 0.99, 0.0)] = index
+    assert len(_SETTLING) == _SETTLING_CACHE_SIZE
+    settled = settling_samples(sos, sample_rate)
+    assert settled > 0
+    assert len(_SETTLING) == 1
 
 
 def test_octave_band_edges() -> None:
