@@ -6,7 +6,12 @@ import pytest
 from reverbscope.core.filters import iec_band
 from reverbscope.core.noise import (
     NOISE_FLOOR_DBFS,
+    PRE_SWEEP_SOURCE,
+    TAIL_SOURCE,
     QuietSegment,
+    _by_source,
+    _longest_run,
+    _nonzero_pieces,
     analyze_noise,
     peak_dbfs,
     quiet_segment_candidates,
@@ -15,6 +20,23 @@ from reverbscope.core.noise import (
     sweep_level_dbfs,
 )
 from reverbscope.models.configuration import DEFAULT_OCTAVE_BANDS_HZ
+
+
+def test_by_source_picks_the_matching_sentence() -> None:
+    assert _by_source(PRE_SWEEP_SOURCE, pre_sweep="p", tail="t", other="o") == "p"
+    assert _by_source(TAIL_SOURCE, pre_sweep="p", tail="t", other="o") == "t"
+    assert _by_source("mid-take", pre_sweep="p", tail="t", other="o") == "o"
+
+
+def test_longest_run_on_an_empty_mask() -> None:
+    assert _longest_run(np.array([False, False, False])) == (0, 0)
+
+
+def test_nonzero_pieces_merge_gaps_shorter_than_min_run() -> None:
+    x = np.array([0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float64)
+    assert _nonzero_pieces(x, min_run=2) == [(1, 6)]
+    assert _nonzero_pieces(x, min_run=1) == [(1, 3), (4, 6)]
+    assert _nonzero_pieces(np.zeros(5), min_run=1) == []
 
 
 def _whole(x: np.ndarray, source: str = "pre-sweep") -> QuietSegment:
