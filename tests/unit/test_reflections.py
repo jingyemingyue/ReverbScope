@@ -185,3 +185,50 @@ def test_peaks_outside_the_window_are_not_reported(sample_rate: int) -> None:
 def test_default_window_keeps_arrivals_on_both_bounds(sample_rate: int) -> None:
     res = _detect(_impulses(sample_rate, (0.8, 80.0)), sample_rate, 0)
     assert [r.delay_ms for r in res.reflections] == pytest.approx([0.8, 80.0], abs=0.2)
+
+
+def test_impulse_too_short_after_direct_sound_adds_note(sample_rate: int) -> None:
+    """When fewer than three samples remain after the direct sound, search stops."""
+    ir = np.zeros(2)
+    ir[0] = 1.0
+    res = detect_early_reflections(
+        ir,
+        sample_rate,
+        0,
+        min_delay_ms=0.0,
+        max_delay_ms=80.0,
+        threshold_db=-20.0,
+        prominence_db=6.0,
+        direct_sound_confidence="high",
+    )
+    assert res.reflections == ()
+    assert any("too short" in note for note in res.notes)
+
+
+def test_only_the_strongest_reflections_are_listed(sample_rate: int) -> None:
+    from reverbscope.core.reflections import MAX_REPORTED_REFLECTIONS
+
+    # Spaced impulses, each well above the diffuse floor, more than the report cap.
+    delays_ms = tuple(2.0 + i * 2.0 for i in range(MAX_REPORTED_REFLECTIONS + 5))
+    ir = np.zeros(int(0.25 * sample_rate))
+    ir[0] = 1.0
+    for index, delay_ms in enumerate(delays_ms):
+        # Descending levels so the "strongest" selection is deterministic.
+        ir[round(delay_ms * sample_rate / 1000.0)] = 0.6 * (0.95**index)
+    res = detect_early_reflections(
+        ir,
+        sample_rate,
+        0,
+        min_delay_ms=1.0,
+        max_delay_ms=80.0,
+        threshold_db=-40.0,
+        prominence_db=3.0,
+        direct_sound_confidence="high",
+        hold_ms=0.0,
+        trend_ms=0.5,
+    )
+    assert len(res.reflections) == MAX_REPORTED_REFLECTIONS
+    assert any("strongest reflections" in note for note in res.notes)
+    # Listed levels are non-increasing (strongest first after the cap trim).
+    levels = [item.relative_db for item in res.reflections]
+    assert levels == sorted(levels, reverse=True)
