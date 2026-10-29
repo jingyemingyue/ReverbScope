@@ -15,6 +15,23 @@ ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上�
 用户文档提供英文和简体中文两种版本，**以英文版为准**；每篇中文文档顶部都有指向英文原文的链接。开发者与内部文档（架构、ADR、研究笔记、依赖与许可证审查、代码来源、项目状态、发布计划）只提供英文版，其中发布计划和 v1.0 架构另有中文摘要。
 执行准则是例外：[GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) 是全项目的执行依据，[GUIDELINES.md](GUIDELINES.md) 是它的英文摘要。
 
+| 文档 | English | 简体中文 |
+| --- | --- | --- |
+| 项目简介 | [README.md](https://github.com/jingyemingyue/ReverbScope/blob/main/README.md) | [README.zh-CN.md](https://github.com/jingyemingyue/ReverbScope/blob/main/README.zh-CN.md) |
+| 安装 | [INSTALLATION.md](INSTALLATION.md) | [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) |
+| 用户指南 | [user-guide/en.md](user-guide/en.md) | [user-guide/zh-CN.md](user-guide/zh-CN.md) |
+| 用 DAW 测量 | [user-guide/daw-setup.md](user-guide/daw-setup.md) | [user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md) |
+| 兼容性 | [COMPATIBILITY.md](COMPATIBILITY.md) | [COMPATIBILITY.zh-CN.md](COMPATIBILITY.zh-CN.md) |
+| 桌面版、终端版与开发者工具 | [EDITIONS.md](EDITIONS.md) | [EDITIONS.zh-CN.md](EDITIONS.zh-CN.md) |
+| 与同类工具的比较 | [COMPARISON.md](COMPARISON.md) | [COMPARISON.zh-CN.md](COMPARISON.zh-CN.md) |
+| 音频设备与主机 API | [AUDIO_DEVICES.md](AUDIO_DEVICES.md) | [AUDIO_DEVICES.zh-CN.md](AUDIO_DEVICES.zh-CN.md) |
+| 硬件测试矩阵 | [HARDWARE_TESTS.md](HARDWARE_TESTS.md) | [HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md) |
+| 安全策略 | [SECURITY.md](https://github.com/jingyemingyue/ReverbScope/blob/main/SECURITY.md) | [SECURITY.zh-CN.md](https://github.com/jingyemingyue/ReverbScope/blob/main/SECURITY.zh-CN.md) |
+| 贡献指南 | [CONTRIBUTING.md](https://github.com/jingyemingyue/ReverbScope/blob/main/CONTRIBUTING.md) | 仅英文，欢迎用中文提 issue |
+| 验证方案 | [VALIDATION.md](VALIDATION.md) | 仅英文 |
+| 测量方法 | [MEASUREMENT_METHODOLOGY.md](MEASUREMENT_METHODOLOGY.md) | 仅英文 |
+| 更新日志 | [CHANGELOG.md](https://github.com/jingyemingyue/ReverbScope/blob/main/CHANGELOG.md) | 仅英文 |
+
 ## 中文用户文档
 
 - [项目简介（README.zh-CN.md）](https://github.com/jingyemingyue/ReverbScope/blob/main/README.zh-CN.md)
@@ -53,3 +70,9 @@ ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上�
 - [贡献指南](https://github.com/jingyemingyue/ReverbScope/blob/main/CONTRIBUTING.md)（欢迎在 issue 中使用中文）
 - [更新日志](https://github.com/jingyemingyue/ReverbScope/blob/main/CHANGELOG.md)
 - 其余开发者文档见[英文文档索引](index.md)。
+
+## 研究笔记
+
+- [文献](research/literature.md)
+- [参考仓库](research/reference_repos.md)
+- [依赖调研](research/dependencies.md)
