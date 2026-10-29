@@ -16,8 +16,12 @@
 | --- | --- | --- |
 | Apple 芯片，macOS 14+ | `RoomScope-Desktop-macOS-arm64.dmg` | `RoomScope-Terminal-macOS-arm64.tar.gz` |
 | Intel Mac，macOS 14+ | `RoomScope-Desktop-macOS-x86_64.dmg` | `RoomScope-Terminal-macOS-x86_64.tar.gz` |
-| Windows 10/11 x64 | `RoomScope-Desktop-Windows-x64-Setup.exe` 或 `RoomScope-Desktop-Windows-x64.zip` | `RoomScope-Terminal-Windows-x64.zip` |
+| Windows 10/11 x64 | `RoomScope-Desktop-Windows-x64-Setup.exe` 或 `RoomScope-Desktop-Windows-x64.zip`（仅此旧 beta） | `RoomScope-Terminal-Windows-x64.zip`（仅此旧 beta） |
 | Linux x86_64，glibc 2.39+ | `RoomScope-Desktop-Linux-x86_64.tar.gz` | `RoomScope-Terminal-Linux-x86_64.tar.gz` |
+
+上表 Windows 行是 **v0.5.0b1 的历史文件名**。作者暂时不维护 Windows 版本；新的
+ReverbScope Release 不再提供 Windows 安装程序或 zip。源代码在仓库里，可以自行构建 —
+见[在 Windows 上从源代码构建](INSTALLATION.zh-CN.md#在-windows-上从源代码构建)。
 
 这些是构建目标，不等于已验证的声卡/驱动组合。同一发布中还需下载 `SHA256SUMS`。
 `cyclonedx.sbom.json` 和 `generated-bundle.lock` 说明该包的依赖；不能拿当前源码的锁文件或
@@ -45,9 +49,10 @@ Get-FileHash .\RoomScope-Desktop-Windows-x64-Setup.exe -Algorithm SHA256
 - **Mac 桌面版：** 打开 DMG，把 **RoomScope** 拖到应用程序，推出 DMG，再从应用程序启动。
   未签名提示出现后，在系统设置 → 隐私与安全性 → 仍要打开中处理；无需关闭 Gatekeeper 或 SIP。
   以后真实录音时允许麦克风权限。此应用**未经 Apple 公证**。
-- **Windows 桌面版：** 运行 Setup 后从开始菜单打开 RoomScope，或完整解压 ZIP 后启动
-  `roomscope-gui.exe`。SmartScreen 可能显示“更多信息 → 仍要运行”；若系统策略禁止，报告阻拦，
-  不要关闭策略。这些包没有 Authenticode 签名。
+- **Windows 桌面版（仅 v0.5.0b1 资产）：** 该旧 beta 的 Assets 里仍列有 Setup 和 ZIP。
+  新 Release 没有这些文件。当前测试请优先用 macOS 或 Linux，或[在 Windows 上从源代码构建](INSTALLATION.zh-CN.md#在-windows-上从源代码构建)。
+  若打开残留的 v0.5.0b1 Windows 文件，SmartScreen 可能显示“更多信息 → 仍要运行”；若系统策略禁止，报告阻拦，
+  不要关闭策略。那些包没有 Authenticode 签名。
 - **Linux 桌面版：** 完整解压，安装[该版本安装文档](https://github.com/jingyemingyue/ReverbScope/blob/v0.5.0b1/docs/INSTALLATION.md)
   列出的 PortAudio 与 Qt 系统库，再运行 `./roomscope/roomscope-gui`；中文图表需要 CJK 字体。
 - **终端版：** 完整解压。Mac/Linux 运行 `./roomscope-terminal/roomscope demo`；Windows 打开

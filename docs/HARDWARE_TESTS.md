@@ -117,11 +117,12 @@ run" with a reason is as useful as a "Pass".
    from 20 Hz to 20 kHz; start low and raise it until the sweep is clearly
    audible at the microphone, never loud. ReverbScope refuses levels above
    −12 dBFS unless you confirm it.
-2. Install ReverbScope from the latest release (the
-   [user guide](user-guide/en.md#install) has the steps per system). The
-   builds are not signed yet: on macOS open it once with **System Settings ▸
-   Privacy & Security ▸ Open Anyway**; on Windows click **More info ▸ Run
-   anyway** in SmartScreen; on Linux install `libportaudio2` first. On macOS,
+2. Install ReverbScope from the latest release on **macOS** or **Linux** (the
+   [user guide](user-guide/en.md#install) has the steps). The author does not
+   maintain a Windows edition for now; on Windows, [build from
+   source](INSTALLATION.md#build-on-windows-from-source). Official builds are
+   not signed yet: on macOS open it once with **System Settings ▸ Privacy &
+   Security ▸ Open Anyway**; on Linux install `libportaudio2` first. On macOS,
    allow microphone access when asked (**System Settings ▸ Privacy &
    Security ▸ Microphone**).
 3. Connect the interface, set it up in its own control panel as you
@@ -158,9 +159,10 @@ developer tools** and a restart) also offers **Latency: Low / High** and, per sy
 exclusive mode (Windows) or letting ReverbScope set the device rate (macOS);
 record them if you change them. ASIO is not used by the bundles.
 
-**Windows.** The bundles use WASAPI and carry no ASIO. In the device list pick
-the interface's *Windows WASAPI* entry, and before each sample-rate row set its
-*Default Format* in the Windows Sound control panel to that rate
+**Windows.** There is no official Windows download; a local source build uses
+WASAPI and carries no ASIO. In the device list pick the interface's *Windows
+WASAPI* entry, and before each sample-rate row set its *Default Format* in the
+Windows Sound control panel to that rate
 ([user guide, per platform](user-guide/en.md#per-platform)). Report the
 `audio stream:` line (`blocksize`, `latency_s`) instead of an ASIO
 control-panel buffer. A rate that fails only because the Default Format was

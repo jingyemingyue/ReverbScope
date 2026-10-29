@@ -31,22 +31,24 @@ computers without a desktop.
 | macOS 14+, Apple silicon (primary) | `ReverbScope-Desktop-macOS-arm64.dmg` | Drag ReverbScope to Applications, then open it |
 | macOS 14+, Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | Drag ReverbScope to Applications, then open it |
 | Linux x86_64 | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz && reverbscope/reverbscope-gui` |
+| Windows 10/11 x64 | No official installer or zip | The author does not maintain a Windows edition for now; source stays in the repository — [build on Windows from source](../INSTALLATION.md#build-on-windows-from-source) |
 
 | System | Terminal Edition | Start ReverbScope |
 | --- | --- | --- |
 | macOS 14+, Apple silicon | `ReverbScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 | macOS 14+, Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 | Linux x86_64 | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
+| Windows 10/11 x64 | No official terminal zip | [Build on Windows from source](../INSTALLATION.md#build-on-windows-from-source) |
 
-The Windows and Linux Desktop Edition bundles carry two programs: the desktop
-app `reverbscope-gui` and the command-line tool `reverbscope` (run `reverbscope --help`
-in a terminal). On macOS the app's executable is also the CLI when it is given
-arguments: `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope --help`.
+The Linux Desktop Edition bundle carries two programs: the desktop app
+`reverbscope-gui` and the command-line tool `reverbscope` (run
+`reverbscope --help` in a terminal). On macOS the app's executable is also
+the CLI when it is given arguments:
+`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope --help`.
 
-**The bundles are not signed for distribution** until the maintainer holds
-signing identities (the macOS app has an ad hoc signature and is not
-notarized; the Windows files have no Authenticode signature), so the
-operating system warns the first time:
+**The official bundles are not signed for distribution** until the maintainer
+holds signing identities (the macOS app has an ad hoc signature and is not
+notarized), so the operating system warns the first time:
 
 * **macOS:** open the app once; when macOS says it cannot verify it, choose
   *Done*, then System Settings → Privacy & Security → *Open Anyway* (the
@@ -57,9 +59,9 @@ operating system warns the first time:
   bundle Info.plist). The bundled NumPy and SciPy need macOS 14 or later;
   the DMGs were built and started on macOS 15 (Intel) and 26 (Apple silicon)
   CI runners only.
-* **Windows:** SmartScreen may warn; choose “More info” → “Run anyway”. The
-  installer installs for the current user and needs no administrator rights;
-  uninstall from Settings → Apps.
+* **Windows:** there is no official installer or zip in new releases, so there
+  is no SmartScreen “Run anyway” step for a download. Source remains; see
+  [build on Windows from source](../INSTALLATION.md#build-on-windows-from-source).
 * **Linux:** the tarball needs the system's PortAudio, OpenGL/EGL and
   XCB libraries (on Debian / Ubuntu: `sudo apt install libportaudio2 libegl1
   libgl1 libxkbcommon-x11-0 libxcb-cursor0`), and a CJK font such as
@@ -150,7 +152,8 @@ synthetic in the measurement list.
 `reverbscope devices` prints each device with its host API in a *Host API* column; the
 desktop app shows `[index] name (host API)`.
 
-* **Windows.** Every interface is listed once per host API. Prefer
+* **Windows** (local source builds only; there is no official Windows
+  download). Every interface is listed once per host API. Prefer
   the *Windows WASAPI* entry (or *Windows WDM-KS*); avoid *MME* and
   *Windows DirectSound*, which pass through the Windows mixer. In shared
   mode WASAPI only runs at the device's shared-mode format

@@ -168,7 +168,7 @@ ReverbScope 回答录音师按下录音键之前会问的问题：
 
 现在最有用的事，是在真实的音频接口或真实的 DAW 上跑一遍，然后告诉我发生了什么。失败的检查和通过的一样有用。
 
-1. 安装一个构建（[下载](#下载)；出现 Gatekeeper 或 SmartScreen 警告是正常的）。先从[公开 beta](docs/PUBLIC_TESTING.zh-CN.md) 开始。
+1. 安装一个构建（[下载](#下载)；macOS 上出现 Gatekeeper 警告是正常的）。先从[公开 beta](docs/PUBLIC_TESTING.zh-CN.md) 开始。Windows 作者暂时不维护 — [从源代码构建](docs/INSTALLATION.zh-CN.md#在-windows-上从源代码构建)。
 2. 在终端里运行一次 `reverbscope demo`，看看结果是什么样。
 3. 把音箱音量调低，然后用你的接口和话筒运行**独立模式**，或者通过 DAW 运行**通用 DAW 模式**
    （[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。

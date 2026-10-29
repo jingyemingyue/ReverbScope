@@ -227,8 +227,9 @@ What works, dated: [docs/STATUS.md](docs/STATUS.md). What comes next:
 The most useful thing anyone can do now is run it on a real interface or in a
 real DAW and report what happened. A failed check is as useful as a pass.
 
-1. Install a build ([Download](#download); the Gatekeeper or SmartScreen
-   warning is expected). Start with the [public beta](docs/PUBLIC_TESTING.md).
+1. Install a build ([Download](#download); the Gatekeeper warning on macOS is
+   expected). Start with the [public beta](docs/PUBLIC_TESTING.md). Windows is
+   temporarily unmaintained — [build from source](docs/INSTALLATION.md#build-on-windows-from-source).
 2. In a terminal, run `reverbscope demo` once to see what a result looks like.
 3. Turn the monitors down, then run **Standalone Mode** with your interface
    and a microphone, or **Universal DAW Mode** through your DAW

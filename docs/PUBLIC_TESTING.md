@@ -17,8 +17,13 @@ Open **Assets** on v0.5.0b1. Bundles need neither Python nor Git.
 | --- | --- | --- |
 | Apple silicon, macOS 14+ | `RoomScope-Desktop-macOS-arm64.dmg` | `RoomScope-Terminal-macOS-arm64.tar.gz` |
 | Intel Mac, macOS 14+ | `RoomScope-Desktop-macOS-x86_64.dmg` | `RoomScope-Terminal-macOS-x86_64.tar.gz` |
-| Windows 10/11 x64 | `RoomScope-Desktop-Windows-x64-Setup.exe` or `RoomScope-Desktop-Windows-x64.zip` | `RoomScope-Terminal-Windows-x64.zip` |
+| Windows 10/11 x64 | `RoomScope-Desktop-Windows-x64-Setup.exe` or `RoomScope-Desktop-Windows-x64.zip` (shipped with this old beta only) | `RoomScope-Terminal-Windows-x64.zip` (this old beta only) |
 | Linux x86_64, glibc 2.39+ | `RoomScope-Desktop-Linux-x86_64.tar.gz` | `RoomScope-Terminal-Linux-x86_64.tar.gz` |
+
+The Windows rows above are **historical filenames for v0.5.0b1**. The author
+does not maintain a Windows edition for now; new ReverbScope releases do not
+ship Windows installers or zips. Source stays in the repository — see
+[Build on Windows from source](INSTALLATION.md#build-on-windows-from-source).
 
 These are build targets, not verified interface/driver combinations. Also download
 `SHA256SUMS` from **the same release**. `cyclonedx.sbom.json` and
@@ -50,10 +55,12 @@ Checksums establish file integrity; they are not a signing/notarization claim.
   System Settings → Privacy & Security → Open Anyway after the initial attempt.
   No Gatekeeper or SIP change is needed. Allow microphone access when you later
   perform a real measurement. The app has **not** been Apple-notarized.
-- **Windows Desktop:** run Setup, then Start → RoomScope; or extract the entire
-  ZIP and start `roomscope-gui.exe`. SmartScreen may show More info → Run anyway;
-  if policy blocks it, report the block rather than disabling the policy.
-  These builds have no Authenticode signature.
+- **Windows Desktop (v0.5.0b1 assets only):** that old beta still lists Setup and
+  ZIP files under Assets. New releases do not. Prefer macOS or Linux for current
+  testing, or [build on Windows from source](INSTALLATION.md#build-on-windows-from-source).
+  If you open a leftover v0.5.0b1 Windows file, SmartScreen may show More info →
+  Run anyway; if policy blocks it, report the block rather than disabling the
+  policy. Those builds have no Authenticode signature.
 - **Linux Desktop:** extract the entire archive, install PortAudio and the Qt
   system libraries listed in the [versioned installation guide](https://github.com/jingyemingyue/ReverbScope/blob/v0.5.0b1/docs/INSTALLATION.md),
   then run `./roomscope/roomscope-gui`. A CJK font is needed for Chinese charts.
