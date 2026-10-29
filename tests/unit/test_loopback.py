@@ -6,15 +6,25 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from reverbscope.core.deconvolution import deconvolve, locate_impulse_response
+from reverbscope.core.deconvolution import (
+    LocatedImpulseResponse,
+    deconvolve,
+    locate_impulse_response,
+)
 from reverbscope.core.loopback import (
     COMPENSATION_TOLERANCE_DB,
     LOOPBACK_FR_REFERENCE,
     MAX_ELECTRICAL_SETTLE_MS,
     MIN_LATE_PEAK_DROP_DB,
+    LoopbackAssessment,
+    _two_sided_frame,
     assess_loopback,
+    compensate,
     energy_settling_ms,
     late_peak_drop_db,
+    loopback_fir,
+    make_loopback_result,
+    noise_power,
 )
 from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
 from reverbscope.core.sweep import inverse_filter, measurement_signal, normalisation_band_hz
@@ -537,3 +547,130 @@ def test_the_channel_chosen_beside_a_loopback_is_numbered_from_one(
     assert (channel, reported) == (2, 0) and warning is not None
     assert "channel 3 of 3 (highest RMS excluding loopback channel 1)" in warning
     assert "--channel 2, counted from 0" in warning
+
+
+def _located(
+    *,
+    peak_index: int,
+    valid_length_samples: int,
+    pre_peak_margin_db: float | None,
+    sample_rate: int = 48000,
+) -> LocatedImpulseResponse:
+    samples = np.zeros(max(16, valid_length_samples), dtype=np.float64)
+    samples[0] = 1.0
+    return LocatedImpulseResponse(
+        samples=samples,
+        direct_index=0,
+        pre_delay_samples=0,
+        peak_index=peak_index,
+        peak_value=1.0,
+        valid_length_samples=valid_length_samples,
+        sweep_start_index_in_recording=0,
+        sweep_start_raw_index=0,
+        pre_peak_margin_db=pre_peak_margin_db,
+        truncated_by_max_length=False,
+    )
+
+
+def test_noise_power_is_zero_when_the_estimate_region_is_too_short() -> None:
+    sample_rate = 48000
+    h = np.zeros(100)
+    h[10] = 1.0
+    assert noise_power(h, 10, sample_rate, end_index=20) == 0.0
+
+
+def test_settling_and_late_peak_return_none_on_impossible_records() -> None:
+    sample_rate = 48000
+    short = np.zeros(50)
+    short[5] = 1.0
+    assert energy_settling_ms(short, 5, sample_rate, end_index=20) is None
+    assert late_peak_drop_db(short, 5, sample_rate) is None
+
+    long_silent = np.zeros(sample_rate // 5)
+    assert energy_settling_ms(long_silent, 100, sample_rate) is None
+
+    zero_peak = np.zeros(sample_rate // 10)
+    zero_peak[1000:2000] = 0.1
+    assert late_peak_drop_db(zero_peak, 100, sample_rate) is None
+
+
+def test_loopback_fir_falls_back_when_the_nominal_window_is_tiny() -> None:
+    fir, peak = loopback_fir(np.array([0.1, 1.0, 0.1]), 1, 48000)
+    assert fir.shape[0] == 3
+    assert peak == 1
+    assert fir[peak] == pytest.approx(1.0)
+
+
+def test_medium_confidence_loopback_is_refused_with_a_named_reason() -> None:
+    sample_rate = 48000
+    h = np.zeros(sample_rate)
+    h[1000] = 1.0
+    assessment = assess_loopback(
+        _located(peak_index=1000, valid_length_samples=sample_rate - 1000, pre_peak_margin_db=15.0),
+        h,
+        sample_rate,
+        clipped=False,
+    )
+    assert assessment.accepted is False
+    assert "confidence medium" in (assessment.reason or "")
+    assert "electrical return" in (assessment.reason or "")
+
+
+def test_a_loopback_too_short_after_the_peak_is_refused() -> None:
+    sample_rate = 48000
+    h = np.zeros(sample_rate)
+    h[1000] = 1.0
+    assessment = assess_loopback(
+        _located(peak_index=1000, valid_length_samples=10, pre_peak_margin_db=40.0),
+        h,
+        sample_rate,
+        clipped=False,
+    )
+    assert assessment.accepted is False
+    assert assessment.settle_ms is None
+    assert "too short after the peak" in (assessment.reason or "")
+
+
+def test_two_sided_frame_rejects_a_peak_outside_the_fir() -> None:
+    with pytest.raises(ValueError, match="fir_peak_index must index into fir"):
+        _two_sided_frame(np.array([1.0, 2.0]), 5, 16)
+
+
+def test_compensate_with_a_sub_hertz_band_still_returns_finite_samples() -> None:
+    """When the regularisation skirts collapse (ref_lo >= ref_hi), compensate
+    falls back to the excitation band edges instead of dividing by zero."""
+    from reverbscope.models.result import ExcitationBand
+
+    h = np.zeros(4800)
+    h[100] = 1.0
+    fir = np.zeros(64)
+    fir[8] = 1.0
+    band = ExcitationBand(low_hz=0.5, high_hz=0.7, source="settings")
+    out = compensate(h, fir, 48000, band, fir_peak_index=8)
+    assert np.all(np.isfinite(out))
+    assert out.shape == h.shape
+
+
+def test_path_delay_bound_is_withheld_when_the_microphone_leads() -> None:
+    sample_rate = 48000
+    located = _located(peak_index=2000, valid_length_samples=5000, pre_peak_margin_db=40.0)
+    result = make_loopback_result(
+        channel=0,
+        assessment=LoopbackAssessment(
+            accepted=False,
+            reason="unused",
+            located=located,
+            fir=None,
+            settle_ms=None,
+            drop_db=None,
+            notes=(),
+        ),
+        sample_rate=sample_rate,
+        reference_length=1000,
+        mic_peak_index=1500,
+        temperature_c=20.0,
+        compensation_applied=False,
+    )
+    assert result.path_delay_ms is not None and result.path_delay_ms < 0.0
+    assert result.distance_upper_bound_m is None
+    assert any("precedes the loopback peak" in n for n in result.notes)
