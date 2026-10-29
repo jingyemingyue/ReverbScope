@@ -185,3 +185,46 @@ def test_peaks_outside_the_window_are_not_reported(sample_rate: int) -> None:
 def test_default_window_keeps_arrivals_on_both_bounds(sample_rate: int) -> None:
     res = _detect(_impulses(sample_rate, (0.8, 80.0)), sample_rate, 0)
     assert [r.delay_ms for r in res.reflections] == pytest.approx([0.8, 80.0], abs=0.2)
+
+
+def test_detect_early_reflections_notes_when_the_ir_is_too_short() -> None:
+    ir = np.zeros(10)
+    ir[2] = 1.0
+    res = detect_early_reflections(
+        ir,
+        48_000,
+        2,
+        min_delay_ms=5.0,
+        max_delay_ms=80.0,
+        threshold_db=-30.0,
+        prominence_db=3.0,
+        direct_sound_confidence="high",
+    )
+    assert res.reflections == ()
+    assert any("too short after the direct sound" in note for note in res.notes)
+
+
+def test_detect_early_reflections_keeps_only_the_strongest_candidates() -> None:
+    from reverbscope.core.reflections import MAX_REPORTED_REFLECTIONS
+
+    sample_rate = 48_000
+    ir = np.zeros(int(0.1 * sample_rate))
+    ir[100] = 1.0
+    for i, delay_ms in enumerate(np.linspace(5.0, 50.0, 50)):
+        idx = 100 + int(delay_ms * sample_rate / 1000.0)
+        if idx < ir.shape[0]:
+            ir[idx] = 0.4 * (0.95**i)
+    res = detect_early_reflections(
+        ir,
+        sample_rate,
+        100,
+        min_delay_ms=5.0,
+        max_delay_ms=55.0,
+        threshold_db=-40.0,
+        prominence_db=0.5,
+        direct_sound_confidence="high",
+        hold_ms=0.05,
+        trend_ms=1.0,
+    )
+    assert len(res.reflections) == MAX_REPORTED_REFLECTIONS
+    assert any("strongest reflections are listed" in note for note in res.notes)
