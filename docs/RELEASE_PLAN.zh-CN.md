@@ -146,10 +146,20 @@ Windows：安装程序和可执行文件没有 Authenticode 签名，首次运�
 README 的 **下载** 按钮指向的就是 v0.4.1。在 `v0.4.1` 还没有 tag 之前，`main` 上的每次相关运行都会重建草稿，所以草稿里的
 文件总是来自最新 `main` 提交的同一次运行；由于这个版本号从未发布过，版本仍为 0.4.1。
 
-2026-09-27 在候选构建（Release 运行 #23，PR #21 head `b753e17`）上核对了：全部校验和；wheel 在全新虚拟环境中（非可编辑安装）
-的 CLI、假后端测量、中文输出和 GUI 冒烟；源码包能构建出相同的 wheel；`twine check`；两个 DMG 的内容、架构、Info.plist 和
-动态库路径（在 macOS 上的挂载、安装和启动由工作流在 macOS 26 / 15 运行器上完成，不是真人）；Windows ZIP 的结构（只有工作流在
-Windows 运行器上启动过）；Linux 包在空环境中的冒烟；密钥与私人路径扫描；各处版本号均为 0.4.1。详见英文版 §3c 和 STATUS 快照 30。这些检查针对 `b753e17` 构建出的文件，文件名也是那次运行的旧名字（当时还没有桌面版 / 终端版之分，也没有终端版压缩包）。之后到 #24 的 head `cf27b30` 为止又加入了 14 个提交（包括命令行输出改进 `0f5418e` / `f5eb961`、并入 #23 首次使用体验的 `cd45bf9`、桌面版 / 终端版拆分 `bcea79a`、发布文件修正 `cccc682` / `f893cc7` 和 `cf27b30` 的导出器修复），由 CI 和 Release 工作流在各平台上的冒烟测试覆盖（最近一次：`c5fe692` 上的 Release #34，STATUS 快照 32），不在这次下载检查之内：发布前请在草稿文件上重复 wheel 检查和下面的第 3 步。
+2026-09-27 在候选构建（Release 运行 #23，PR #21 head `b753e17`，构建提交 `7cb1419`；STATUS 快照 30）上核对了如下文件。文件名是那次运行的旧名字（当时还没有桌面版 / 终端版之分，也没有终端版压缩包）。之后到 #24 的 head `cf27b30` 为止又加入了 14 个提交，由 CI 和 Release 工作流在各平台上的冒烟测试覆盖（最近一次：`c5fe692` 上的 Release #34，STATUS 快照 32），不在这次下载检查之内：发布前请在草稿文件上重复 wheel 检查和下面的第 3 步。
+
+| 文件 | 检查 | 结果 |
+| --- | --- | --- |
+| 全部压缩包 | 对照各 `SHA256SUMS-<OS>-<ARCH>` 做 `sha256sum -c` | OK（5/5） |
+| `reverbscope-0.4.1-py3-none-any.whl` | 全新虚拟环境、非可编辑安装：`reverbscope --version`、`--help`、`--backend fake measure`、`sweep`、`analyze`、`show`、`--lang zh_CN show`；带 `[gui]`：离屏 `gui --smoke`，`reverbscope-gui` 保持运行；不带 `[gui]`：`reverbscope gui`（当时会 traceback，本版已修） | OK |
+| `reverbscope-0.4.1.tar.gz` | 能构建出同样 90 个文件的 wheel；`pip install "./reverbscope-0.4.1.tar.gz[gui]"` 安装 `reverbscope` / `reverbscope-gui` 与编译后的 zh_CN 目录 | OK |
+| `twine check` | wheel 与 sdist 元数据 | PASSED |
+| `ReverbScope-macos-arm64.dmg`、`ReverbScope-macos-x86_64.dmg` | 在 Linux 上用 7-Zip 打开：`ReverbScope.app` + `Applications` 链接；Mach-O arm64 / x86_64；`Info.plist` 0.4.1、`LSMinimumSystemVersion` 14.0、麦克风用途文案；`build_info.json` 写明构建提交；313 个 Mach-O，无 `/usr/lib` / `/System` 之外的绝对加载路径 | OK；在 macOS 上的挂载、安装和启动由工作流的 `check_macos_dmg.py` 在 macOS 26 / 15 运行器完成，不是真人 |
+| `reverbscope-windows-x64.zip` | 顶层 `reverbscope-gui.exe`（PE32+ GUI）、`reverbscope.exe`（PE32+ 控制台）、`_internal\`、`THIRD_PARTY_LICENSES\` | OK；仅由工作流在 Windows 运行器上启动过 |
+| `ReverbScope-setup.exe` | 由工作流静默安装、冒烟测试并卸载 | OK（仅运行器） |
+| `reverbscope-linux-x86_64.tar.gz` | 空环境中 `smoke_bundle.py --require-gui-launcher --expect-commit 7cb1419…`（`PATH` 上无虚拟环境） | OK；需要 glibc 2.39 |
+| 密钥与私人路径 | 安装包与 sdist 中的 token / 私钥模式（仅 Qt TLS 插件内的 PEM 头字符串）；sdist 中的家目录路径是测试夹具（`/home/me`、`/home/anna`） | 未发现 |
+| 版本号 | `pyproject.toml`、`reverbscope --version`、wheel / sdist 名、`Info.plist`、`build_info.json` | 均为 0.4.1 |
 
 **发布清单（维护者的操作）：**
 
@@ -163,10 +173,18 @@ Windows 运行器上启动过）；Linux 包在空环境中的冒烟；密钥与
 
 ### 3d. PyPI 就绪情况（2026-09-27 检查，未发布）
 
-0.4.x 不上传 PyPI；第一批公开测试者通过 GitHub Releases 获取。`reverbscope` 这个名字在 2026-09-27 仍未被占用（未保留）；wheel 和
-源码包的元数据通过 `twine check`；可信发布已在 `release.yml` 中接好，但还缺 PyPI 端的 trusted publisher、带审批人的 `pypi` 环境和
-仓库变量；`pypa/gh-action-pypi-publish` 在可信发布下默认上传 PEP 740 证明。**尚未就绪：** `README.md` 里有 38 个相对链接和一张截图，在
-pypi.org 上会失效，首次上传前需要一份使用绝对链接的 README。在真正发布到 PyPI 之前，任何文档都不能让用户运行 `pip install reverbscope`。
+0.4.x 不上传 PyPI；第一批公开测试者通过 GitHub Releases 获取。就绪与否：
+
+| 项 | 状态 |
+| --- | --- |
+| 名称 `reverbscope` | 2026-09-27 在 PyPI 上仍空闲（`/pypi/reverbscope/json` 返回 404）。未保留；首次上传时 PyPI 仍可能拒绝该名。 |
+| 元数据 | wheel 与 sdist 的 `twine check` 通过；许可证表达式 `Apache-2.0`，附带 `LICENSE` / `NOTICE`；`Requires-Python >=3.12`；项目 URL 已设。分类器仍为 *Pre-Alpha*。 |
+| PyPI 上的 README | **尚未就绪。** `readme = "README.md"` 含 38 个相对链接和截图，在 pypi.org 上会失效。首次上传前需提供绝对链接的 README（或简短的 PyPI 专用说明）。 |
+| Wheel / sdist | 纯 Python wheel，由 Release 工作流的 `package` 作业构建；sdist 能重建同一 wheel（§3c）。 |
+| 可信发布 | 已在 `release.yml` 接好（`pypi` 作业：`environment: pypi`、`id-token: write`、按 SHA 固定的 `pypa/gh-action-pypi-publish`），门禁为 `v*` tag **且** `vars.REVERBSCOPE_PUBLISH_PYPI == 'true'`。仍缺：PyPI 端 trusted publisher、带必需审批人的 `pypi` 环境、该变量。 |
+| 出处证明 | 在可信发布下 `pypa/gh-action-pypi-publish` 默认上传 PEP 740 证明；无需额外配置。 |
+
+在真正有版本上架 PyPI 之前，任何文档都不能让用户运行 `pip install reverbscope`；INSTALLATION 已写明，且未装 PySide6 时 `reverbscope gui` 会建议 `pip install "PySide6_Essentials>=6.6,<6.12"`，而不是去装尚未上架的包的 extra。
 
 ## 4. 每次发布都适用的门禁
 
@@ -174,11 +192,31 @@ CI 全绿（lint、mypy、文档链接检查、文档站点构建、`check_src_s
 
 ## 5. 仍待维护者决定
 
-公开仓库（已于 2026-09-24 公开；§9.1 清单中其余仓库设置未在此核对）；Apple Developer ID + 公证、Windows 签名，或明确决定不签名发 1.0；PyPI 注册 `reverbscope`、配可信发布、建 `pypi` 环境、设 `REVERBSCOPE_PUBLISH_PYPI=true`、为 PyPI 准备使用绝对链接的 README（§3d）；把 v0.4.1 草稿发布为第一个公开预发布版本（已于 2026-09-30 完成：预发布、非 latest，tag `v0.4.1` 在 `d97822a`，14 个附件；自己电脑上的安装仍未做）；验证活动的房间、参考工具（REW 只作对比仪器）和执行人；是否要求 DCO 签署；Dependabot 的 #3 / #4 等 v0.4.1 发布之后再处理（收尾期间不升级 GitHub Actions 的大版本），届时在它重新 rebase 到 SHA 固定的工作流并且 CI 绿之后合并。
+| 决定 | 最迟需要 | 状态 |
+| --- | --- | --- |
+| 公开仓库（ARCHITECTURE_V1.md §9.1：描述与 topics、`main` 分支保护、CODEOWNERS、私密漏洞报告、标签、Discussions、置顶路线图） | 1.0.0rc1（建议在第一个候选版就做，以便外部测试） | 仓库自 2026-09-24 公开；CODEOWNERS 已有；其余为仓库设置，此处未核对（issue 表单使用 `hardware-report`、`daw-report` 标签，仅在标签存在时 GitHub 才会加上） |
+| Apple Developer ID + 公证、Windows Authenticode；或明确决定不签名发 1.0 并写进文档 | 1.0.0rc1 | 未定；0.x 安装包按设计不签名 |
+| PyPI：注册 `reverbscope`、配可信发布、建带必需审批人的 `pypi` 环境、设 `REVERBSCOPE_PUBLISH_PYPI=true`；为 PyPI 准备绝对链接的 README | 维护者希望上架的第一个版本（最早 0.5.0） | 未定；就绪情况见 §3d；此前工作流保持关闭 |
+| 把 v0.4.1 草稿发布为第一个公开预发布版本 | 已完成 | 2026-09-30 以预发布（非 latest）发布，tag `v0.4.1` 在 `d97822a`，14 个附件。自己电脑上的安装（清单第 3 步）仍未做 |
+| 验证活动：房间、参考仪器（REW 只作对比）、谁来跑 | 1.0.0rc1 | 未定；近期没有硬件 |
+| 是否要求 DCO 签署 | 公开仓库时 | 未定 |
+| Dependabot PR #3 / #4（actions/checkout 4→7、actions/setup-python 5→7） | v0.4.1 发布之后 | 收尾期间先不动，以免发布工作流大版本变化；之后在 Dependabot rebase 到 SHA 固定工作流且 CI 绿时合并 |
 
 ## 6. 2026-09-24 审查后续（issue）
 
-#9 频响对比先插值再平滑（混叠）；#10 `analyze-ir` 无测试；#11 会话加载跟随绝对路径；#12 环回 FIR 窗把补偿后的响应提前约 5 ms；#13 PortAudio 在实时回调里报进度、回调异常被吞；#14 中文目录不全、安全提示未翻译、`.mo` 未随包发布；#15 ISO 3382-2 表 1 未注明来源、engineering 等级不检查话筒数；#16 `check_src_safety.py` 漏检、覆盖率数字未记录。#17 打包门禁按文件名认不出虚拟键盘的 QML 插件。
+合并里程碑 PR 时开出；都不阻断 0.4.0，若干项阻断 0.5.0（见 §2）。九项均在 0.4.1 修好（CHANGELOG `[0.4.1]`）；对应 PR 合并后关闭 issue。
+
+| Issue | 范围 | 严重程度 | 0.4.1 |
+| --- | --- | --- | --- |
+| #9 | `compare`：频响差值在平滑前对原始频谱插值 | 中 | 先在原生网格上平滑 |
+| #10 | `analyze_impulse_response` / `analyze-ir` 无测试 | 中 | 已测；顺带修了二次峰值搜索与非 IR 输入 |
+| #11 | 会话加载跟随绝对成员路径 | 低（安全） | 成员限制在会话文件夹内 |
+| #12 | 环回 FIR 窗把补偿后的响应提前约 5 ms | 中 | FIR 原点取峰值、线性除法、在有效记录上扣除噪声后的建立时间 |
+| #13 | PortAudio：在实时回调里报进度；回调异常被吞 | 中 | 轮询进度、错误使测量失败、先校验声道 |
+| #14 | 中文目录不全；安全提示未翻译；`.mo` 未随包发布 | 对 i18n 声称偏高 | 全部 profile、上下文、带哈希的 `.mo` 进 wheel |
+| #15 | ISO 3382-2 表 1：来源未注明；engineering 等级忽略话筒数 | 中 | 从表标准读入表 1，逐行检查 |
+| #16 | `check_src_safety.py` 漏检；覆盖率数字未记录 | 低 | 别名 / 动态导入；记录 90.20% |
+| #17 | 打包门禁认不出虚拟键盘的 QML 插件 | 发任何安装包前必须关 | 按目录匹配 QML；任何 QML 树都失败 |
 
 **更新（2026-09-24 稍晚）：** 以上九项都已在分支 `v0.4.1-review-followups` 修好（版本号 0.4.1，每项都有在 0.4.0 上会失败的合成测试，见 CHANGELOG `[0.4.1]`）。因为 #17 必须在发布任何安装包之前关闭（§4），0.4.0 不再单独发 Release：这个 PR 在 CI 全绿后合并，第一个草稿 Release 就是 v0.4.1。
 
