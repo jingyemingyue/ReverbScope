@@ -180,3 +180,29 @@ def test_audio_signal_keeps_its_sample_rate_as_a_python_int() -> None:
         AudioSignal(samples=np.zeros(8), sample_rate=44100.5)
     with pytest.raises(InvalidAudioError, match="integer"):
         AudioSignal(samples=np.zeros(8), sample_rate=True)  # type: ignore[arg-type]
+    with pytest.raises(InvalidAudioError, match="positive"):
+        AudioSignal(samples=np.zeros(8), sample_rate=0)
+    with pytest.raises(InvalidAudioError, match="1-D"):
+        AudioSignal(samples=np.zeros((4, 2, 2)), sample_rate=48000)
+
+
+def test_calibration_round_trips_through_to_dict() -> None:
+    from reverbscope.models.calibration import CalibrationRecord
+
+    record = CalibrationRecord(
+        reference_dbfs=-20.0,
+        reference_db_spl=94.0,
+        method="pistonphone",
+        date="2026-01-01",
+        notes="booth",
+    )
+    assert CalibrationRecord.from_dict(record.to_dict()) == record
+
+
+def test_project_treats_missing_positions_as_empty() -> None:
+    from reverbscope.models.project import Project
+
+    project = Project.from_dict(
+        {"schema_version": 1, "name": "Booth", "notes": "", "reverbscope_version": ""}
+    )
+    assert project.positions == ()
