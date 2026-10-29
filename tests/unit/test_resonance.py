@@ -32,6 +32,42 @@ def _detect(ir: np.ndarray, sample_rate: int, **kwargs: object):  # type: ignore
     )
 
 
+def test_decay_20db_is_none_when_the_envelope_never_falls() -> None:
+    sample_rate = 48000
+    flat = np.ones(sample_rate, dtype=np.float64)
+    assert _decay_20db_s(flat, sample_rate, 0.01) is None
+
+
+def test_band_helpers_skip_centres_past_nyquist(sample_rate: int) -> None:
+    ir = np.zeros(sample_rate, dtype=np.float64)
+    ir[0] = 1.0
+    past_nyquist = sample_rate  # centre well above Nyquist
+    assert band_decay_20db_s(ir, sample_rate, past_nyquist) is None
+    assert np.allclose(notch_band(ir, sample_rate, past_nyquist), ir)
+
+
+def test_resonance_search_refuses_when_frequency_resolution_is_too_coarse(
+    sample_rate: int,
+) -> None:
+    # A few-sample IR makes a frequency response with almost no bins.
+    ir = np.zeros(16, dtype=np.float64)
+    ir[0] = 1.0
+    fr = frequency_response(ir, sample_rate, smoothing_fraction=0)
+    result = detect_potential_resonances(
+        ir,
+        sample_rate,
+        fr,
+        max_hz=300.0,
+        min_prominence_db=6.0,
+    )
+    assert result.candidates == ()
+    assert (
+        result.searched_range_hz is None
+        or result.searched_range_hz[1] <= result.searched_range_hz[0]
+    )
+    assert any("too coarse" in note or "no search" in note for note in result.notes)
+
+
 def test_ringing_low_frequency_mode_is_a_candidate(sample_rate: int) -> None:
     ir = make_rir(sample_rate, rt60_s=0.3, length_s=2.0, diffuse_level=0.01)
     t = np.arange(ir.shape[0]) / sample_rate
