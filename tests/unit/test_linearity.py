@@ -180,3 +180,116 @@ def test_detect_dropouts_finds_zero_and_frozen_runs_but_not_clipping() -> None:
         ).dropouts
         == ()
     )
+
+
+def test_detect_dropouts_returns_empty_when_search_window_is_too_short() -> None:
+    from reverbscope.core.linearity import detect_dropouts
+
+    signal = np.random.default_rng(0).normal(0.0, 0.1, 1000)
+    # Shorter than DROPOUT_MIN_SAMPLES / DROPOUT_MIN_MS at 48 kHz.
+    check = detect_dropouts(signal, 48000, sweep_start=0, sweep_length=10)
+    assert check.dropouts == ()
+    settings = SweepSettings(sample_rate=48000, duration_s=0.5, fade_in_s=0.2, fade_out_s=0.2)
+    # Fades eat the whole short sweep window.
+    faded = detect_dropouts(signal, 48000, sweep_start=0, sweep_length=100, settings=settings)
+    assert faded.dropouts == ()
+    assert faded.searched_s[0] == pytest.approx(faded.searched_s[1])
+
+
+def test_alias_trajectory_is_none_when_harmonics_do_not_fold_or_are_too_short() -> None:
+    from reverbscope.core.linearity import _alias_trajectory
+    from reverbscope.models.result import ExcitationBand
+
+    settings = SweepSettings(duration_s=2.0)
+    # Order-2 fold needs content above Nyquist/2; a band entirely below that.
+    assert (
+        _alias_trajectory(
+            settings, 2, ExcitationBand(low_hz=20.0, high_hz=5000.0, source="settings")
+        )
+        is None
+    )
+    # A half-hertz strip around the fold edge is shorter than 16 samples.
+    assert (
+        _alias_trajectory(
+            settings,
+            2,
+            ExcitationBand(low_hz=12_000.0, high_hz=12_000.5, source="settings"),
+        )
+        is None
+    )
+
+
+def test_analysis_band_rejects_fold_outside_excitation() -> None:
+    from reverbscope.core.linearity import _AliasTrajectory, _analysis_band
+    from reverbscope.models.result import ExcitationBand
+
+    settings = SweepSettings(duration_s=2.0)
+    traj = _AliasTrajectory(order=3, start=100, stop=200, low_hz=5000.0, high_hz=8000.0)
+    band, reason = _analysis_band(
+        traj,
+        settings,
+        ExcitationBand(low_hz=20.0, high_hz=1000.0, source="settings"),
+        window_bins_hz=10.0,
+    )
+    assert band is None
+    assert reason is not None
+    assert "outside the swept range" in reason
+
+
+def test_probe_inverse_skips_normalisation_when_band_has_no_bins() -> None:
+    from reverbscope.core.linearity import _alias_trajectory, _probe_inverse
+    from reverbscope.core.sweep import excitation_band_hz
+    from reverbscope.models.result import ExcitationBand
+
+    settings = SweepSettings(duration_s=2.0)
+    low, high = excitation_band_hz(settings)
+    traj = _alias_trajectory(
+        settings, 3, ExcitationBand(low_hz=low, high_hz=high, source="settings")
+    )
+    assert traj is not None
+    inverse = _probe_inverse(settings, traj, (1e9, 1e9 + 1.0))
+    assert inverse.shape[0] == traj.stop - traj.start
+    assert np.max(np.abs(inverse)) > 0.0
+
+
+def test_aliased_distortion_reports_outside_window_and_empty_linear_energy() -> None:
+    from reverbscope.core.linearity import aliased_distortion_levels
+    from reverbscope.core.sweep import excitation_band_hz, inverse_filter
+    from reverbscope.models.result import ExcitationBand
+
+    settings = SweepSettings(duration_s=1.0)
+    rate = settings.sample_rate
+    low, high = excitation_band_hz(settings)
+    exc = ExcitationBand(low_hz=low, high_hz=high, source="settings")
+    inv = inverse_filter(settings)
+
+    tiny = aliased_distortion_levels(
+        np.zeros(100),
+        np.zeros(50),
+        sample_rate=rate,
+        settings=settings,
+        excitation_band=exc,
+        peak_index=25,
+        reference_length=inv.shape[0],
+        orders=(3,),
+    )
+    assert tiny[0].level_db is None
+    assert "outside the recording" in (tiny[0].reason or "")
+
+    direct = 10_000
+    peak_index = direct + (inv.shape[0] - 1)
+    half = round(0.004 * rate)
+    rec = np.random.default_rng(0).normal(0.0, 1e-6, peak_index + half + 20_000)
+    h_full = np.zeros(peak_index + half + 1000)
+    empty = aliased_distortion_levels(
+        rec,
+        h_full,
+        sample_rate=rate,
+        settings=settings,
+        excitation_band=exc,
+        peak_index=peak_index,
+        reference_length=inv.shape[0],
+        orders=(3,),
+    )
+    assert empty[0].level_db is None
+    assert "no energy in the probe band" in (empty[0].reason or "")
