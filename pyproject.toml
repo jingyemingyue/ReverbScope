@@ -53,7 +53,7 @@ dependencies = [
 # lock 6.11.2. Lift the bound once a 6.12.x has been run through the suite and
 # the desktop app on all three platforms (docs/DEPENDENCIES.md §4).
 gui = [
-  "PySide6_Essentials>=6.6,<6.12",
+  "PySide6_Essentials>=6.6,<6.13",
   # Charts (GUI_2_ARCHITECTURE.md §6.1). Pinned exactly: ui/pg.py relies on
   # pyqtgraph internals (PlotItem's auto-range button, the ViewBox menu, the
   # scene it paints into SVG), so every upgrade is reviewed, not floated.
